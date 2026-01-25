@@ -1,11 +1,12 @@
-import React from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground } from "react-native"
+import React, { useEffect, useState } from "react"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
+import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 const Logo = require("@assets/images/logo2.png")
 const BadgeSocialNetwork = require("@assets/images/badge-social-network.png")
 const BadgeWeek = require("@assets/images/badge-week.png")
@@ -18,11 +19,70 @@ interface HomeDinamicaScreenProps extends AppStackScreenProps<"HomeDinamica"> {}
 
 export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
+  const [hasPermission, setHasPermission] = useState(false)
+  const [screenTimeToday, setScreenTimeToday] = useState(0)
+  const [topApps, setTopApps] = useState<AppUsage[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    checkPermissionAndLoadData()
+  }, [])
+
+  const checkPermissionAndLoadData = async () => {
+    try {
+      const permission = await ScreenTimeService.hasPermission()
+      setHasPermission(permission)
+      
+      if (permission) {
+        await loadScreenTimeData()
+      }
+    } catch (error) {
+      console.error('Erro ao verificar permissão:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadScreenTimeData = async () => {
+    try {
+      const [todayTime, apps] = await Promise.all([
+        ScreenTimeService.getScreenTimeToday(),
+        ScreenTimeService.getScreenTimeByApp(1), // Hoje
+      ])
+      
+      setScreenTimeToday(todayTime)
+      setTopApps(apps.slice(0, 3)) // Top 3 apps
+    } catch (error) {
+      console.error('Erro ao carregar dados de tempo de tela:', error)
+    }
+  }
+
+  const handleRequestPermission = () => {
+    Alert.alert(
+      "Permissão Necessária",
+      "Para exibir seu tempo de tela real, precisamos de acesso às estatísticas de uso do dispositivo.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Conceder",
+          onPress: () => {
+            ScreenTimeService.requestPermission()
+            setTimeout(() => {
+              checkPermissionAndLoadData()
+            }, 2000)
+          },
+        },
+      ]
+    )
+  }
+
+  const hours = Math.floor(screenTimeToday / 60)
+  const minutes = screenTimeToday % 60
 
   // Mock data - replace with real data from your API
   const screenTimeData = {
-    hours: 2,
-    minutes: 32,
+    hours: hasPermission ? hours : 2,
+    minutes: hasPermission ? minutes : 32,
     mostUsedApps: ["📱", "🎵", "⏰"],
   }
 
@@ -51,26 +111,49 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Screen Time Card */}
             
-        <View style={styles.screenTimeCard}>
+        <TouchableOpacity 
+          style={styles.screenTimeCard}
+          onPress={!hasPermission ? handleRequestPermission : undefined}
+          activeOpacity={!hasPermission ? 0.7 : 1}
+        >
           <ImageBackground 
-        source={BackgroundImage}
-        style={{ width: '100%', height: 127, justifyContent: 'center' }}
-        resizeMode="cover"
-      >
-          <Text style={styles.screenTimeText}>
-            {screenTimeData.hours}h {screenTimeData.minutes}m
-          </Text>
-          <Text style={styles.screenTimeLabel}>de tempo de tela</Text>
-          <View style={styles.mostUsedApps}>
-            {screenTimeData.mostUsedApps.map((app, index) => (
-              <View key={index} style={styles.appIcon}>
-                <Text style={styles.appEmoji}>{app}</Text>
+            source={BackgroundImage}
+            style={{ width: '100%', height: 127, justifyContent: 'center' }}
+            resizeMode="cover"
+          >
+            {loading ? (
+              <ActivityIndicator size="large" color="#FFFFFF" style={{ marginLeft: 16 }} />
+            ) : !hasPermission ? (
+              <View style={{ marginLeft: 16 }}>
+                <Text style={styles.screenTimeText}>--h --m</Text>
+                <Text style={styles.screenTimeLabel}>Toque para conceder permissão</Text>
               </View>
-            ))}
-            <Text style={styles.mostUsedLabel}>Mais usados</Text>
-          </View>
+            ) : (
+              <View>
+                <Text style={styles.screenTimeText}>
+                  {screenTimeData.hours}h {screenTimeData.minutes}m
+                </Text>
+                <Text style={styles.screenTimeLabel}>de tempo de tela hoje</Text>
+                <View style={styles.mostUsedApps}>
+                  {topApps.length > 0 ? (
+                    topApps.map((app, index) => (
+                      <View key={app.packageName} style={styles.appIcon}>
+                        <Text style={styles.appName} numberOfLines={1}>{app.appName.charAt(0)}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    screenTimeData.mostUsedApps.map((app, index) => (
+                      <View key={index} style={styles.appIcon}>
+                        <Text style={styles.appEmoji}>{app}</Text>
+                      </View>
+                    ))
+                  )}
+                  <Text style={styles.mostUsedLabel}>Mais usados</Text>
+                </View>
+              </View>
+            )}
           </ImageBackground>
-        </View>
+        </TouchableOpacity>
 
         {/* Comparison Message */}
         <TouchableOpacity style={styles.comparisonCard}>
@@ -97,7 +180,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             {activeChallenges.map((challenge) => (
               <TouchableOpacity key={challenge.id} style={styles.challengeCard}>
                 <View style={styles.challengeIcon}>
-                  <Image source={challenge.imageLogo} style={styles.challengeImage} />
+                  <Image source={challenge.imageLogo} />
                 </View>
                 <ProgressBar progress={challenge.progress} />
                 <Text style={styles.challengeTitle}>{challenge.title}</Text>
@@ -202,6 +285,11 @@ const styles = StyleSheet.create({
   },
   appEmoji: {
     fontSize: 18,
+  },
+  appName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#322D70",
   },
   mostUsedLabel: {
     fontSize: 12,
