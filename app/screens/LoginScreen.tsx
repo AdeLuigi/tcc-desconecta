@@ -1,6 +1,6 @@
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
 // eslint-disable-next-line no-restricted-imports
-import { TextInput, TextStyle, ViewStyle } from "react-native"
+import { TextInput, TextStyle, ViewStyle, View } from "react-native"
 
 import { Button } from "@/components/Button"
 import { PressableIcon } from "@/components/Icon"
@@ -14,7 +14,7 @@ import type { ThemedStyle } from "@/theme/types"
 
 interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
 
-export const LoginScreen: FC<LoginScreenProps> = () => {
+export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
   const authPasswordInput = useRef<TextInput>(null)
 
   const [authPassword, setAuthPassword] = useState("")
@@ -118,6 +118,13 @@ export const LoginScreen: FC<LoginScreenProps> = () => {
         preset="reversed"
         onPress={login}
       />
+      
+      <View style={{ marginTop: 16 }}>
+        <Button
+          text="← Voltar para Onboarding"
+          onPress={() => navigation.navigate("Onboarding")}
+        />
+      </View>
     </Screen>
   )
 }

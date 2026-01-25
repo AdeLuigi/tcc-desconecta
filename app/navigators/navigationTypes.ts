@@ -17,8 +17,33 @@ export type DemoTabParamList = {
 
 // App Stack Navigator types
 export type AppStackParamList = {
+  BemVindo: undefined
+  Onboarding: undefined
   Welcome: undefined
   Login: undefined
+  Cadastro: undefined
+  ConfiguracaoPrimeiroAcesso: undefined
+  HomeDinamica: undefined
+  GruposDeAmigos: undefined
+  CriarNovoGrupo: undefined
+  PaginaDoGrupo: undefined
+  Atividade: undefined
+  Ranking: undefined
+  Batepapo: undefined
+  DetalhesDoGrupo: undefined
+  DesafiosPublicos: undefined
+  DesafiosInscrito: undefined
+  DesafiosDisponiveis: undefined
+  AppModoFoco: undefined
+  FeedDosGrupos: undefined
+  EstatisticaPessoalResumida: undefined
+  EstatisticasPessoais: undefined
+  Configuracoes: undefined
+  Perfil: undefined
+  BloqueioApps: undefined
+  LimiteTela: undefined
+  LimiteApps: undefined
+  Notificacoes: undefined
   Demo: NavigatorScreenParams<DemoTabParamList>
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
