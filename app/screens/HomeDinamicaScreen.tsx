@@ -1,11 +1,15 @@
 import React from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
+import ProgressBar from "@/components/ProgressBar"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 const Logo = require("@assets/images/logo2.png")
+const BadgeSocialNetwork = require("@assets/images/badge-social-network.png")
+const BadgeWeek = require("@assets/images/badge-week.png")
+const BackgroundImage = require("@assets/images/frame home 1.png")
 
 interface HomeDinamicaScreenProps extends AppStackScreenProps<"HomeDinamica"> {}
 
@@ -20,9 +24,9 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   }
 
   const activeChallenges = [
-    { id: 1, title: "24 horas sem redes sociais", progress: 20 },
-    { id: 2, title: "7 dias com menos de 3 horas", progress: 20 },
-    { id: 3, title: "7 dias...", progress: 20 },
+    { id: 1, title: "24 horas sem redes sociais", progress: 20, imageLogo: BadgeSocialNetwork },
+    { id: 2, title: "7 dias com menos de 3 horas", progress: 20, imageLogo: BadgeWeek },
+    { id: 3, title: "7 dias...", progress: 20, imageLogo: BadgeSocialNetwork },
   ]
 
   const groups = [
@@ -43,7 +47,13 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Screen Time Card */}
+            
         <View style={styles.screenTimeCard}>
+          <ImageBackground 
+        source={BackgroundImage}
+        style={{ width: '100%', height: 127, justifyContent: 'center' }}
+        resizeMode="cover"
+      >
           <Text style={styles.screenTimeText}>
             {screenTimeData.hours}h {screenTimeData.minutes}m
           </Text>
@@ -56,14 +66,22 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             ))}
             <Text style={styles.mostUsedLabel}>Mais usados</Text>
           </View>
+          </ImageBackground>
         </View>
 
         {/* Comparison Message */}
         <TouchableOpacity style={styles.comparisonCard}>
-          <Text style={styles.comparisonText}>
-            📉 Você está 28% abaixo da média dos usuários
-          </Text>
-          <Text style={styles.arrow}>›</Text>
+          <View >
+            <Icon icon="vector" size={16} color="#72C3E0" />
+          </View>
+          <View style={{ width:"80%"}}>
+            <Text style={styles.comparisonText} >
+             <Text style={{fontWeight: "bold"}} >Você está 28%</Text> abaixo da média dos usuários
+            </Text>
+          </View>
+          <View>
+            <Icon icon="chevron" size={16} />
+          </View>
         </TouchableOpacity>
 
         {/* Active Challenges Section */}
@@ -76,12 +94,11 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             {activeChallenges.map((challenge) => (
               <TouchableOpacity key={challenge.id} style={styles.challengeCard}>
                 <View style={styles.challengeIcon}>
-                  <Text style={styles.challengeEmoji}>🎯</Text>
-                  <View style={styles.progressBadge}>
-                    <Text style={styles.progressText}>{challenge.progress}%</Text>
-                  </View>
+                  <Image source={challenge.imageLogo} style={styles.challengeImage} />
                 </View>
+                <ProgressBar progress={challenge.progress} />
                 <Text style={styles.challengeTitle}>{challenge.title}</Text>
+                
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -131,7 +148,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#1E1B4B",
+    backgroundColor: "#322D70",
   },
   logo: {
     color: "#FFFFFF",
@@ -143,31 +160,34 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   screenTimeCard: {
-    backgroundColor: "#7DD3FC",
-    borderRadius: 16,
-    padding: 24,
-    marginTop: 20,
+
+    padding: 16,
     marginBottom: 16,
     alignItems: "center",
+    backgroundColor: "#322D70",
   },
   screenTimeText: {
-    fontSize: 48,
+    fontSize: 30,
     fontWeight: "700",
-    color: "#1E293B",
+    color: "#FFFFFF",
+    marginLeft: 16,
   },
   screenTimeLabel: {
     fontSize: 14,
-    color: "#475569",
+    color: "#FFFFFF",
     marginTop: 4,
+    marginLeft: 16,
+    fontWeight: "bold",
   },
   mostUsedApps: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 16,
     gap: 8,
+    marginLeft: 16,
+    
   },
   appIcon: {
     width: 32,
@@ -182,22 +202,23 @@ const styles = StyleSheet.create({
   },
   mostUsedLabel: {
     fontSize: 12,
-    color: "#475569",
+    color: "#FFFFFF",
     marginLeft: 4,
+    fontWeight: "bold",
   },
   comparisonCard: {
     flexDirection: "row",
+    flex: 1,
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
+    marginHorizontal: 16,
   },
   comparisonText: {
-    fontSize: 14,
-    color: "#1E293B",
-    flex: 1,
+   
   },
   arrow: {
     fontSize: 24,
@@ -205,6 +226,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -214,8 +236,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#1E293B",
+    fontWeight: "bold",
+    color: "#322D70",
   },
   horizontalScroll: {
     marginHorizontal: -20,
@@ -227,6 +249,13 @@ const styles = StyleSheet.create({
     padding: 16,
     width: 140,
     marginRight: 12,
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  imageLogo: {
+    width: 40,
+    height: 40,
+    marginBottom: 12,
   },
   challengeIcon: {
     width: 60,
@@ -258,8 +287,9 @@ const styles = StyleSheet.create({
   challengeTitle: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "bold",
     lineHeight: 18,
+    textAlign: "center",
   },
   groupCard: {
     flexDirection: "row",
