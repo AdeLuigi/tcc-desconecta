@@ -138,7 +138,17 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
                   {topApps.length > 0 ? (
                     topApps.map((app, index) => (
                       <View key={app.packageName} style={styles.appIcon}>
-                        <Text style={styles.appName} numberOfLines={1}>{app.appName.charAt(0)}</Text>
+                        {app.appIcon ? (
+                          <Image 
+                            source={{ uri: `data:image/png;base64,${app.appIcon}` }}
+                            style={styles.appIconImage}
+                            resizeMode="contain"
+                          />
+                        ) : (
+                          <Text style={styles.appName} numberOfLines={1}>
+                            {app.appName.charAt(0)}
+                          </Text>
+                        )}
                       </View>
                     ))
                   ) : (
@@ -282,6 +292,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.5)",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+  appIconImage: {
+    width: 28,
+    height: 28,
   },
   appEmoji: {
     fontSize: 18,

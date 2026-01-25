@@ -6,6 +6,7 @@ export interface AppUsage {
   packageName: string;
   appName: string;
   timeInMinutes: number;
+  appIcon?: string; // Base64 string do ícone
 }
 
 export interface DailyScreenTime {
