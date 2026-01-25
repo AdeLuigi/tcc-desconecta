@@ -1,6 +1,6 @@
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
 // eslint-disable-next-line no-restricted-imports
-import { TextInput, TextStyle, ViewStyle, View, TouchableOpacity, Image, ImageStyle } from "react-native"
+import { TextInput, TextStyle, ViewStyle, View, TouchableOpacity, Image, ImageStyle, ImageBackground } from "react-native"
 
 import { Button } from "@/components/Button"
 import { PressableIcon } from "@/components/Icon"
@@ -12,7 +12,8 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
-const Logo = require("@assets/images/logo.png")
+const Logo = require("@assets/images/logonovo.png")
+const BackgroundImage = require("@assets/images/background.png")
 
 interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
 
@@ -74,10 +75,14 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
       safeAreaEdges={["top", "bottom"]}
       style={themed($screen)}
     >
-      <View style={themed($container)}>
+      <ImageBackground 
+        source={BackgroundImage} 
+        style={themed($backgroundImage)}
+        resizeMode="cover"
+      >
+        <View style={themed($container)}>
         {/* Logo */}
         <View style={themed($logoContainer)}>
-          <Text style={themed($logo)}>DESCONECTA</Text>
           <Image source={Logo} resizeMode="contain" />
         </View>
 
@@ -96,6 +101,7 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
             helper={error}
             status={error ? "error" : undefined}
             onSubmitEditing={() => authPasswordInput.current?.focus()}
+            style={{ fontSize: 16, height: 36 }}
           />
 
           <TextField
@@ -111,6 +117,7 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
             placeholder="Senha"
             onSubmitEditing={login}
             RightAccessory={PasswordRightAccessory}
+            style={{ fontSize: 16, height: 36 }}
           />
 
           <Button
@@ -143,24 +150,23 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
           </View>
         </View>
       </View>
+      </ImageBackground>
     </Screen>
   )
 }
-
-const $Logo: ThemedStyle<ImageStyle> = ({ spacing }) => ({
-  height: 88,
-  width: "100%",
-  marginBottom: spacing.xxl,
-})
 
 const $screen: ThemedStyle<ViewStyle> = () => ({
   backgroundColor: "#3D2F7D",
 })
 
+const $backgroundImage: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  width: "100%",
+})
+
 const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexGrow: 1,
-  paddingVertical: spacing.xxl,
-  paddingHorizontal: spacing.lg,
+  
 })
 
 const $container: ThemedStyle<ViewStyle> = () => ({
@@ -174,16 +180,11 @@ const $logoContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "center",
 })
 
-const $logo: ThemedStyle<TextStyle> = () => ({
-  fontSize: 32,
-  fontWeight: "bold",
-  color: "#FFFFFF",
-  letterSpacing: 2,
-})
 
 const $formContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   width: "100%",
   maxWidth: 400,
+  paddingHorizontal: spacing.lg,
 })
 
 const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
