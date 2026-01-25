@@ -10,6 +10,9 @@ const Logo = require("@assets/images/logo2.png")
 const BadgeSocialNetwork = require("@assets/images/badge-social-network.png")
 const BadgeWeek = require("@assets/images/badge-week.png")
 const BackgroundImage = require("@assets/images/frame home 1.png")
+const brainrot = require("@assets/images/brainrot.png")
+const familia = require("@assets/images/familia.png")
+const iluminados = require("@assets/images/iluminados.png")
 
 interface HomeDinamicaScreenProps extends AppStackScreenProps<"HomeDinamica"> {}
 
@@ -30,9 +33,9 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   ]
 
   const groups = [
-    { id: 1, name: "Sem Brainrot", admin: "Felipe", participants: 29, emoji: "🔥" },
-    { id: 2, name: "Família Silva", admin: "Ademário", participants: 12, emoji: "👨‍👩‍👧‍👦" },
-    { id: 3, name: "Iluminados", admin: "Ana", participants: 8, emoji: "🌅" },
+    { id: 1, name: "Sem Brainrot", admin: "Felipe", participants: 29, groupImage: brainrot },
+    { id: 2, name: "Família Silva", admin: "Ademário", participants: 12, groupImage: familia },
+    { id: 3, name: "Iluminados", admin: "Ana", participants: 8, groupImage: iluminados },
   ]
 
   return (
@@ -72,7 +75,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         {/* Comparison Message */}
         <TouchableOpacity style={styles.comparisonCard}>
           <View >
-            <Icon icon="vector" size={16} color="#72C3E0" />
+            <Icon icon="vector" size={14} color="#72C3E0" />
           </View>
           <View style={{ width:"80%"}}>
             <Text style={styles.comparisonText} >
@@ -80,7 +83,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             </Text>
           </View>
           <View>
-            <Icon icon="chevron" size={16} />
+            <Icon icon="chevron" size={20} />
           </View>
         </TouchableOpacity>
 
@@ -88,7 +91,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         <View style={styles.section}>
           <TouchableOpacity style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Desafios ativos</Text>
-            <Text style={styles.arrow}>›</Text>
+            <Icon icon="chevron" size={20} />
           </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
             {activeChallenges.map((challenge) => (
@@ -111,7 +114,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             onPress={() => navigation.navigate("GruposDeAmigos")}
           >
             <Text style={styles.sectionTitle}>Seus grupos</Text>
-            <Text style={styles.arrow}>›</Text>
+            <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
           {groups.map((group) => (
             <TouchableOpacity 
@@ -120,15 +123,15 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
               onPress={() => navigation.navigate("DetalhesDoGrupo")}
             >
               <View style={styles.groupAvatar}>
-                <Text style={styles.groupEmoji}>{group.emoji}</Text>
+                <Image source={group.groupImage} />
               </View>
               <View style={styles.groupInfo}>
                 <Text style={styles.groupName}>{group.name}</Text>
                 <Text style={styles.groupDetails}>
-                  👤 {group.admin} · {group.participants} participantes
+                  🥇 <Text style={{fontWeight: "bold", color: "#6881BA"}}>{group.admin}</Text> · {group.participants} participantes
                 </Text>
               </View>
-              <Text style={styles.arrow}>›</Text>
+              <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           ))}
         </View>
@@ -213,9 +216,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     marginBottom: 24,
     marginHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   comparisonText: {
    
@@ -230,7 +242,6 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
@@ -316,12 +327,12 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#1E293B",
+    fontWeight: "bold",
+    color: "#312E81",
     marginBottom: 4,
   },
   groupDetails: {
     fontSize: 13,
-    color: "#64748B",
+    color: "#6881BA",
   },
 })
