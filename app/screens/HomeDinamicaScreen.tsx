@@ -14,6 +14,7 @@ const BackgroundImage = require("@assets/images/frame home 1.png")
 const brainrot = require("@assets/images/brainrot.png")
 const familia = require("@assets/images/familia.png")
 const iluminados = require("@assets/images/iluminados.png")
+import { useAuth } from "@/context/AuthContext"
 
 interface HomeDinamicaScreenProps extends AppStackScreenProps<"HomeDinamica"> {}
 
@@ -23,6 +24,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const [screenTimeToday, setScreenTimeToday] = useState(0)
   const [topApps, setTopApps] = useState<AppUsage[]>([])
   const [loading, setLoading] = useState(true)
+  const { logout } = useAuth()
 
   useEffect(() => {
     checkPermissionAndLoadData()
@@ -47,7 +49,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     try {
       const [todayTime, apps] = await Promise.all([
         ScreenTimeService.getScreenTimeToday(),
-        ScreenTimeService.getScreenTimeByApp(1), // Hoje
+        ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
       ])
       
       setScreenTimeToday(todayTime)
@@ -166,7 +168,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         </TouchableOpacity>
 
         {/* Comparison Message */}
-        <TouchableOpacity style={styles.comparisonCard}>
+        <TouchableOpacity style={styles.comparisonCard} onPress={() => logout()}>
           <View >
             <Icon icon="vector" size={14} color="#72C3E0" />
           </View>

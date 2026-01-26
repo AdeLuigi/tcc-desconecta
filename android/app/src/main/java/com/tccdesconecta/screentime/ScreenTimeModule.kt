@@ -86,14 +86,14 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val startTime = calendar.timeInMillis
             val endTime = System.currentTimeMillis()
 
-            val usageStatsList = usageStatsManager.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY,
+            // Usa queryAndAggregateUsageStats para evitar duplicação
+            val usageStatsMap = usageStatsManager.queryAndAggregateUsageStats(
                 startTime,
                 endTime
             )
 
             var totalTime = 0L
-            usageStatsList?.forEach { usageStats ->
+            usageStatsMap?.values?.forEach { usageStats ->
                 totalTime += usageStats.totalTimeInForeground
             }
 
@@ -110,7 +110,10 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val usageStatsManager = reactApplicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             
             val calendar = Calendar.getInstance()
-            calendar.add(Calendar.DAY_OF_YEAR, -daysBack)
+            // Se daysBack = 0, pega de hoje. Se = 1, pega desde ontem, etc.
+            if (daysBack > 0) {
+                calendar.add(Calendar.DAY_OF_YEAR, -daysBack)
+            }
             calendar.set(Calendar.HOUR_OF_DAY, 0)
             calendar.set(Calendar.MINUTE, 0)
             calendar.set(Calendar.SECOND, 0)
@@ -118,17 +121,17 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val startTime = calendar.timeInMillis
             val endTime = System.currentTimeMillis()
 
-            val usageStatsList = usageStatsManager.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY,
+            // Usa queryAndAggregateUsageStats para dados já agregados
+            val usageStatsMap = usageStatsManager.queryAndAggregateUsageStats(
                 startTime,
                 endTime
             )
 
             val appUsageMap = mutableMapOf<String, Long>()
-            usageStatsList?.forEach { usageStats ->
+            usageStatsMap?.values?.forEach { usageStats ->
                 val packageName = usageStats.packageName
                 val timeInForeground = usageStats.totalTimeInForeground
-                appUsageMap[packageName] = appUsageMap.getOrDefault(packageName, 0) + timeInForeground
+                appUsageMap[packageName] = timeInForeground
             }
 
             val resultArray = WritableNativeArray()
