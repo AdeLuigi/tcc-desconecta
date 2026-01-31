@@ -1,0 +1,158 @@
+{
+  "social": {
+    "label": "Redes Sociais",
+    "emoji": "💬",
+    "packages": [
+      "com.instagram.android",
+      "com.facebook.katana",
+      "com.facebook.orca",
+      "com.whatsapp",
+      "com.twitter.android",
+      "com.snapchat.android",
+      "com.zhiliaoapp.musically",
+      "com.linkedin.android",
+      "com.discord",
+      "com.telegram.messenger",
+      "org.telegram.messenger",
+      "com.pinterest",
+      "com.reddit.frontpage",
+      "com.tumblr",
+      "com.viber.voip"
+    ]
+  },
+  "entertainment": {
+    "label": "Entretenimento",
+    "emoji": "🎬",
+    "packages": [
+      "com.netflix.mediaclient",
+      "com.amazon.avod.thirdpartyclient",
+      "com.hbo.hbonow",
+      "com.disney.disneyplus",
+      "com.globo.globoplay",
+      "com.globosat.globosatplay",
+      "br.com.hbomax",
+      "com.crunchyroll.crunchyroid",
+      "tv.pluto.android"
+    ]
+  },
+  "streaming": {
+    "label": "Streaming",
+    "emoji": "🎵",
+    "packages": [
+      "com.spotify.music",
+      "com.google.android.youtube",
+      "com.google.android.apps.youtube.music",
+      "com.deezer.android.app",
+      "com.amazon.mp3",
+      "com.apple.android.music",
+      "com.soundcloud.android",
+      "fm.last.android"
+    ]
+  },
+  "games": {
+    "label": "Jogos",
+    "emoji": "🎮",
+    "packages": [
+      "com.supercell.clashofclans",
+      "com.supercell.brawlstars",
+      "com.mojang.minecraftpe",
+      "com.garena.game.freefire",
+      "com.ea.gp.fifamobile",
+      "com.king.candycrushsaga",
+      "com.riotgames.league.wildrift",
+      "com.mobile.legends",
+      "com.pubg.imobile",
+      "com.tencent.ig",
+      "com.epicgames.fortnite",
+      "com.roblox.client"
+    ]
+  },
+  "productivity": {
+    "label": "Produtividade",
+    "emoji": "📚",
+    "packages": [
+      "com.notion.id",
+      "com.todoist",
+      "com.google.android.apps.docs",
+      "com.microsoft.office.word",
+      "com.microsoft.office.excel",
+      "com.microsoft.office.powerpoint",
+      "com.evernote",
+      "com.trello",
+      "com.asana.app",
+      "com.google.android.keep",
+      "com.microsoft.todos",
+      "com.adobe.reader"
+    ]
+  },
+  "education": {
+    "label": "Educação",
+    "emoji": "🎓",
+    "packages": [
+      "com.duolingo",
+      "org.khanacademy.android",
+      "com.google.android.apps.classroom",
+      "com.Babbel.Mobile.Android",
+      "com.busuu.android.enc",
+      "com.memrise.android.memrisecompanion",
+      "com.photomath.app",
+      "com.brainly",
+      "com.quizlet.quizletandroid"
+    ]
+  },
+  "photo": {
+    "label": "Foto e Vídeo",
+    "emoji": "📸",
+    "packages": [
+      "com.google.android.apps.photos",
+      "com.adobe.lrmobile",
+      "com.vsco.cam",
+      "com.neuralprisma",
+      "com.lightricks.facetune.free",
+      "com.canva.editor",
+      "com.picsart.studio"
+    ]
+  },
+  "news": {
+    "label": "Notícias",
+    "emoji": "📰",
+    "packages": [
+      "flipboard.app",
+      "com.google.android.apps.magazines",
+      "br.com.abril.android.veja",
+      "br.com.infoglobo.oglobo",
+      "com.estadao.mobile",
+      "com.folha.app"
+    ]
+  },
+  "maps": {
+    "label": "Mapas e Navegação",
+    "emoji": "🗺️",
+    "packages": [
+      "com.google.android.apps.maps",
+      "com.waze",
+      "com.ubercab",
+      "com.ubercab.eats",
+      "br.com.ifood",
+      "net.rappi.rappiclient"
+    ]
+  },
+  "shopping": {
+    "label": "Compras",
+    "emoji": "🛍️",
+    "packages": [
+      "com.amazon.mShop.android.shopping",
+      "com.mercadolibre",
+      "br.com.americanas",
+      "br.com.magazineluiza.app",
+      "com.shopee.br",
+      "com.shein.app",
+      "com.aliexpress.android"
+    ]
+  },
+  "other": {
+    "label": "Outros",
+    "emoji": "📱",
+    "packages": []
+  }
+}

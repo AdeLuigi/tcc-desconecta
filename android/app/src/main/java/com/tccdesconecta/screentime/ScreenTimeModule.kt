@@ -5,10 +5,12 @@ import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Process
 import android.provider.Settings
 import android.util.Base64
@@ -140,7 +142,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 appData.putString("packageName", entry.key)
                 appData.putInt("timeInMinutes", (entry.value / 1000 / 60).toInt())
                 
-                // Tenta pegar o nome e ícone do app
+                // Tenta pegar o nome, ícone e categoria do app
                 try {
                     val pm = reactApplicationContext.packageManager
                     val appInfo = pm.getApplicationInfo(entry.key, 0)
@@ -153,8 +155,21 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                     if (iconBase64 != null) {
                         appData.putString("appIcon", iconBase64)
                     }
+                    
+                    // NOVO: Obter categoria do app (Android 8.0+)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val categoryId = appInfo.category
+                        val categoryName = getCategoryName(categoryId)
+                        appData.putInt("categoryId", categoryId)
+                        appData.putString("category", categoryName)
+                    } else {
+                        appData.putInt("categoryId", -1)
+                        appData.putString("category", "other")
+                    }
                 } catch (e: Exception) {
                     appData.putString("appName", entry.key)
+                    appData.putInt("categoryId", -1)
+                    appData.putString("category", "other")
                 }
                 
                 resultArray.pushMap(appData)
@@ -206,5 +221,25 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         } catch (e: Exception) {
             promise.reject("ERROR", e.message)
         }
+    }
+    
+    /**
+     * Converte o ID de categoria nativo do Android para um nome amigável
+     */
+    private fun getCategoryName(categoryId: Int): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return when (categoryId) {
+                ApplicationInfo.CATEGORY_GAME -> "games"
+                ApplicationInfo.CATEGORY_AUDIO -> "streaming"
+                ApplicationInfo.CATEGORY_VIDEO -> "entertainment"
+                ApplicationInfo.CATEGORY_IMAGE -> "photo"
+                ApplicationInfo.CATEGORY_SOCIAL -> "social"
+                ApplicationInfo.CATEGORY_NEWS -> "news"
+                ApplicationInfo.CATEGORY_MAPS -> "maps"
+                ApplicationInfo.CATEGORY_PRODUCTIVITY -> "productivity"
+                else -> "other"
+            }
+        }
+        return "other"
     }
 }

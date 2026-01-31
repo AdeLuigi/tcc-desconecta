@@ -7,6 +7,8 @@ export interface AppUsage {
   appName: string;
   timeInMinutes: number;
   appIcon?: string; // Base64 string do ícone
+  categoryId?: number; // ID nativo do Android (API 26+)
+  category?: string; // Nome amigável da categoria
 }
 
 export interface DailyScreenTime {

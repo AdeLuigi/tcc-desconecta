@@ -7,6 +7,7 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import ScreenTimeService, { AppUsage } from "@/services/screenTime"
+import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
 const Logo = require("@assets/images/logo2.png")
 const BadgeSocialNetwork = require("@assets/images/badge-social-network.png")
 const BadgeWeek = require("@assets/images/badge-week.png")
@@ -22,7 +23,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const { theme } = useAppTheme()
   const [hasPermission, setHasPermission] = useState(false)
   const [screenTimeToday, setScreenTimeToday] = useState(0)
-  const [topApps, setTopApps] = useState<AppUsage[]>([])
+  const [topApps, setTopApps] = useState<(AppUsage & { category: AppCategory })[]>([])
   const [loading, setLoading] = useState(true)
   const { logout } = useAuth()
 
@@ -52,8 +53,14 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
       ])
       
+      // Adicionar categoria com fallback para lista manual
+      const appsWithCategory = apps.map(app => ({
+        ...app,
+        category: getAppCategory(app.packageName, app.category),
+      }))
+      
       setScreenTimeToday(todayTime)
-      setTopApps(apps.slice(0, 3)) // Top 3 apps
+      setTopApps(appsWithCategory.slice(0, 3)) // Top 3 apps
     } catch (error) {
       console.error('Erro ao carregar dados de tempo de tela:', error)
     }
@@ -147,10 +154,11 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
                             resizeMode="contain"
                           />
                         ) : (
-                          <Text style={styles.appName} numberOfLines={1}>
-                            {app.appName.charAt(0)}
+                          <Text style={styles.appEmoji}>
+                            {getCategoryEmoji(app.category)}
                           </Text>
                         )}
+                                                  
                       </View>
                     ))
                   ) : (
