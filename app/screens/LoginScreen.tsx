@@ -1,6 +1,6 @@
 import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
 // eslint-disable-next-line no-restricted-imports
-import { TextInput, TextStyle, ViewStyle, View, TouchableOpacity, Image, ImageStyle, ImageBackground } from "react-native"
+import { TextInput, TextStyle, ViewStyle, View, TouchableOpacity, Image, ImageStyle, ImageBackground, Alert } from "react-native"
 
 import { Button } from "@/components/Button"
 import { PressableIcon } from "@/components/Icon"
@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
+import { signInWithGoogle, configureGoogleSignIn } from "@/services/auth"
 
 const Logo = require("@assets/images/logonovo.png")
 const BackgroundImage = require("@assets/images/background.png")
@@ -23,12 +24,18 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
   const [authPassword, setAuthPassword] = useState("")
   const [isAuthPasswordHidden, setIsAuthPasswordHidden] = useState(true)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const { authEmail, setAuthEmail, setAuthToken, validationError } = useAuth()
 
   const {
     themed,
     theme: { colors },
   } = useAppTheme()
+
+  // Configura o Google Sign-In quando o componente é montado
+  useEffect(() => {
+    configureGoogleSignIn()
+  }, [])
 
   const error = isSubmitted ? validationError : ""
 
@@ -47,9 +54,39 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
     setAuthToken(String(Date.now()))
   }
 
-  function loginWithGoogle() {
-    // Implementar login com Google aqui
-    console.log("Login com Google")
+  async function loginWithGoogle() {
+    try {
+      setIsGoogleLoading(true)
+      const result = await signInWithGoogle()
+
+      if (result.success && result.user) {
+        // Salva o email do usuário e o token de autenticação
+        if (result.user.email) {
+          setAuthEmail(result.user.email)
+        }
+        setAuthToken(result.idToken || result.user.uid)
+        
+        // Opcional: Mostrar mensagem de sucesso
+        Alert.alert(
+          "Sucesso!",
+          `Bem-vindo(a), ${result.user.displayName || result.user.email}!`,
+        )
+      } else {
+        // Mostra erro se o login falhou
+        Alert.alert(
+          "Erro no Login",
+          result.error || "Não foi possível fazer login com Google",
+        )
+      }
+    } catch (error: any) {
+      console.error("Error in loginWithGoogle:", error)
+      Alert.alert(
+        "Erro",
+        error.message || "Ocorreu um erro ao fazer login com Google",
+      )
+    } finally {
+      setIsGoogleLoading(false)
+    }
   }
 
   const PasswordRightAccessory: ComponentType<TextFieldAccessoryProps> = useMemo(
@@ -136,9 +173,15 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
           </View>
 
           {/* Google Button */}
-          <TouchableOpacity style={themed($googleButton)} onPress={loginWithGoogle}>
+          <TouchableOpacity 
+            style={themed($googleButton)} 
+            onPress={loginWithGoogle}
+            disabled={isGoogleLoading}
+          >
             <Text style={themed($googleIcon)}>G</Text>
-            <Text style={themed($googleButtonText)}>Continuar com Google</Text>
+            <Text style={themed($googleButtonText)}>
+              {isGoogleLoading ? "Entrando..." : "Continuar com Google"}
+            </Text>
           </TouchableOpacity>
 
           {/* Sign up link */}
