@@ -30,7 +30,22 @@ export type AppStackParamList = {
   Atividade: undefined
   Ranking: undefined
   Batepapo: undefined
-  DetalhesDoGrupo: undefined
+  DetalhesDoGrupo: {
+    grupo: {
+      id: string
+      nome: string
+      descricao: string
+      foto: string
+      membros: Array<{
+        userId: string
+        cargo: string
+      }>
+      ranking_mensal: Array<{
+        userId: string
+        pontos: number
+      }>
+    }
+  }
   DesafiosPublicos: undefined
   DesafiosInscrito: undefined
   DesafiosDisponiveis: undefined

@@ -102,9 +102,54 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   ]
 
   const groups = [
-    { id: 1, name: "Sem Brainrot", admin: "Felipe", participants: 29, groupImage: brainrot },
-    { id: 2, name: "Família Silva", admin: "Ademário", participants: 12, groupImage: familia },
-    { id: 3, name: "Iluminados", admin: "Ana", participants: 8, groupImage: iluminados },
+    {
+      id: "1",
+      nome: "Sem Brainrot",
+      descricao: "Grupo focado em reduzir o uso de redes sociais e conteúdos viciantes",
+      foto: brainrot,
+      membros: [
+        { userId: "felipe123", cargo: "administrador" },
+        { userId: "user2", cargo: "membro" },
+        { userId: "user3", cargo: "membro" },
+      ],
+      ranking_mensal: [
+        { userId: "felipe123", pontos: 1200 },
+        { userId: "user2", pontos: 980 },
+        { userId: "user3", pontos: 850 },
+      ],
+    },
+    {
+      id: "2",
+      nome: "Família Silva",
+      descricao: "Grupo familiar para acompanhar o tempo de tela juntos",
+      foto: familia,
+      membros: [
+        { userId: "ademario", cargo: "administrador" },
+        { userId: "maria", cargo: "membro" },
+        { userId: "joao", cargo: "membro" },
+      ],
+      ranking_mensal: [
+        { userId: "ademario", pontos: 1500 },
+        { userId: "maria", pontos: 1100 },
+        { userId: "joao", pontos: 900 },
+      ],
+    },
+    {
+      id: "3",
+      nome: "Iluminados",
+      descricao: "Amigos buscando equilíbrio digital e produtividade",
+      foto: iluminados,
+      membros: [
+        { userId: "ana", cargo: "administrador" },
+        { userId: "pedro", cargo: "membro" },
+        { userId: "carla", cargo: "membro" },
+      ],
+      ranking_mensal: [
+        { userId: "ana", pontos: 1350 },
+        { userId: "pedro", pontos: 1050 },
+        { userId: "carla", pontos: 800 },
+      ],
+    },
   ]
 
   return (
@@ -219,24 +264,30 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             <Text style={styles.sectionTitle}>Seus grupos</Text>
             <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
-          {groups.map((group) => (
-            <TouchableOpacity 
-              key={group.id} 
-              style={styles.groupCard}
-              onPress={() => navigation.navigate("DetalhesDoGrupo")}
-            >
-              <View style={styles.groupAvatar}>
-                <Image source={group.groupImage} />
-              </View>
-              <View style={styles.groupInfo}>
-                <Text style={styles.groupName}>{group.name}</Text>
-                <Text style={styles.groupDetails}>
-                  🥇 <Text style={{fontWeight: "bold", color: "#6881BA"}}>{group.admin}</Text> · {group.participants} participantes
-                </Text>
-              </View>
-              <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
-            </TouchableOpacity>
-          ))}
+          {groups.map((group) => {
+            const admin = group.membros.find(m => m.cargo === "administrador")
+            const adminName = admin ? admin.userId : "Admin"
+            const participantCount = group.membros.length
+            
+            return (
+              <TouchableOpacity 
+                key={group.id} 
+                style={styles.groupCard}
+                onPress={() => navigation.navigate("DetalhesDoGrupo", { grupo: group })}
+              >
+                <View style={styles.groupAvatar}>
+                  <Image source={group.foto} />
+                </View>
+                <View style={styles.groupInfo}>
+                  <Text style={styles.groupName}>{group.nome}</Text>
+                  <Text style={styles.groupDetails}>
+                    🥇 <Text style={{fontWeight: "bold", color: "#6881BA"}}>{adminName}</Text> · {participantCount} participantes
+                  </Text>
+                </View>
+                <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
+            )
+          })}
         </View>
       </ScrollView>
     </Screen>
