@@ -1,8 +1,9 @@
-import React from "react"
+import React, { useState } from "react"
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
+import { FeedPosts } from "@/components/FeedPosts"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 
@@ -11,6 +12,7 @@ interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrup
 export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ navigation, route }) => {
   const { theme } = useAppTheme()
   const { grupo } = route.params
+  const [activeTab, setActiveTab] = useState<"info" | "feed">("info")
 
   // Ordenar ranking por pontos
   const rankingOrdenado = [...grupo.ranking_mensal].sort((a, b) => b.pontos - a.pontos)
@@ -31,7 +33,29 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       </View>
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Group Info Card */}
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "info" && styles.tabActive]}
+            onPress={() => setActiveTab("info")}
+          >
+            <Text style={[styles.tabText, activeTab === "info" && styles.tabTextActive]}>
+              Informações
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "feed" && styles.tabActive]}
+            onPress={() => setActiveTab("feed")}
+          >
+            <Text style={[styles.tabText, activeTab === "feed" && styles.tabTextActive]}>
+              Feed do Grupo
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {activeTab === "info" ? (
+          <>
+            {/* Group Info Card */}
         <View style={styles.groupInfoCard}>
           <View style={styles.groupHeader}>
             <View style={styles.groupAvatarLarge}>
@@ -147,6 +171,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
+          </>
+        ) : (
+          /* Feed Tab */
+          <View style={styles.feedContainer}>
+            <FeedPosts groupId={grupo.id} />
+          </View>
+        )}
       </ScrollView>
     </Screen>
   )
@@ -175,6 +206,42 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    padding: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  tabActive: {
+    backgroundColor: "#322D70",
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6881BA",
+  },
+  tabTextActive: {
+    color: "#FFFFFF",
+  },
+  feedContainer: {
+    flex: 1,
+    minHeight: 400,
   },
   groupInfoCard: {
     backgroundColor: "#FFFFFF",
