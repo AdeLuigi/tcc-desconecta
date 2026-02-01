@@ -39,10 +39,12 @@ export type AppStackParamList = {
       membros: Array<{
         userId: string
         cargo: string
+        nome: string
       }>
       ranking_mensal: Array<{
         userId: string
         pontos: number
+        nome: string
       }>
     }
   }

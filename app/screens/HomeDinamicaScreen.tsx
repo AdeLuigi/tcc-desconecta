@@ -8,6 +8,7 @@ import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
+import { getUserGroups, type Group } from "@/services/groupService"
 const Logo = require("@assets/images/logo2.png")
 const BadgeSocialNetwork = require("@assets/images/badge-social-network.png")
 const BadgeWeek = require("@assets/images/badge-week.png")
@@ -25,11 +26,32 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const [screenTimeToday, setScreenTimeToday] = useState(0)
   const [topApps, setTopApps] = useState<(AppUsage & { category: AppCategory })[]>([])
   const [loading, setLoading] = useState(true)
-  const { logout } = useAuth()
+  const [groups, setGroups] = useState<Group[]>([])
+  const [loadingGroups, setLoadingGroups] = useState(true)
+  const { logout, userData } = useAuth()
 
   useEffect(() => {
     checkPermissionAndLoadData()
+    loadUserGroups()
   }, [])
+
+  const loadUserGroups = async () => {
+    try {
+      if (!userData?.uid) {
+        console.log("Usuário não autenticado, não é possível carregar grupos")
+        return
+      }
+
+      setLoadingGroups(true)
+      const userGroups = await getUserGroups(userData.uid)
+      setGroups(userGroups)
+      console.log(`Carregados ${userGroups.length} grupos do usuário`)
+    } catch (error) {
+      console.error("Erro ao carregar grupos:", error)
+    } finally {
+      setLoadingGroups(false)
+    }
+  }
 
   const checkPermissionAndLoadData = async () => {
     try {
@@ -88,7 +110,6 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const hours = Math.floor(screenTimeToday / 60)
   const minutes = screenTimeToday % 60
 
-  // Mock data - replace with real data from your API
   const screenTimeData = {
     hours: hasPermission ? hours : 2,
     minutes: hasPermission ? minutes : 32,
@@ -101,56 +122,25 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     { id: 3, title: "7 dias...", progress: 20, imageLogo: BadgeSocialNetwork },
   ]
 
-  const groups = [
-    {
-      id: "1",
-      nome: "Sem Brainrot",
-      descricao: "Grupo focado em reduzir o uso de redes sociais e conteúdos viciantes",
-      foto: brainrot,
-      membros: [
-        { userId: "felipe123", cargo: "administrador" },
-        { userId: "user2", cargo: "membro" },
-        { userId: "user3", cargo: "membro" },
-      ],
-      ranking_mensal: [
-        { userId: "felipe123", pontos: 1200 },
-        { userId: "user2", pontos: 980 },
-        { userId: "user3", pontos: 850 },
-      ],
-    },
-    {
-      id: "2",
-      nome: "Família Silva",
-      descricao: "Grupo familiar para acompanhar o tempo de tela juntos",
-      foto: familia,
-      membros: [
-        { userId: "ademario", cargo: "administrador" },
-        { userId: "maria", cargo: "membro" },
-        { userId: "joao", cargo: "membro" },
-      ],
-      ranking_mensal: [
-        { userId: "ademario", pontos: 1500 },
-        { userId: "maria", pontos: 1100 },
-        { userId: "joao", pontos: 900 },
-      ],
-    },
-    {
-      id: "3",
-      nome: "Iluminados",
-      descricao: "Amigos buscando equilíbrio digital e produtividade",
-      foto: iluminados,
-      membros: [
-        { userId: "ana", cargo: "administrador" },
-        { userId: "pedro", cargo: "membro" },
-        { userId: "carla", cargo: "membro" },
-      ],
-      ranking_mensal: [
-        { userId: "ana", pontos: 1350 },
-        { userId: "pedro", pontos: 1050 },
-        { userId: "carla", pontos: 800 },
-      ],
-    },
-  ]
+  // Imagens padrão para grupos sem foto
+  const defaultGroupImages: Record<string, any> = {
+    brainrot: brainrot,
+    familia: familia,
+    iluminados: iluminados,
+  }
+
+  const getGroupImage = (fotoUrl: string) => { // TODO - colocar essa função em um utils e usar ela também no DetalhesDoGrupoScreen
+    // Se a foto for uma URL válida, retorna um objeto para Image com uri
+    if (fotoUrl && (fotoUrl.startsWith("http") || fotoUrl.startsWith("data:"))) {
+      return { uri: fotoUrl }
+    }
+    // Se for uma chave de imagem local, retorna a imagem
+    if (fotoUrl && defaultGroupImages[fotoUrl]) {
+      return defaultGroupImages[fotoUrl]
+    }
+    // Imagem padrão
+    return brainrot
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
@@ -264,30 +254,51 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             <Text style={styles.sectionTitle}>Seus grupos</Text>
             <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
-          {groups.map((group) => {
-            const admin = group.membros.find(m => m.cargo === "administrador")
-            const adminName = admin ? admin.userId : "Admin"
-            const participantCount = group.membros.length
-            
-            return (
+          
+          {loadingGroups ? (
+            <ActivityIndicator size="small" color="#322D70" style={{ marginVertical: 20 }} />
+          ) : groups.length === 0 ? (
+            <View style={styles.emptyGroupsContainer}>
+              <Text style={styles.emptyGroupsText}>
+                Você ainda não participa de nenhum grupo
+              </Text>
               <TouchableOpacity 
-                key={group.id} 
-                style={styles.groupCard}
-                onPress={() => navigation.navigate("DetalhesDoGrupo", { grupo: group })}
+                style={styles.createGroupButton}
+                onPress={() => navigation.navigate("GruposDeAmigos")}
               >
-                <View style={styles.groupAvatar}>
-                  <Image source={group.foto} />
-                </View>
-                <View style={styles.groupInfo}>
-                  <Text style={styles.groupName}>{group.nome}</Text>
-                  <Text style={styles.groupDetails}>
-                    🥇 <Text style={{fontWeight: "bold", color: "#6881BA"}}>{adminName}</Text> · {participantCount} participantes
-                  </Text>
-                </View>
-                <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
+                <Text style={styles.createGroupButtonText}>Explorar grupos</Text>
               </TouchableOpacity>
-            )
-          })}
+            </View>
+          ) : (
+            groups.map((group) => {
+              const admin = group.membros.find(m => m.cargo === "administrador")
+              const adminName = admin ? admin.nome : "Admin"
+              const participantCount = group.membros.length
+              
+              return (
+                <TouchableOpacity 
+                  key={group.id} 
+                  style={styles.groupCard}
+                  onPress={() => navigation.navigate("DetalhesDoGrupo", { grupo: group })}
+                >
+                  <View style={styles.groupAvatar}>
+                    <Image 
+                      source={getGroupImage(group.foto)} 
+                      style={{ width: 48, height: 48, borderRadius: 24 }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <View style={styles.groupInfo}>
+                    <Text style={styles.groupName}>{group.nome}</Text>
+                    <Text style={styles.groupDetails}>
+                      🥇 <Text style={{fontWeight: "bold", color: "#6881BA"}}>{adminName}</Text> · {participantCount} participantes
+                    </Text>
+                  </View>
+                  <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
+              )
+            })
+          )}
         </View>
       </ScrollView>
     </Screen>
@@ -498,5 +509,27 @@ const styles = StyleSheet.create({
   groupDetails: {
     fontSize: 13,
     color: "#6881BA",
+  },
+  emptyGroupsContainer: {
+    alignItems: "center",
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  emptyGroupsText: {
+    fontSize: 14,
+    color: "#6881BA",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  createGroupButton: {
+    backgroundColor: "#322D70",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createGroupButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
 })

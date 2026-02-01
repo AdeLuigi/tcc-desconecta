@@ -107,7 +107,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                 </View>
                 <View style={styles.memberInfo}>
                   <View style={styles.memberNameRow}>
-                    <Text style={styles.memberName}>{membro.userId}</Text>
+                    <Text style={styles.memberName}>{membro.nome}</Text>
                     {isAdmin && (
                       <View style={styles.adminBadge}>
                         <Text style={styles.adminBadgeText}>Admin</Text>
@@ -145,7 +145,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                   </Text>
                 </View>
                 <View style={styles.rankingInfo}>
-                  <Text style={styles.rankingName}>{item.userId}</Text>
+                  <Text style={styles.rankingName}>{item.nome}</Text>
                   <View style={styles.rankingPointsBar}>
                     <View 
                       style={[
