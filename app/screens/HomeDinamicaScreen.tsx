@@ -247,13 +247,21 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
         {/* Groups Section */}
         <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.sectionHeader}
-            onPress={() => navigation.navigate("GruposDeAmigos")}
-          >
-            <Text style={styles.sectionTitle}>Seus grupos</Text>
-            <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
-          </TouchableOpacity>
+          <View style={styles.sectionHeaderRow}>
+            <TouchableOpacity 
+              style={styles.sectionHeader}
+              onPress={() => navigation.navigate("GruposDeAmigos")}
+            >
+              <Text style={styles.sectionTitle}>Seus grupos</Text>
+              <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.addGroupButton}
+              onPress={() => navigation.navigate("CriarNovoGrupo")}
+            >
+              <Text style={styles.addGroupButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
           
           {loadingGroups ? (
             <ActivityIndicator size="small" color="#322D70" style={{ marginVertical: 20 }} />
@@ -415,10 +423,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 16,
   },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+  },
+  addGroupButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#322D70",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  addGroupButtonText: {
+    fontSize: 24,
+    fontWeight: "300",
+    color: "#FFFFFF",
+    lineHeight: 24,
   },
   sectionTitle: {
     fontSize: 16,

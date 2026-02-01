@@ -1,4 +1,5 @@
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, arrayUnion, query, where } from "@react-native-firebase/firestore"
+import { getUserData } from "./userService"
 
 /**
  * Interface do grupo no Firestore
@@ -12,6 +13,7 @@ export interface GroupMember {
 export interface RankingMember {
   userId: string
   pontos: number
+  nome: string
 }
 
 export interface Group {
@@ -104,6 +106,10 @@ export async function createGroup(
   adminUserId: string,
 ): Promise<string | null> {
   try {
+    // Buscar dados do usuário para obter o nome
+    const userData = await getUserData(adminUserId)
+    const userName = userData?.nome || "Admin"
+
     const newGroup = {
       nome,
       descricao,
@@ -113,12 +119,14 @@ export async function createGroup(
         {
           userId: adminUserId,
           cargo: "administrador" as const,
+          nome: userName,
         },
       ],
       ranking_mensal: [
         {
           userId: adminUserId,
           pontos: 0,
+          nome: userName,
         },
       ],
     }
