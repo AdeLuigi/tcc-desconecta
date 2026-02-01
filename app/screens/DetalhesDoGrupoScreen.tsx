@@ -1,18 +1,30 @@
 import React, { useState } from "react"
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity } from "react-native"
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
 import { FeedPosts } from "@/components/FeedPosts"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
+import { useAuth } from "@/context/AuthContext"
+import { createFeedPost, type TipoAtividade } from "@/services/feedService"
+import * as ImagePicker from 'expo-image-picker'
+import storage from '@react-native-firebase/storage'
 
 interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> {}
 
 export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ navigation, route }) => {
   const { theme } = useAppTheme()
   const { grupo } = route.params
+  const { userData } = useAuth()
   const [activeTab, setActiveTab] = useState<"info" | "feed">("info")
+  const [modalVisible, setModalVisible] = useState(false)
+  const [postDescription, setPostDescription] = useState("")
+  const [selectedActivityType, setSelectedActivityType] = useState<TipoAtividade>("progresso")
+  const [isCreatingPost, setIsCreatingPost] = useState(false)
+  const [feedKey, setFeedKey] = useState(0)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   // Ordenar ranking por pontos
   const rankingOrdenado = [...grupo.ranking_mensal].sort((a, b) => b.pontos - a.pontos)
@@ -20,6 +32,148 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   // Calcular estatísticas do grupo
   const totalPontos = grupo.ranking_mensal.reduce((sum, item) => sum + item.pontos, 0)
   const mediaPontos = Math.round(totalPontos / grupo.ranking_mensal.length)
+
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      
+      if (!permissionResult.granted) {
+        Alert.alert("Permissão negada", "Você precisa permitir o acesso à galeria")
+        return
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri)
+      }
+    } catch (error) {
+      console.error("Erro ao selecionar imagem:", error)
+      Alert.alert("Erro", "Não foi possível selecionar a imagem")
+    }
+  }
+
+  const uploadImage = async (uri: string): Promise<string | null> => {
+    try {
+      setIsUploadingImage(true)
+      const filename = `feed/${grupo.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`
+      const reference = storage().ref(filename)
+      
+      await reference.putFile(uri)
+      const downloadURL = await reference.getDownloadURL()
+      
+      return downloadURL
+    } catch (error) {
+      console.error("Erro ao fazer upload da imagem:", error)
+      Alert.alert("Erro", "Não foi possível fazer upload da imagem")
+      return null
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleCreatePost = async () => {
+    if (!userData) {
+      Alert.alert("Erro", "Você precisa estar logado para criar uma postagem")
+      return
+    }
+
+    if (!postDescription.trim()) {
+      Alert.alert("Atenção", "Digite uma descrição para a postagem")
+      return
+    }
+
+    setIsCreatingPost(true)
+    try {
+      let photoURL: string | undefined = undefined
+      
+      // Se tiver imagem selecionada, faz upload primeiro
+      if (selectedImage) {
+        photoURL = await uploadImage(selectedImage) || undefined
+        if (!photoURL) {
+          // Se falhou o upload, pergunta se quer continuar sem a imagem
+          Alert.alert(
+            "Erro no upload",
+            "Não foi possível fazer upload da imagem. Deseja publicar sem a foto?",
+            [
+              { text: "Cancelar", style: "cancel", onPress: () => setIsCreatingPost(false) },
+              { 
+                text: "Publicar sem foto", 
+                onPress: async () => {
+                  await createPostWithoutImage()
+                }
+              },
+            ]
+          )
+          return
+        }
+      }
+
+      const postId = await createFeedPost(
+        grupo.id,
+        userData.uid,
+        userData.nome,
+        postDescription.trim(),
+        selectedActivityType,
+        photoURL
+      )
+
+      if (postId) {
+        Alert.alert("Sucesso", "Postagem criada com sucesso!")
+        setModalVisible(false)
+        setPostDescription("")
+        setSelectedActivityType("progresso")
+        setSelectedImage(null)
+        // Forçar atualização do feed
+        setFeedKey(prev => prev + 1)
+      } else {
+        Alert.alert("Erro", "Não foi possível criar a postagem")
+      }
+    } catch (error) {
+      console.error("Erro ao criar postagem:", error)
+      Alert.alert("Erro", "Ocorreu um erro ao criar a postagem")
+    } finally {
+      setIsCreatingPost(false)
+    }
+  }
+
+  const createPostWithoutImage = async () => {
+    try {
+      const postId = await createFeedPost(
+        grupo.id,
+        userData!.uid,
+        userData!.nome,
+        postDescription.trim(),
+        selectedActivityType
+      )
+
+      if (postId) {
+        Alert.alert("Sucesso", "Postagem criada com sucesso!")
+        setModalVisible(false)
+        setPostDescription("")
+        setSelectedActivityType("progresso")
+        setSelectedImage(null)
+        setFeedKey(prev => prev + 1)
+      }
+    } catch (error) {
+      console.error("Erro ao criar postagem:", error)
+    } finally {
+      setIsCreatingPost(false)
+    }
+  }
+
+  const activityTypes: { value: TipoAtividade; label: string; emoji: string }[] = [
+    { value: "desafio_completo", label: "Desafio Completo", emoji: "🏆" },
+    { value: "atividade_alternativa", label: "Atividade Alternativa", emoji: "🎯" },
+    { value: "meta_atingida", label: "Meta Atingida", emoji: "✨" },
+    { value: "progresso", label: "Progresso", emoji: "📈" },
+    { value: "leitura", label: "Leitura", emoji: "📚" },
+  ]
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
@@ -175,10 +329,133 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         ) : (
           /* Feed Tab */
           <View style={styles.feedContainer}>
-            <FeedPosts groupId={grupo.id} />
+            <FeedPosts key={feedKey} groupId={grupo.id} />
           </View>
         )}
       </ScrollView>
+
+      {/* Botão Flutuante para Criar Postagem - Apenas na aba Feed */}
+      {activeTab === "feed" && (
+        <TouchableOpacity
+          style={styles.fabButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.fabButtonText}>+</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Modal de Criar Postagem */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Nova Postagem</Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                disabled={isCreatingPost}
+              >
+                <Icon icon="x" size={24} color="#322D70" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>Tipo de Atividade</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.activityTypesScroll}
+              >
+                {activityTypes.map((type) => (
+                  <TouchableOpacity
+                    key={type.value}
+                    style={[
+                      styles.activityTypeChip,
+                      selectedActivityType === type.value && styles.activityTypeChipActive,
+                    ]}
+                    onPress={() => setSelectedActivityType(type.value)}
+                    disabled={isCreatingPost}
+                  >
+                    <Text style={styles.activityTypeEmoji}>{type.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.activityTypeLabel,
+                        selectedActivityType === type.value && styles.activityTypeLabelActive,
+                      ]}
+                    >
+                      {type.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={styles.inputLabel}>Descrição</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Compartilhe seu progresso, conquista ou pensamento..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                numberOfLines={6}
+                value={postDescription}
+                onChangeText={setPostDescription}
+                textAlignVertical="top"
+                editable={!isCreatingPost}
+              />
+
+              <Text style={styles.inputLabel}>Foto (opcional)</Text>
+              {selectedImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => setSelectedImage(null)}
+                    disabled={isCreatingPost}
+                  >
+                    <Icon icon="x" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.addImageButton}
+                  onPress={pickImage}
+                  disabled={isCreatingPost || isUploadingImage}
+                >
+                  <Text style={styles.addImageIcon}>📷</Text>
+                  <Text style={styles.addImageText}>Adicionar foto</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setModalVisible(false)}
+                disabled={isCreatingPost}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.postButton,
+                  (isCreatingPost || !postDescription.trim()) && styles.postButtonDisabled,
+                ]}
+                onPress={handleCreatePost}
+                disabled={isCreatingPost || !postDescription.trim()}
+              >
+                {isCreatingPost ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.postButtonText}>Publicar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 }
@@ -500,5 +777,182 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
     marginRight: 8,
+  },
+  fabButton: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#322D70",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  fabButtonText: {
+    fontSize: 32,
+    fontWeight: "300",
+    color: "#FFFFFF",
+    lineHeight: 32,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "85%",
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  modalBody: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#322D70",
+    marginBottom: 12,
+  },
+  activityTypesScroll: {
+    marginBottom: 24,
+  },
+  activityTypeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    marginRight: 8,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  activityTypeChipActive: {
+    backgroundColor: "#E0E7FF",
+    borderColor: "#322D70",
+  },
+  activityTypeEmoji: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  activityTypeLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748B",
+  },
+  activityTypeLabelActive: {
+    color: "#322D70",
+    fontWeight: "600",
+  },
+  textInput: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    color: "#1E293B",
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 20,
+  },
+  modalFooter: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  postButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#322D70",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  postButtonDisabled: {
+    backgroundColor: "#94A3B8",
+    opacity: 0.6,
+  },
+  postButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  imagePreviewContainer: {
+    position: "relative",
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addImageButton: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    borderStyle: "dashed",
+    paddingVertical: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  addImageIcon: {
+    fontSize: 48,
+  },
+  addImageText: {
+    fontSize: 14,
+    color: "#6881BA",
+    fontWeight: "600",
+    marginTop: 8,
   },
 })
