@@ -12,6 +12,7 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { signInWithGoogle, configureGoogleSignIn } from "@/services/auth"
+import { syncUserWithFirestore } from "@/services/userService"
 
 const Logo = require("@assets/images/logonovo.png")
 const BackgroundImage = require("@assets/images/background.png")
@@ -25,7 +26,7 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
   const [isAuthPasswordHidden, setIsAuthPasswordHidden] = useState(true)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const { authEmail, setAuthEmail, setAuthToken, validationError } = useAuth()
+  const { authEmail, setAuthEmail, setAuthToken, setUserData, validationError } = useAuth()
 
   const {
     themed,
@@ -66,11 +67,25 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
         }
         setAuthToken(result.idToken || result.user.uid)
         
-        // Opcional: Mostrar mensagem de sucesso
-        Alert.alert(
-          "Sucesso!",
-          `Bem-vindo(a), ${result.user.displayName || result.user.email}!`,
-        )
+        // Sincroniza com o Firestore
+        const userData = await syncUserWithFirestore()
+        
+        if (userData) {
+          setUserData(userData)
+          console.log("Usuário sincronizado com sucesso:", userData)
+          
+          // Mostra mensagem de sucesso
+          Alert.alert(
+            "Sucesso!",
+            `Bem-vindo(a), ${userData.nome}!`,
+          )
+        } else {
+          console.warn("Não foi possível sincronizar com o Firestore")
+          Alert.alert(
+            "Sucesso!",
+            `Bem-vindo(a), ${result.user.displayName || result.user.email}!`,
+          )
+        }
       } else {
         // Mostra erro se o login falhou
         Alert.alert(

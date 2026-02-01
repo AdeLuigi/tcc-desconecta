@@ -1,0 +1,183 @@
+import firestore from "@react-native-firebase/firestore"
+import auth from "@react-native-firebase/auth"
+
+/**
+ * Interface do usuário no Firestore
+ */
+export interface UserData {
+  uid: string
+  email: string
+  nome: string
+  photoURL: string
+  dataCriacao: string
+  configuracoes: {
+    bloqueio_apps: boolean
+    limite_tela_minutos: number
+    notificacoes: boolean
+  }
+  premios_colecionaveis: string[]
+  streak: number
+}
+
+/**
+ * Valores padrão para um novo usuário
+ */
+const DEFAULT_USER_DATA = {
+  configuracoes: {
+    bloqueio_apps: false,
+    limite_tela_minutos: 180,
+    notificacoes: true,
+  },
+  premios_colecionaveis: [],
+  streak: 0,
+}
+
+/**
+ * Sincroniza o usuário com o Firestore após login
+ * Se o usuário não existir, cria um novo documento
+ * Se já existir, apenas busca os dados
+ */
+export async function syncUserWithFirestore(): Promise<UserData | null> {
+  try {
+    const currentUser = auth().currentUser
+
+    if (!currentUser) {
+      console.error("Nenhum usuário autenticado")
+      return null
+    }
+
+    const { uid, email, displayName, photoURL } = currentUser
+
+    if (!email) {
+      console.error("Usuário sem email")
+      return null
+    }
+
+    const userRef = firestore().collection("usuarios").doc(uid)
+    const userDoc = await userRef.get()
+
+    if (userDoc.exists()) {
+      // Usuário já existe, retorna os dados
+      console.log("Usuário já existe no Firestore, buscando dados...")
+      const userData = userDoc.data() as UserData
+      return userData
+    } else {
+      // Usuário novo, cria documento
+      console.log("Criando novo usuário no Firestore...")
+      const newUserData: UserData = {
+        uid,
+        email,
+        nome: displayName || email.split("@")[0],
+        photoURL: photoURL || "",
+        dataCriacao: new Date().toISOString(),
+        ...DEFAULT_USER_DATA,
+      }
+
+      await userRef.set(newUserData)
+      console.log("Usuário criado com sucesso no Firestore")
+      return newUserData
+    }
+  } catch (error) {
+    console.error("Erro ao sincronizar usuário com Firestore:", error)
+    return null
+  }
+}
+
+/**
+ * Busca os dados do usuário do Firestore
+ */
+export async function getUserData(uid: string): Promise<UserData | null> {
+  try {
+    const userDoc = await firestore().collection("usuarios").doc(uid).get()
+
+    if (userDoc.exists()) {
+      return userDoc.data() as UserData
+    }
+
+    return null
+  } catch (error) {
+    console.error("Erro ao buscar dados do usuário:", error)
+    return null
+  }
+}
+
+/**
+ * Atualiza os dados do usuário no Firestore
+ */
+export async function updateUserData(
+  uid: string,
+  data: Partial<UserData>,
+): Promise<boolean> {
+  try {
+    await firestore().collection("usuarios").doc(uid).update(data)
+    console.log("Dados do usuário atualizados com sucesso")
+    return true
+  } catch (error) {
+    console.error("Erro ao atualizar dados do usuário:", error)
+    return false
+  }
+}
+
+/**
+ * Atualiza as configurações do usuário
+ */
+export async function updateUserSettings(
+  uid: string,
+  settings: Partial<UserData["configuracoes"]>,
+): Promise<boolean> {
+  try {
+    const userRef = firestore().collection("usuarios").doc(uid)
+    const currentData = await userRef.get()
+
+    if (!currentData.exists()) {
+      console.error("Usuário não encontrado")
+      return false
+    }
+
+    const currentSettings = currentData.data()?.configuracoes || {}
+
+    await userRef.update({
+      configuracoes: {
+        ...currentSettings,
+        ...settings,
+      },
+    })
+
+    console.log("Configurações atualizadas com sucesso")
+    return true
+  } catch (error) {
+    console.error("Erro ao atualizar configurações:", error)
+    return false
+  }
+}
+
+/**
+ * Atualiza o streak do usuário
+ */
+export async function updateUserStreak(uid: string, streak: number): Promise<boolean> {
+  try {
+    await firestore().collection("usuarios").doc(uid).update({ streak })
+    return true
+  } catch (error) {
+    console.error("Erro ao atualizar streak:", error)
+    return false
+  }
+}
+
+/**
+ * Adiciona um prêmio à coleção do usuário
+ */
+export async function addPremioColecao(uid: string, premioId: string): Promise<boolean> {
+  try {
+    await firestore()
+      .collection("usuarios")
+      .doc(uid)
+      .update({
+        premios_colecionaveis: firestore.FieldValue.arrayUnion(premioId),
+      })
+    return true
+  } catch (error) {
+    console.error("Erro ao adicionar prêmio:", error)
+    return false
+  }
+}

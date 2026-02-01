@@ -2684,6 +2684,13 @@
   dependencies:
     plist "^3.1.0"
 
+"@react-native-firebase/firestore@^23.8.5":
+  version "23.8.5"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/firestore/-/firestore-23.8.5.tgz#47fab88d1cbda6c4fe9c5044bec8d3dc70b2cd34"
+  integrity sha512-1EaRitFGQvNXl+kOvZalEmhDUa3dMxBP+VliD8W1MNe/56PicmrIm9yM+oCcsUd5jrhcOoRBEbrP07Vd3qpbyQ==
+  dependencies:
+    react-native-url-polyfill "3.0.0"
+
 "@react-native-google-signin/google-signin@^16.1.1":
   version "16.1.1"
   resolved "https://registry.yarnpkg.com/@react-native-google-signin/google-signin/-/google-signin-16.1.1.tgz#40b9f8458a09cf8933132efd8a68f0a573167e92"
@@ -8307,6 +8314,13 @@ react-native-screens@~4.16.0:
     react-freeze "^1.0.0"
     react-native-is-edge-to-edge "^1.2.1"
     warn-once "^0.1.0"
+
+react-native-url-polyfill@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/react-native-url-polyfill/-/react-native-url-polyfill-3.0.0.tgz#16b809c35d45f7d4cf968967bc35ab73b7542826"
+  integrity sha512-aA5CiuUCUb/lbrliVCJ6lZ17/RpNJzvTO/C7gC/YmDQhTUoRD5q5HlJfwLWcxz4VgAhHwXKzhxH+wUN24tAdqg==
+  dependencies:
+    whatwg-url-without-unicode "8.0.0-3"
 
 react-native-web@~0.21.0:
   version "0.21.2"

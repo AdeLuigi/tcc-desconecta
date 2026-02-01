@@ -1,12 +1,15 @@
-import { createContext, FC, PropsWithChildren, useCallback, useContext, useMemo } from "react"
+import { createContext, FC, PropsWithChildren, useCallback, useContext, useMemo, useState } from "react"
 import { useMMKVString } from "react-native-mmkv"
+import type { UserData } from "@/services/userService"
 
 export type AuthContextType = {
   isAuthenticated: boolean
   authToken?: string
   authEmail?: string
+  userData?: UserData | null
   setAuthToken: (token?: string) => void
   setAuthEmail: (email: string) => void
+  setUserData: (data: UserData | null) => void
   logout: () => void
   validationError: string
 }
@@ -18,10 +21,12 @@ export interface AuthProviderProps {}
 export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ children }) => {
   const [authToken, setAuthToken] = useMMKVString("AuthProvider.authToken")
   const [authEmail, setAuthEmail] = useMMKVString("AuthProvider.authEmail")
+  const [userData, setUserData] = useState<UserData | null>(null)
 
   const logout = useCallback(() => {
     setAuthToken(undefined)
     setAuthEmail("")
+    setUserData(null)
   }, [setAuthEmail, setAuthToken])
 
   const validationError = useMemo(() => {
@@ -35,8 +40,10 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
     isAuthenticated: !!authToken,
     authToken,
     authEmail,
+    userData,
     setAuthToken,
     setAuthEmail,
+    setUserData,
     logout,
     validationError,
   }
