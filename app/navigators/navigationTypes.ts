@@ -36,6 +36,7 @@ export type AppStackParamList = {
       nome: string
       descricao: string
       foto: string
+      codigoGrupo: string
       membros: Array<{
         userId: string
         cargo: string

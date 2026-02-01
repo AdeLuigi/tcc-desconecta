@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from "react-native"
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
@@ -228,6 +228,48 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           <View style={styles.descriptionSection}>
             <Text style={styles.sectionLabel}>Descrição</Text>
             <Text style={styles.groupDescription}>{grupo.descricao}</Text>
+          </View>
+
+          {/* Group Code Section */}
+          <View style={styles.codeSection}>
+            <Text style={styles.sectionLabel}>Código do Grupo</Text>
+            <View style={styles.codeContainer}>
+              <View style={styles.codeBox}>
+                <Text style={styles.codeText}>{grupo.codigoGrupo || "------"}</Text>
+              </View>
+              <View style={styles.codeActions}>
+                <TouchableOpacity
+                  style={styles.codeActionButton}
+                  onPress={() => {
+                    if (grupo.codigoGrupo) {
+                      Clipboard.setString(grupo.codigoGrupo)
+                      Alert.alert("Copiado!", "Código copiado para a área de transferência")
+                    }
+                  }}
+                >
+                  <Icon icon="copy" size={20} color="#322D70" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.codeActionButton}
+                  onPress={async () => {
+                    if (grupo.codigoGrupo) {
+                      try {
+                        await Share.share({
+                          message: `Junte-se ao grupo "${grupo.nome}" no Desconecta!\n\nCódigo: ${grupo.codigoGrupo}\n\nAbra o app e use este código para entrar no grupo.`,
+                        })
+                      } catch (error) {
+                        console.error("Erro ao compartilhar:", error)
+                      }
+                    }
+                  }}
+                >
+                  <Icon icon="share" size={20} color="#322D70" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <Text style={styles.codeHelper}>
+              Compartilhe este código para que outros possam entrar no grupo
+            </Text>
           </View>
         </View>
 
@@ -579,6 +621,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#475569",
     lineHeight: 24,
+  },
+  codeSection: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    marginTop: 16,
+  },
+  codeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  codeBox: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+  },
+  codeText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#322D70",
+    letterSpacing: 4,
+  },
+  codeActions: {
+    gap: 8,
+  },
+  codeActionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  codeHelper: {
+    fontSize: 12,
+    color: "#6881BA",
+    marginTop: 8,
+    lineHeight: 16,
   },
   statsCard: {
     backgroundColor: "#322D70",
