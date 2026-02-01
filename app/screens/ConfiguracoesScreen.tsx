@@ -1,15 +1,48 @@
 import React from "react"
-import { View, StyleSheet } from "react-native"
+import { View, StyleSheet, Alert } from "react-native"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
+import { useAuth } from "@/context/AuthContext"
+import { signOutGoogle } from "@/services/auth"
 
 interface ConfiguracoesScreenProps extends AppStackScreenProps<"Configuracoes"> {}
 
 export const ConfiguracoesScreen: React.FC<ConfiguracoesScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
+  const { logout } = useAuth()
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Sair da conta",
+      "Tem certeza que deseja sair?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOutGoogle()
+              logout()
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Onboarding" }],
+              })
+            } catch (error) {
+              console.error("Erro ao fazer logout:", error)
+              Alert.alert("Erro", "Não foi possível sair da conta")
+            }
+          },
+        },
+      ],
+    )
+  }
 
   return (
     <Screen preset="scroll" safeAreaEdges={["top", "bottom"]} contentContainerStyle={styles.container}>
@@ -45,6 +78,12 @@ export const ConfiguracoesScreen: React.FC<ConfiguracoesScreenProps> = ({ naviga
             style={styles.button}
           />
           <Button
+            text="Sair da conta"
+            onPress={handleLogout}
+            style={[styles.button, styles.logoutButton]}
+            preset="reversed"
+          />
+          <Button
             text="Voltar → Home dinâmica"
             onPress={() => navigation.navigate("HomeDinamica")}
             style={styles.button}
@@ -75,5 +114,9 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "100%",
+  },
+  logoutButton: {
+    marginTop: 16,
+    backgroundColor: "#DC2626",
   },
 })

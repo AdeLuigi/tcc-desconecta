@@ -1,6 +1,9 @@
-import { createContext, FC, PropsWithChildren, useCallback, useContext, useMemo, useState } from "react"
+import { createContext, FC, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { MMKV } from "react-native-mmkv"
 import { useMMKVString } from "react-native-mmkv"
 import type { UserData } from "@/services/userService"
+
+const storage = new MMKV()
 
 export type AuthContextType = {
   isAuthenticated: boolean
@@ -23,10 +26,39 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
   const [authEmail, setAuthEmail] = useMMKVString("AuthProvider.authEmail")
   const [userData, setUserData] = useState<UserData | null>(null)
 
+  // Carregar userData do MMKV ao iniciar
+  useEffect(() => {
+    try {
+      const storedUserData = storage.getString("AuthProvider.userData")
+      if (storedUserData) {
+        const parsedData = JSON.parse(storedUserData)
+        setUserData(parsedData)
+        console.log("Dados do usuário carregados do storage")
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error)
+    }
+  }, [])
+
+  // Persistir userData quando mudar
+  useEffect(() => {
+    try {
+      if (userData) {
+        storage.set("AuthProvider.userData", JSON.stringify(userData))
+        console.log("Dados do usuário salvos no storage")
+      }
+    } catch (error) {
+      console.error("Erro ao salvar dados do usuário:", error)
+    }
+  }, [userData])
+
   const logout = useCallback(() => {
     setAuthToken(undefined)
     setAuthEmail("")
     setUserData(null)
+    // Limpar userData do storage
+    storage.delete("AuthProvider.userData")
+    console.log("Dados do usuário removidos do storage")
   }, [setAuthEmail, setAuthToken])
 
   const validationError = useMemo(() => {
