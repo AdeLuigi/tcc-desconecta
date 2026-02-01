@@ -1,75 +1,54 @@
-import React, { useState } from "react"
-import { View, StyleSheet, Image, TouchableOpacity } from "react-native"
+import React, { useState, useEffect } from "react"
+import { View, StyleSheet, Image, TouchableOpacity, ActivityIndicator, RefreshControl, ScrollView } from "react-native"
 import { Text } from "./Text"
 import { Icon } from "./Icon"
 import { PostComments } from "@/components/PostComments"
+import { getGroupFeed, type FeedPost, type TipoAtividade } from "@/services/feedService"
 
-export type TipoAtividade = 'desafio_completo' | 'atividade_alternativa' | 'meta_atingida' | 'progresso'
-
-export interface FeedPost {
-  id: string
-  dataCriacao: Date
-  descricao: string
-  foto?: string
-  tipoAtividade: TipoAtividade
-  userId: string
-  nomeUsuario: string
-}
+export type { FeedPost, TipoAtividade }
 
 interface FeedPostsProps {
   groupId: string
 }
-
-// Mock data
-const MOCK_POSTS: FeedPost[] = [
-  {
-    id: "post1",
-    dataCriacao: new Date("2026-01-31T14:30:00"),
-    descricao: "Consegui ficar 24 horas sem redes sociais! 🎉 Foi desafiador mas muito gratificante.",
-    foto: "https://picsum.photos/400/300?random=1",
-    tipoAtividade: "desafio_completo",
-    userId: "felipe123",
-    nomeUsuario: "Felipe",
-  },
-  {
-    id: "post2",
-    dataCriacao: new Date("2026-01-31T10:15:00"),
-    descricao: "Hoje li um livro inteiro em vez de ficar no celular. Recomendo 'Foco' de Daniel Goleman!",
-    foto: "https://picsum.photos/400/300?random=2",
-    tipoAtividade: "atividade_alternativa",
-    userId: "ana",
-    nomeUsuario: "Ana",
-  },
-  {
-    id: "post3",
-    dataCriacao: new Date("2026-01-30T18:45:00"),
-    descricao: "Passei apenas 2 horas no celular hoje! Meu recorde pessoal 💪",
-    tipoAtividade: "meta_atingida",
-    userId: "pedro",
-    nomeUsuario: "Pedro",
-  },
-  {
-    id: "post4",
-    dataCriacao: new Date("2026-01-30T12:20:00"),
-    descricao: "Comecei a meditar pela manhã em vez de checar o Instagram. Que diferença!",
-    foto: "https://picsum.photos/400/300?random=3",
-    tipoAtividade: "atividade_alternativa",
-    userId: "carla",
-    nomeUsuario: "Carla",
-  },
-]
 
 const ACTIVITY_TYPES: Record<TipoAtividade, { label: string; emoji: string; color: string }> = {
   desafio_completo: { label: "Desafio Completo", emoji: "🏆", color: "#7C3AED" },
   atividade_alternativa: { label: "Atividade Alternativa", emoji: "🎯", color: "#10B981" },
   meta_atingida: { label: "Meta Atingida", emoji: "⭐", color: "#F59E0B" },
   progresso: { label: "Progresso", emoji: "📈", color: "#3B82F6" },
+  leitura: { label: "Leitura", emoji: "📚", color: "#8B5CF6" },
 }
 
 export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
+  const [posts, setPosts] = useState<FeedPost[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const formatDate = (date: Date): string => {
+  useEffect(() => {
+    loadFeed()
+  }, [groupId])
+
+  const loadFeed = async () => {
+    try {
+      setLoading(true)
+      const feedPosts = await getGroupFeed(groupId)
+      setPosts(feedPosts)
+    } catch (error) {
+      console.error("Erro ao carregar feed:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadFeed()
+    setRefreshing(false)
+  }
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
     const day = date.getDate().toString().padStart(2, "0")
     const month = (date.getMonth() + 1).toString().padStart(2, "0")
     const hours = date.getHours().toString().padStart(2, "0")
@@ -91,11 +70,11 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
         <View style={styles.postHeader}>
           <View style={styles.userAvatar}>
             <Text style={styles.userAvatarText}>
-              {item.nomeUsuario.charAt(0).toUpperCase()}
+              {item.nome.charAt(0).toUpperCase()}
             </Text>
           </View>
           <View style={styles.postHeaderInfo}>
-            <Text style={styles.userName}>{item.nomeUsuario}</Text>
+            <Text style={styles.userName}>{item.nome}</Text>
             <Text style={styles.postDate}>{formatDate(item.dataCriacao)}</Text>
           </View>
           <View style={[styles.activityBadge, { backgroundColor: activityInfo.color }]}>
@@ -152,10 +131,25 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
     )
   }
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#322D70" />
+        <Text style={styles.loadingText}>Carregando feed...</Text>
+      </View>
+    )
+  }
+
   return (
-    <View style={styles.container}>
-      {MOCK_POSTS.length > 0 ? (
-        MOCK_POSTS.map((post) => (
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+      showsVerticalScrollIndicator={false}
+    >
+      {posts.length > 0 ? (
+        posts.map((post) => (
           <View key={post.id}>
             {renderPost({ item: post })}
           </View>
@@ -170,13 +164,24 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
           </Text>
         </View>
       )}
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 48,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#94A3B8",
   },
   postCard: {
     backgroundColor: "#FFFFFF",

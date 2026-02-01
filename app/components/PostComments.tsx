@@ -1,88 +1,40 @@
-import React, { useState } from "react"
-import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from "react-native"
+import React, { useState, useEffect } from "react"
+import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native"
 import { Text } from "./Text"
 import { Icon } from "./Icon"
-
-export interface Comment {
-  id: string
-  dataCriacao: Date
-  nomeUsuario: string
-  texto: string
-  userId: string
-}
+import { getPostComments, addComment, type Comment } from "@/services/feedService"
+import { useAuth } from "@/context/AuthContext"
 
 interface PostCommentsProps {
   groupId: string
   postId: string
 }
 
-// Mock data - diferentes para cada post
-const MOCK_COMMENTS_BY_POST: Record<string, Comment[]> = {
-  post1: [
-    {
-      id: "comment1",
-      dataCriacao: new Date("2026-01-31T14:35:00"),
-      nomeUsuario: "Ana",
-      texto: "Parabéns Felipe! Isso é inspirador! 🎉",
-      userId: "ana",
-    },
-    {
-      id: "comment2",
-      dataCriacao: new Date("2026-01-31T15:10:00"),
-      nomeUsuario: "Pedro",
-      texto: "Que conquista! Vou tentar fazer o mesmo amanhã.",
-      userId: "pedro",
-    },
-  ],
-  post2: [
-    {
-      id: "comment3",
-      dataCriacao: new Date("2026-01-31T10:30:00"),
-      nomeUsuario: "Carla",
-      texto: "Adorei a recomendação! Vou ler também.",
-      userId: "carla",
-    },
-  ],
-  post3: [
-    {
-      id: "comment4",
-      dataCriacao: new Date("2026-01-30T19:00:00"),
-      nomeUsuario: "Felipe",
-      texto: "Sensacional Pedro! Continue assim! 💪",
-      userId: "felipe123",
-    },
-    {
-      id: "comment5",
-      dataCriacao: new Date("2026-01-30T19:15:00"),
-      nomeUsuario: "Ana",
-      texto: "Incrível! Qual foi sua estratégia?",
-      userId: "ana",
-    },
-    {
-      id: "comment6",
-      dataCriacao: new Date("2026-01-30T20:00:00"),
-      nomeUsuario: "Pedro",
-      texto: "Obrigado pessoal! Usei o modo foco do app e funcionou muito bem!",
-      userId: "pedro",
-    },
-  ],
-  post4: [
-    {
-      id: "comment7",
-      dataCriacao: new Date("2026-01-30T13:00:00"),
-      nomeUsuario: "Felipe",
-      texto: "A meditação matinal é transformadora mesmo!",
-      userId: "felipe123",
-    },
-  ],
-}
-
 export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) => {
-  const [comments, setComments] = useState<Comment[]>(MOCK_COMMENTS_BY_POST[postId] || [])
+  const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingComments, setLoadingComments] = useState(true)
+  const { userData } = useAuth()
 
-  const formatDate = (date: Date): string => {
+  useEffect(() => {
+    loadComments()
+  }, [groupId, postId])
+
+  const loadComments = async () => {
+    try {
+      setLoadingComments(true)
+      const postComments = await getPostComments(groupId, postId)
+      setComments(postComments)
+    } catch (error) {
+      console.error("Erro ao carregar comentários:", error)
+    } finally {
+      setLoadingComments(false)
+    }
+  }
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
     const day = date.getDate().toString().padStart(2, "0")
     const month = (date.getMonth() + 1).toString().padStart(2, "0")
     const hours = date.getHours().toString().padStart(2, "0")
@@ -90,29 +42,42 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
     return `${day}/${month} às ${hours}:${minutes}`
   }
 
-  const handleAddComment = () => {
-    if (newComment.trim() === "") return
+  const handleAddComment = async () => {
+    if (newComment.trim() === "" || !userData) return
 
     setIsLoading(true)
 
-    // Simular delay de envio
-    setTimeout(() => {
-      const comment: Comment = {
-        id: `comment_${Date.now()}`,
-        dataCriacao: new Date(),
-        nomeUsuario: "Você",
-        texto: newComment,
-        userId: "current_user",
-      }
+    try {
+      const commentId = await addComment(
+        groupId,
+        postId,
+        userData.uid,
+        userData.nome,
+        newComment.trim()
+      )
 
-      setComments([comment, ...comments])
-      setNewComment("")
+      if (commentId) {
+        // Adiciona o comentário localmente para feedback imediato
+        const newCommentObj: Comment = {
+          id: commentId,
+          dataCriacao: new Date().toISOString(),
+          nomeUsuario: userData.nome,
+          texto: newComment.trim(),
+          userId: userData.uid,
+        }
+
+        setComments([newCommentObj, ...comments])
+        setNewComment("")
+      }
+    } catch (error) {
+      console.error("Erro ao adicionar comentário:", error)
+    } finally {
       setIsLoading(false)
-    }, 500)
+    }
   }
 
   const renderComment = ({ item }: { item: Comment }) => {
-    const isCurrentUser = item.userId === "current_user"
+    const isCurrentUser = item.userId === userData?.uid
 
     return (
       <View style={styles.commentCard}>
@@ -141,7 +106,11 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
     >
       {/* Comments List */}
       <View style={styles.commentsContainer}>
-        {comments.length > 0 ? (
+        {loadingComments ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#322D70" />
+          </View>
+        ) : comments.length > 0 ? (
           <FlatList
             data={comments}
             renderItem={renderComment}
@@ -201,6 +170,10 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    paddingVertical: 16,
+    alignItems: "center",
   },
   commentsContainer: {
     marginBottom: 12,

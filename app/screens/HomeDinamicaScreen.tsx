@@ -33,7 +33,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   useEffect(() => {
     checkPermissionAndLoadData()
     loadUserGroups()
-  }, [])
+  }, [userData])
 
   const loadUserGroups = async () => {
     try {
