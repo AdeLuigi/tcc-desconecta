@@ -1,4 +1,4 @@
-import firestore from "@react-native-firebase/firestore"
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, arrayUnion, query, where } from "@react-native-firebase/firestore"
 
 /**
  * Interface do grupo no Firestore
@@ -29,22 +29,17 @@ export interface Group {
  */
 export async function getUserGroups(userId: string): Promise<Group[]> {
   try {
-    const groupsSnapshot = await firestore()
-      .collection("grupos")
-      .where("membros", "array-contains-any", [
-        { userId, cargo: "administrador" },
-        { userId, cargo: "membro" },
-      ])
-      .get()
-
-    // Se a query acima não funcionar (Firestore tem limitações com array-contains em objetos),
-    // fazemos uma busca em todos os grupos e filtramos manualmente
-    const allGroupsSnapshot = await firestore().collection("grupos").get()
+    const db = getFirestore()
+    const groupsRef = collection(db, "grupos")
+    
+    // Firestore tem limitações com array-contains em objetos,
+    // então buscamos todos os grupos e filtramos manualmente
+    const allGroupsSnapshot = await getDocs(groupsRef)
     
     const groups: Group[] = []
     
-    allGroupsSnapshot.forEach((doc) => {
-      const data = doc.data()
+    allGroupsSnapshot.forEach((docSnap: any) => {
+      const data = docSnap.data()
       const membros = data.membros || []
       
       // Verifica se o usuário está nos membros
@@ -52,7 +47,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
       
       if (isMember) {
         groups.push({
-          id: doc.id,
+          id: docSnap.id,
           nome: data.nome || "",
           descricao: data.descricao || "",
           foto: data.foto || "",
@@ -75,7 +70,9 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
  */
 export async function getGroupById(groupId: string): Promise<Group | null> {
   try {
-    const groupDoc = await firestore().collection("grupos").doc(groupId).get()
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    const groupDoc = await getDoc(groupRef)
 
     if (groupDoc.exists()) {
       const data = groupDoc.data()
@@ -126,7 +123,9 @@ export async function createGroup(
       ],
     }
 
-    const docRef = await firestore().collection("grupos").add(newGroup)
+    const db = getFirestore()
+    const groupsRef = collection(db, "grupos")
+    const docRef = await addDoc(groupsRef, newGroup)
     return docRef.id
   } catch (error) {
     console.error("Erro ao criar grupo:", error)
@@ -142,14 +141,15 @@ export async function addMemberToGroup(
   userId: string,
 ): Promise<boolean> {
   try {
-    const groupRef = firestore().collection("grupos").doc(groupId)
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
     
-    await groupRef.update({
-      membros: firestore.FieldValue.arrayUnion({
+    await updateDoc(groupRef, {
+      membros: arrayUnion({
         userId,
         cargo: "membro",
       }),
-      ranking_mensal: firestore.FieldValue.arrayUnion({
+      ranking_mensal: arrayUnion({
         userId: userId,
         pontos: 0,
       }),
@@ -176,7 +176,9 @@ export async function removeMemberFromGroup(
     const updatedMembros = group.membros.filter((m) => m.userId !== userId)
     const updatedRanking = group.ranking_mensal.filter((r) => r.userId !== userId)
 
-    await firestore().collection("grupos").doc(groupId).update({
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    await updateDoc(groupRef, {
       membros: updatedMembros,
       ranking_mensal: updatedRanking,
     })
@@ -207,7 +209,9 @@ export async function updateMemberPoints(
       return member
     })
 
-    await firestore().collection("grupos").doc(groupId).update({
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    await updateDoc(groupRef, {
       ranking_mensal: updatedRanking,
     })
 

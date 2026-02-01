@@ -1,4 +1,4 @@
-import firestore from "@react-native-firebase/firestore"
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from "@react-native-firebase/firestore"
 
 export type TipoAtividade = 'desafio_completo' | 'atividade_alternativa' | 'meta_atingida' | 'progresso' | 'leitura'
 
@@ -25,19 +25,17 @@ export interface Comment {
  */
 export async function getGroupFeed(groupId: string): Promise<FeedPost[]> {
   try {
-    const feedSnapshot = await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .orderBy("dataCriacao", "desc")
-      .get()
+    const db = getFirestore()
+    const feedRef = collection(db, "grupos", groupId, "feed")
+    const feedQuery = query(feedRef, orderBy("dataCriacao", "desc"))
+    const feedSnapshot = await getDocs(feedQuery)
 
     const posts: FeedPost[] = []
     
-    feedSnapshot.forEach((doc) => {
-      const data = doc.data()
+    feedSnapshot.forEach((docSnap) => {
+      const data = docSnap.data()
       posts.push({
-        id: doc.id,
+        id: docSnap.id,
         dataCriacao: data.dataCriacao || "",
         descricao: data.descricao || "",
         foto: data.foto || "",
@@ -75,11 +73,9 @@ export async function createFeedPost(
       userId,
     }
 
-    const docRef = await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .add(newPost)
+    const db = getFirestore()
+    const feedRef = collection(db, "grupos", groupId, "feed")
+    const docRef = await addDoc(feedRef, newPost)
 
     return docRef.id
   } catch (error) {
@@ -96,21 +92,17 @@ export async function getPostComments(
   postId: string,
 ): Promise<Comment[]> {
   try {
-    const commentsSnapshot = await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .doc(postId)
-      .collection("comentarios")
-      .orderBy("dataCriacao", "desc")
-      .get()
+    const db = getFirestore()
+    const commentsRef = collection(db, "grupos", groupId, "feed", postId, "comentarios")
+    const commentsQuery = query(commentsRef, orderBy("dataCriacao", "desc"))
+    const commentsSnapshot = await getDocs(commentsQuery)
 
     const comments: Comment[] = []
     
-    commentsSnapshot.forEach((doc) => {
-      const data = doc.data()
+    commentsSnapshot.forEach((docSnap) => {
+      const data = docSnap.data()
       comments.push({
-        id: doc.id,
+        id: docSnap.id,
         dataCriacao: data.dataCriacao || "",
         nomeUsuario: data.nomeUsuario || "",
         texto: data.texto || "",
@@ -143,13 +135,9 @@ export async function addComment(
       userId,
     }
 
-    const docRef = await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .doc(postId)
-      .collection("comentarios")
-      .add(newComment)
+    const db = getFirestore()
+    const commentsRef = collection(db, "grupos", groupId, "feed", postId, "comentarios")
+    const docRef = await addDoc(commentsRef, newComment)
 
     return docRef.id
   } catch (error) {
@@ -163,30 +151,23 @@ export async function addComment(
  */
 export async function deletePost(groupId: string, postId: string): Promise<boolean> {
   try {
-    // Primeiro deleta todos os comentários
-    const commentsSnapshot = await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .doc(postId)
-      .collection("comentarios")
-      .get()
-
-    const batch = firestore().batch()
+    const db = getFirestore()
     
-    commentsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref)
+    // Primeiro deleta todos os comentários
+    const commentsRef = collection(db, "grupos", groupId, "feed", postId, "comentarios")
+    const commentsSnapshot = await getDocs(commentsRef)
+
+    const batch = writeBatch(db)
+    
+    commentsSnapshot.forEach((docSnap) => {
+      batch.delete(docSnap.ref)
     })
 
     await batch.commit()
 
     // Depois deleta o post
-    await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .doc(postId)
-      .delete()
+    const postRef = doc(db, "grupos", groupId, "feed", postId)
+    await deleteDoc(postRef)
 
     return true
   } catch (error) {
@@ -204,14 +185,9 @@ export async function deleteComment(
   commentId: string,
 ): Promise<boolean> {
   try {
-    await firestore()
-      .collection("grupos")
-      .doc(groupId)
-      .collection("feed")
-      .doc(postId)
-      .collection("comentarios")
-      .doc(commentId)
-      .delete()
+    const db = getFirestore()
+    const commentRef = doc(db, "grupos", groupId, "feed", postId, "comentarios", commentId)
+    await deleteDoc(commentRef)
 
     return true
   } catch (error) {

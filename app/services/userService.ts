@@ -1,5 +1,5 @@
-import firestore from "@react-native-firebase/firestore"
 import auth from "@react-native-firebase/auth"
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, arrayUnion } from "@react-native-firebase/firestore"
 
 /**
  * Interface do usuário no Firestore
@@ -53,8 +53,9 @@ export async function syncUserWithFirestore(): Promise<UserData | null> {
       return null
     }
 
-    const userRef = firestore().collection("usuarios").doc(uid)
-    const userDoc = await userRef.get()
+    const db = getFirestore()
+    const userRef = doc(db, "usuarios", uid)
+    const userDoc = await getDoc(userRef)
 
     if (userDoc.exists()) {
       // Usuário já existe, retorna os dados
@@ -73,7 +74,7 @@ export async function syncUserWithFirestore(): Promise<UserData | null> {
         ...DEFAULT_USER_DATA,
       }
 
-      await userRef.set(newUserData)
+      await setDoc(userRef, newUserData)
       console.log("Usuário criado com sucesso no Firestore")
       return newUserData
     }
@@ -88,7 +89,9 @@ export async function syncUserWithFirestore(): Promise<UserData | null> {
  */
 export async function getUserData(uid: string): Promise<UserData | null> {
   try {
-    const userDoc = await firestore().collection("usuarios").doc(uid).get()
+    const db = getFirestore()
+    const userRef = doc(db, "usuarios", uid)
+    const userDoc = await getDoc(userRef)
 
     if (userDoc.exists()) {
       return userDoc.data() as UserData
@@ -109,7 +112,9 @@ export async function updateUserData(
   data: Partial<UserData>,
 ): Promise<boolean> {
   try {
-    await firestore().collection("usuarios").doc(uid).update(data)
+    const db = getFirestore()
+    const userRef = doc(db, "usuarios", uid)
+    await updateDoc(userRef, data)
     console.log("Dados do usuário atualizados com sucesso")
     return true
   } catch (error) {
@@ -126,8 +131,9 @@ export async function updateUserSettings(
   settings: Partial<UserData["configuracoes"]>,
 ): Promise<boolean> {
   try {
-    const userRef = firestore().collection("usuarios").doc(uid)
-    const currentData = await userRef.get()
+    const db = getFirestore()
+    const userRef = doc(db, "usuarios", uid)
+    const currentData = await getDoc(userRef)
 
     if (!currentData.exists()) {
       console.error("Usuário não encontrado")
@@ -136,7 +142,7 @@ export async function updateUserSettings(
 
     const currentSettings = currentData.data()?.configuracoes || {}
 
-    await userRef.update({
+    await updateDoc(userRef, {
       configuracoes: {
         ...currentSettings,
         ...settings,
@@ -156,7 +162,9 @@ export async function updateUserSettings(
  */
 export async function updateUserStreak(uid: string, streak: number): Promise<boolean> {
   try {
-    await firestore().collection("usuarios").doc(uid).update({ streak })
+    const db = getFirestore()
+    const userRef = doc(db, "usuarios", uid)
+    await updateDoc(userRef, { streak })
     return true
   } catch (error) {
     console.error("Erro ao atualizar streak:", error)
@@ -169,12 +177,11 @@ export async function updateUserStreak(uid: string, streak: number): Promise<boo
  */
 export async function addPremioColecao(uid: string, premioId: string): Promise<boolean> {
   try {
-    await firestore()
-      .collection("usuarios")
-      .doc(uid)
-      .update({
-        premios_colecionaveis: firestore.FieldValue.arrayUnion(premioId),
-      })
+    const db = getFirestore()
+    const userRef = doc(db, "usuarios", uid)
+    await updateDoc(userRef, {
+      premios_colecionaveis: arrayUnion(premioId),
+    })
     return true
   } catch (error) {
     console.error("Erro ao adicionar prêmio:", error)

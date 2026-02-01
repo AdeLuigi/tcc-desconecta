@@ -1,4 +1,4 @@
-import auth from "@react-native-firebase/auth"
+import auth, { GoogleAuthProvider, getAuth, signInWithCredential } from "@react-native-firebase/auth"
 import { GoogleSignin } from "@react-native-google-signin/google-signin"
 
 /**
@@ -42,7 +42,7 @@ export async function signInWithGoogle() {
     console.log("Google Sign-In Result:", JSON.stringify(signInResult, null, 2))
 
     // Tenta acessar o idToken de diferentes formas (versões diferentes da lib)
-    const idToken = signInResult.idToken || signInResult.data?.idToken
+    const idToken = (signInResult as any).idToken || (signInResult as any).data?.idToken
 
     if (!idToken) {
       console.error("Estrutura do signInResult:", signInResult)
@@ -53,10 +53,11 @@ export async function signInWithGoogle() {
     }
 
     // Create a Google credential with the token
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken)
+    const googleCredential = GoogleAuthProvider.credential(idToken)
 
     // Sign-in the user with the credential
-    const userCredential = await auth().signInWithCredential(googleCredential)
+    const authInstance = getAuth()
+    const userCredential = await signInWithCredential(authInstance, googleCredential)
 
     return {
       success: true,
@@ -78,7 +79,8 @@ export async function signInWithGoogle() {
 export async function signOutGoogle() {
   try {
     await GoogleSignin.signOut()
-    await auth().signOut()
+    const authInstance = getAuth()
+    await authInstance.signOut()
   } catch (error) {
     console.error("Error signing out:", error)
   }
@@ -88,5 +90,6 @@ export async function signOutGoogle() {
  * Verifica se o usuário está logado com Google
  */
 export async function isSignedInWithGoogle() {
-  return await GoogleSignin.isSignedIn()
+  const authInstance = getAuth()
+  return authInstance.currentUser !== null
 }
