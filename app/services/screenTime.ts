@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, getDocs, orderBy, limit } from "@react-native-firebase/firestore"
-import type { AppCategory } from '@/utils/appCategories';
+import { getAppCategory, type AppCategory } from '@/utils/appCategories';
 
 const { ScreenTimeModule } = NativeModules;
 
@@ -16,6 +16,12 @@ export interface AppUsage {
 export interface DailyScreenTime {
   date: string;
   timeInMinutes: number;
+}
+
+export interface SpecificDayScreenTime {
+  date: string; // formato: YYYY-MM-DD
+  totalTimeInMinutes: number;
+  apps: AppUsage[];
 }
 
 export interface ScreenTimeData {
@@ -124,6 +130,26 @@ class ScreenTimeService {
   }
 
   /**
+   * Retorna o tempo de tela e apps de um dia específico
+   * @param daysAgo Número de dias atrás (0 = hoje, 1 = ontem, etc)
+   */
+  async getScreenTimeForSpecificDay(daysAgo: number): Promise<SpecificDayScreenTime | null> {
+    if (Platform.OS !== 'android') {
+      return null;
+    }
+    try {
+      const hasPermission = await this.hasPermission();
+      if (!hasPermission) {
+        throw new Error('Permissão de estatísticas de uso não concedida');
+      }
+      return await ScreenTimeModule.getScreenTimeForSpecificDay(daysAgo);
+    } catch (error) {
+      console.error(`Erro ao obter tempo de tela do dia ${daysAgo}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Formata minutos em formato legível (ex: "2h 30min")
    */
   formatTime(minutes: number): string {
@@ -144,18 +170,19 @@ class ScreenTimeService {
    * @param userId ID do usuário
    * @param tempoTotal Tempo total em minutos
    * @param apps Lista de apps com categorias
+   * @param dataEspecifica Data específica no formato YYYY-MM-DD (opcional, padrão: hoje)
    */
   async saveScreenTimeData(
     userId: string, 
     tempoTotal: number, 
-    apps: (AppUsage & { category: AppCategory })[]
+    apps: (AppUsage & { category: AppCategory })[],
+    dataEspecifica?: string
   ): Promise<void> {
     try {
       const db = getFirestore();
-      const hoje = new Date();
-      const dataFormatada = hoje.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dataFormatada = dataEspecifica || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
-      // Verificar se já existe registro para hoje
+      // Verificar se já existe registro para essa data
       const tempoTelaRef = collection(db, "estatisticas");
       const q = query(
         tempoTelaRef, 
@@ -207,6 +234,82 @@ class ScreenTimeService {
       }
     } catch (error) {
       console.error('Erro ao salvar dados de tempo de tela:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Salva dados retroativos dos últimos 7 dias no Firestore
+   * Só salva se o documento para aquela data ainda não existir
+   * @param userId ID do usuário
+   */
+  async saveLastSevenDaysData(userId: string): Promise<void> {
+    try {
+      console.log('Iniciando salvamento de dados retroativos dos últimos 7 dias...');
+      
+      const savedDays: string[] = [];
+      const skippedDays: string[] = [];
+      const errorDays: string[] = [];
+
+      // Percorrer os últimos 7 dias (0 = hoje, 1 = ontem, etc)
+      for (let daysAgo = 0; daysAgo < 7; daysAgo++) {
+        try {
+          // Buscar dados do dia específico
+          const dayData = await this.getScreenTimeForSpecificDay(daysAgo);
+          
+          if (!dayData || dayData.totalTimeInMinutes === 0) {
+            console.log(`Dia ${dayData?.date || daysAgo}: Sem dados de tempo de tela`);
+            skippedDays.push(dayData?.date || `${daysAgo} dias atrás`);
+            continue;
+          }
+
+          // Verificar se já existe registro para essa data
+          const db = getFirestore();
+          const tempoTelaRef = collection(db, "estatisticas");
+          const q = query(
+            tempoTelaRef,
+            where("userId", "==", userId),
+            where("data", "==", dayData.date),
+            limit(1)
+          );
+          
+          const existingDocs = await getDocs(q);
+          
+          if (!existingDocs.empty) {
+            console.log(`Dia ${dayData.date}: Já existe registro, pulando...`);
+            skippedDays.push(dayData.date);
+            continue;
+          }
+
+          // Adicionar categoria aos apps
+          const appsWithCategory = dayData.apps.map(app => ({
+            ...app,
+            category: getAppCategory(app.packageName, app.category),
+          }));
+
+          // Salvar dados do dia
+          await this.saveScreenTimeData(
+            userId,
+            dayData.totalTimeInMinutes,
+            appsWithCategory,
+            dayData.date
+          );
+
+          savedDays.push(dayData.date);
+          console.log(`Dia ${dayData.date}: Salvos ${dayData.totalTimeInMinutes} minutos com ${dayData.apps.length} apps`);
+        } catch (error) {
+          console.error(`Erro ao processar dia ${daysAgo}:`, error);
+          errorDays.push(`${daysAgo} dias atrás`);
+        }
+      }
+
+      console.log('=== Resumo do salvamento retroativo ===');
+      console.log(`Dias salvos: ${savedDays.length} - ${savedDays.join(', ')}`);
+      console.log(`Dias pulados (já existiam ou sem dados): ${skippedDays.length}`);
+      console.log(`Dias com erro: ${errorDays.length}`);
+      console.log('========================================');
+    } catch (error) {
+      console.error('Erro ao salvar dados retroativos:', error);
       throw error;
     }
   }

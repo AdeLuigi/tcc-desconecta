@@ -230,6 +230,103 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         }
     }
 
+    @ReactMethod
+    fun getScreenTimeForSpecificDay(daysAgo: Int, promise: Promise) {
+        try {
+            val usageStatsManager = reactApplicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            
+            // Define o início do dia específico
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            val startTime = calendar.timeInMillis
+            
+            // Define o fim do dia específico
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            val endTime = calendar.timeInMillis
+
+            val usageStatsList = usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
+                startTime,
+                endTime
+            )
+
+            // Agregar uso por app
+            val appUsageMap = mutableMapOf<String, Long>()
+            usageStatsList?.forEach { usageStats ->
+                val packageName = usageStats.packageName
+                val existing = appUsageMap[packageName] ?: 0L
+                appUsageMap[packageName] = existing + usageStats.totalTimeInForeground
+            }
+
+            // Calcular tempo total
+            var totalTime = 0L
+            appUsageMap.values.forEach { time ->
+                totalTime += time
+            }
+
+            // Preparar resultado
+            val resultMap = WritableNativeMap()
+            val appsArray = WritableNativeArray()
+            
+            appUsageMap.entries.sortedByDescending { it.value }.forEach { entry ->
+                val appData = WritableNativeMap()
+                appData.putString("packageName", entry.key)
+                appData.putInt("timeInMinutes", (entry.value / 1000 / 60).toInt())
+                
+                try {
+                    val pm = reactApplicationContext.packageManager
+                    val appInfo = pm.getApplicationInfo(entry.key, 0)
+                    val appName = pm.getApplicationLabel(appInfo).toString()
+                    appData.putString("appName", appName)
+                    
+                    val icon = pm.getApplicationIcon(entry.key)
+                    val iconBase64 = drawableToBase64(icon)
+                    if (iconBase64 != null) {
+                        appData.putString("appIcon", iconBase64)
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val categoryId = appInfo.category
+                        val categoryName = getCategoryName(categoryId)
+                        appData.putInt("categoryId", categoryId)
+                        appData.putString("category", categoryName)
+                    } else {
+                        appData.putInt("categoryId", -1)
+                        appData.putString("category", "other")
+                    }
+                } catch (e: Exception) {
+                    appData.putString("appName", entry.key)
+                    appData.putInt("categoryId", -1)
+                    appData.putString("category", "other")
+                }
+                
+                appsArray.pushMap(appData)
+            }
+
+            // Data do dia no formato ISO
+            val dayCalendar = Calendar.getInstance()
+            dayCalendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+            val dateString = String.format(
+                "%04d-%02d-%02d",
+                dayCalendar.get(Calendar.YEAR),
+                dayCalendar.get(Calendar.MONTH) + 1,
+                dayCalendar.get(Calendar.DAY_OF_MONTH)
+            )
+
+            resultMap.putString("date", dateString)
+            resultMap.putInt("totalTimeInMinutes", (totalTime / 1000 / 60).toInt())
+            resultMap.putArray("apps", appsArray)
+
+            promise.resolve(resultMap)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
+
     private fun getCategoryName(categoryId: Int): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             return when (categoryId) {
