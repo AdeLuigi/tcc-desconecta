@@ -272,72 +272,89 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       </View>
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "info" && styles.tabActive]}
-            onPress={() => setActiveTab("info")}
-          >
-            <Text style={[styles.tabText, activeTab === "info" && styles.tabTextActive]}>
-              Informações
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "feed" && styles.tabActive]}
-            onPress={() => setActiveTab("feed")}
-          >
-            <Text style={[styles.tabText, activeTab === "feed" && styles.tabTextActive]}>
-              Feed do Grupo
-            </Text>
-          </TouchableOpacity>
+        {/* Group Header Card */}
+        <View style={styles.groupHeaderCard}>
+          <View style={styles.groupAvatarLarge}>
+            {typeof grupo.foto === 'string' ? (
+              <Image source={{ uri: grupo.foto }} style={styles.groupImage} />
+            ) : (
+              <Image source={grupo.foto} style={styles.groupImage} />
+            )}
+          </View>
+          <Text style={styles.groupName}>{grupo.nome}</Text>
+          <Text style={styles.groupMembers}>👥 {grupo.membros.length} membros</Text>
         </View>
 
-        {activeTab === "info" ? (
-          <>
-            {/* Group Info Card */}
-        <View style={styles.groupInfoCard}>
-          <View style={styles.groupHeader}>
-            <View style={styles.groupAvatarLarge}>
-              {typeof grupo.foto === 'string' ? (
-                <Image source={{ uri: grupo.foto }} style={styles.groupImage} />
-              ) : (
-                <Image source={grupo.foto} style={styles.groupImage} />
-              )}
+        {/* Quick Actions */}
+        <View style={styles.quickActionsContainer}>
+          <TouchableOpacity 
+            style={styles.quickActionCard}
+            onPress={() => {
+              Alert.alert(
+                grupo.nome,
+                grupo.descricao,
+                [{ text: "OK" }]
+              )
+            }}
+          >
+            <View style={styles.quickActionIcon}>
+              <Text style={styles.quickActionEmoji}>ℹ️</Text>
             </View>
-            <View style={styles.groupHeaderInfo}>
-              <Text style={styles.groupName}>{grupo.nome}</Text>
-              <Text style={styles.groupMembers}>👥 {grupo.membros.length} membros</Text>
+            <Text style={styles.quickActionLabel}>Informações</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.quickActionCard}
+            onPress={() => {
+              const membersList = grupo.membros.map((m, i) => 
+                `${i + 1}. ${m.nome} ${m.cargo === 'administrador' ? '👑' : ''}`
+              ).join('\n')
+              Alert.alert(
+                `Membros (${grupo.membros.length})`,
+                membersList,
+                [{ text: "OK" }]
+              )
+            }}
+          >
+            <View style={styles.quickActionIcon}>
+              <Text style={styles.quickActionEmoji}>👥</Text>
             </View>
-          </View>
+            <Text style={styles.quickActionLabel}>Membros</Text>
+          </TouchableOpacity>
 
-          <View style={styles.descriptionSection}>
-            <Text style={styles.sectionLabel}>Descrição</Text>
-            <Text style={styles.groupDescription}>{grupo.descricao}</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.quickActionCard}
+            onPress={() => {
+              const rankingList = rankingOrdenado.map((r, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}º`
+                return `${medal} ${r.nome} - ${r.pontos} pts`
+              }).join('\n')
+              Alert.alert(
+                'Ranking Mensal 🏆',
+                rankingList,
+                [{ text: "OK" }]
+              )
+            }}
+          >
+            <View style={styles.quickActionIcon}>
+              <Text style={styles.quickActionEmoji}>🏆</Text>
+            </View>
+            <Text style={styles.quickActionLabel}>Ranking</Text>
+          </TouchableOpacity>
 
-          {/* Group Code Section */}
-          <View style={styles.codeSection}>
-            <Text style={styles.sectionLabel}>Código do Grupo</Text>
-            <View style={styles.codeContainer}>
-              <View style={styles.codeBox}>
-                <Text style={styles.codeText}>{grupo.codigoGrupo || "------"}</Text>
-              </View>
-              <View style={styles.codeActions}>
-                <TouchableOpacity
-                  style={styles.codeActionButton}
-                  onPress={() => {
-                    if (grupo.codigoGrupo) {
+          <TouchableOpacity 
+            style={styles.quickActionCard}
+            onPress={() => {
+              if (grupo.codigoGrupo) {
+                Alert.alert(
+                  'Código do Grupo',
+                  `${grupo.codigoGrupo}\n\nCompartilhe este código para que outros possam entrar no grupo.`,
+                  [
+                    { text: "Copiar", onPress: () => {
                       Clipboard.setString(grupo.codigoGrupo)
                       Alert.alert("Copiado!", "Código copiado para a área de transferência")
-                    }
-                  }}
-                >
-                  <Icon icon="copy" size={20} color="#322D70" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.codeActionButton}
-                  onPress={async () => {
-                    if (grupo.codigoGrupo) {
+                    }},
+                    { text: "Compartilhar", onPress: async () => {
                       try {
                         await Share.share({
                           message: `Junte-se ao grupo "${grupo.nome}" no Desconecta!\n\nCódigo: ${grupo.codigoGrupo}\n\nAbra o app e use este código para entrar no grupo.`,
@@ -345,71 +362,30 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                       } catch (error) {
                         console.error("Erro ao compartilhar:", error)
                       }
-                    }
-                  }}
-                >
-                  <Icon icon="share" size={20} color="#322D70" />
-                </TouchableOpacity>
-              </View>
+                    }},
+                    { text: "Fechar", style: "cancel" }
+                  ]
+                )
+              }
+            }}
+          >
+            <View style={styles.quickActionIcon}>
+              <Text style={styles.quickActionEmoji}>🔑</Text>
             </View>
-            <Text style={styles.codeHelper}>
-              Compartilhe este código para que outros possam entrar no grupo
-            </Text>
-          </View>
+            <Text style={styles.quickActionLabel}>Código</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Stats Card */}
-        <View style={styles.statsCard}>
-          <Text style={styles.statsTitle}>Estatísticas do Grupo</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{totalPontos.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Pontos Totais</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{mediaPontos}</Text>
-              <Text style={styles.statLabel}>Média de Pontos</Text>
+        {/* Ranking de Hoje - Destaque Principal */}
+        <View style={styles.highlightSection}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.highlightTitle}>Ranking de Hoje 📱</Text>
+              <Text style={styles.highlightSubtitle}>
+                Menos tempo de tela = melhor posição
+              </Text>
             </View>
           </View>
-        </View>
-
-        {/* Members Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Membros ({grupo.membros.length})</Text>
-          {grupo.membros.map((membro, index) => {
-            const isAdmin = membro.cargo === "administrador"
-            return (
-              <View key={index} style={styles.memberCard}>
-                <View style={styles.memberAvatar}>
-                  <Text style={styles.memberAvatarText}>
-                    {membro.userId.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.memberInfo}>
-                  <View style={styles.memberNameRow}>
-                    <Text style={styles.memberName}>{membro.nome}</Text>
-                    {isAdmin && (
-                      <View style={styles.adminBadge}>
-                        <Text style={styles.adminBadgeText}>Admin</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.memberRole}>
-                    {isAdmin ? "Administrador" : "Membro"}
-                  </Text>
-                </View>
-              </View>
-            )
-          })}
-        </View>
-
-        {/* Ranking Section - Tempo de Tela de Hoje */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ranking de Hoje 📱</Text>
-          <Text style={styles.rankingSubtitle}>
-            Menos tempo de tela = melhor posição
-          </Text>
           
           {loadingRanking ? (
             <View style={styles.loadingContainer}>
@@ -474,72 +450,24 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           )}
         </View>
 
-        {/* Ranking Mensal por Pontos */}
+        {/* Feed do Grupo */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ranking Mensal 🏆</Text>
-          {rankingOrdenado.map((item, index) => {
-            const posicao = index + 1
-            const medalha = posicao === 1 ? "🥇" : posicao === 2 ? "🥈" : posicao === 3 ? "🥉" : ""
-            
-            return (
-              <View key={index} style={styles.rankingCard}>
-                <View style={styles.rankingPosition}>
-                  {medalha ? (
-                    <Text style={styles.medalEmoji}>{medalha}</Text>
-                  ) : (
-                    <Text style={styles.positionNumber}>{posicao}º</Text>
-                  )}
-                </View>
-                <View style={styles.rankingAvatar}>
-                  <Text style={styles.rankingAvatarText}>
-                    {item.userId.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.rankingInfo}>
-                  <Text style={styles.rankingName}>{item.nome}</Text>
-                  <View style={styles.rankingPointsBar}>
-                    <View 
-                      style={[
-                        styles.rankingPointsFill,
-                        { width: `${(item.pontos / rankingOrdenado[0].pontos) * 100}%` }
-                      ]} 
-                    />
-                  </View>
-                </View>
-                <Text style={styles.rankingPoints}>{item.pontos}</Text>
-              </View>
-            )
-          })}
-        </View>
-
-        {/* Action Button */}
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate("PaginaDoGrupo")}
-        >
-          <Text style={styles.actionButtonText}>Ver Página do Grupo</Text>
-          <Icon icon="chevron" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-          </>
-        ) : (
-          /* Feed Tab */
+          <Text style={styles.sectionTitle}>Feed do Grupo 💬</Text>
           <View style={styles.feedContainer}>
             <FeedPosts key={feedKey} groupId={grupo.id} />
           </View>
-        )}
+        </View>
+
+        <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Botão Flutuante para Criar Postagem - Apenas na aba Feed */}
-      {activeTab === "feed" && (
-        <TouchableOpacity
-          style={styles.fabButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.fabButtonText}>+</Text>
-        </TouchableOpacity>
-      )}
+      {/* Botão Flutuante para Criar Postagem */}
+      <TouchableOpacity
+        style={styles.fabButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.fabButtonText}>+</Text>
+      </TouchableOpacity>
 
       {/* Modal de Criar Postagem */}
       <Modal
@@ -681,58 +609,94 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
-  tabsContainer: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    padding: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  tabActive: {
-    backgroundColor: "#322D70",
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6881BA",
-  },
-  tabTextActive: {
-    color: "#FFFFFF",
-  },
-  feedContainer: {
-    flex: 1,
-    minHeight: 400,
-  },
-  groupInfoCard: {
+  groupHeaderCard: {
     backgroundColor: "#FFFFFF",
     margin: 16,
     marginBottom: 12,
     borderRadius: 16,
-    padding: 20,
+    padding: 24,
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  groupHeader: {
+  quickActionsContainer: {
     flexDirection: "row",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  quickActionCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
     alignItems: "center",
-    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quickActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  quickActionEmoji: {
+    fontSize: 24,
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#322D70",
+    textAlign: "center",
+  },
+  highlightSection: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  highlightTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#322D70",
+    marginBottom: 4,
+  },
+  highlightSubtitle: {
+    fontSize: 13,
+    color: "#6881BA",
+    marginBottom: 16,
+  },
+  sectionHeaderRow: {
+    marginBottom: 12,
+  },
+  feedContainer: {
+    flex: 1,
+    minHeight: 400,
+  },
+  section: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#322D70",
+    marginBottom: 12,
   },
   groupAvatarLarge: {
     width: 80,
@@ -742,24 +706,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
-    marginRight: 16,
+    marginBottom: 12,
   },
   groupImage: {
     width: "100%",
     height: "100%",
   },
-  groupHeaderInfo: {
-    flex: 1,
-  },
   groupName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#322D70",
-    marginBottom: 8,
+    marginBottom: 4,
+    textAlign: "center",
   },
   groupMembers: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#6881BA",
+    textAlign: "center",
   },
   descriptionSection: {
     paddingTop: 16,
@@ -866,72 +829,6 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 13,
     color: "rgba(255, 255, 255, 0.8)",
-  },
-  section: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#322D70",
-    marginBottom: 12,
-  },
-  memberCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  memberAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#6881BA",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  memberAvatarText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  memberName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#322D70",
-    marginRight: 8,
-  },
-  adminBadge: {
-    backgroundColor: "#7C3AED",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  adminBadgeText: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  memberRole: {
-    fontSize: 14,
-    color: "#6881BA",
   },
   rankingCard: {
     flexDirection: "row",
