@@ -9,6 +9,7 @@ export interface UserData {
   email: string
   nome: string
   photoURL: string
+  descricao?: string
   dataCriacao: string
   configuracoes: {
     bloqueio_apps: boolean
@@ -23,6 +24,7 @@ export interface UserData {
  * Valores padrão para um novo usuário
  */
 const DEFAULT_USER_DATA = {
+  descricao: "",
   configuracoes: {
     bloqueio_apps: false,
     limite_tela_minutos: 180,

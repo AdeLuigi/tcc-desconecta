@@ -103,8 +103,8 @@ const ConquistasStack = () => {
 const AjustesStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Configuracoes" component={ConfiguracoesScreen as any} />
       <Stack.Screen name="Perfil" component={PerfilScreen as any} />
+      <Stack.Screen name="Configuracoes" component={ConfiguracoesScreen as any} />
       <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
       <Stack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
       <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
