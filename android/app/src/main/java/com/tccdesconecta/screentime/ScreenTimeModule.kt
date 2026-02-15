@@ -88,18 +88,23 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val startTime = calendar.timeInMillis
             val endTime = System.currentTimeMillis()
 
-            // Usa queryAndAggregateUsageStats para evitar duplicação
-            val usageStatsMap = usageStatsManager.queryAndAggregateUsageStats(
+            val usageStatsList = usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
                 startTime,
                 endTime
             )
 
-            var totalTime = 0L
-            usageStatsMap?.values?.forEach { usageStats ->
-                totalTime += usageStats.totalTimeInForeground
+            val aggregatedStats = mutableMapOf<String, Long>()
+            usageStatsList?.forEach { usageStats ->
+                val existing = aggregatedStats[usageStats.packageName] ?: 0L
+                aggregatedStats[usageStats.packageName] = existing + usageStats.totalTimeInForeground
             }
 
-            // Retorna em minutos
+            var totalTime = 0L
+            aggregatedStats.values.forEach { time ->
+                totalTime += time
+            }
+
             promise.resolve((totalTime / 1000 / 60).toInt())
         } catch (e: Exception) {
             promise.reject("ERROR", e.message)
@@ -112,7 +117,6 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val usageStatsManager = reactApplicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             
             val calendar = Calendar.getInstance()
-            // Se daysBack = 0, pega de hoje. Se = 1, pega desde ontem, etc.
             if (daysBack > 0) {
                 calendar.add(Calendar.DAY_OF_YEAR, -daysBack)
             }
@@ -123,17 +127,17 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val startTime = calendar.timeInMillis
             val endTime = System.currentTimeMillis()
 
-            // Usa queryAndAggregateUsageStats para dados já agregados
-            val usageStatsMap = usageStatsManager.queryAndAggregateUsageStats(
+            val usageStatsList = usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
                 startTime,
                 endTime
             )
 
             val appUsageMap = mutableMapOf<String, Long>()
-            usageStatsMap?.values?.forEach { usageStats ->
+            usageStatsList?.forEach { usageStats ->
                 val packageName = usageStats.packageName
-                val timeInForeground = usageStats.totalTimeInForeground
-                appUsageMap[packageName] = timeInForeground
+                val existing = appUsageMap[packageName] ?: 0L
+                appUsageMap[packageName] = existing + usageStats.totalTimeInForeground
             }
 
             val resultArray = WritableNativeArray()
@@ -142,21 +146,18 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 appData.putString("packageName", entry.key)
                 appData.putInt("timeInMinutes", (entry.value / 1000 / 60).toInt())
                 
-                // Tenta pegar o nome, ícone e categoria do app
                 try {
                     val pm = reactApplicationContext.packageManager
                     val appInfo = pm.getApplicationInfo(entry.key, 0)
                     val appName = pm.getApplicationLabel(appInfo).toString()
                     appData.putString("appName", appName)
                     
-                    // Pega o ícone do app e converte para base64
                     val icon = pm.getApplicationIcon(entry.key)
                     val iconBase64 = drawableToBase64(icon)
                     if (iconBase64 != null) {
                         appData.putString("appIcon", iconBase64)
                     }
-                    
-                    // NOVO: Obter categoria do app (Android 8.0+)
+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val categoryId = appInfo.category
                         val categoryName = getCategoryName(categoryId)
@@ -206,9 +207,15 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                     endTime
                 )
 
-                var totalTime = 0L
+                val dailyStats = mutableMapOf<String, Long>()
                 usageStatsList?.forEach { usageStats ->
-                    totalTime += usageStats.totalTimeInForeground
+                    val existing = dailyStats[usageStats.packageName] ?: 0L
+                    dailyStats[usageStats.packageName] = existing + usageStats.totalTimeInForeground
+                }
+
+                var totalTime = 0L
+                dailyStats.values.forEach { time ->
+                    totalTime += time
                 }
 
                 val dayData = WritableNativeMap()
@@ -222,10 +229,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             promise.reject("ERROR", e.message)
         }
     }
-    
-    /**
-     * Converte o ID de categoria nativo do Android para um nome amigável
-     */
+
     private fun getCategoryName(categoryId: Int): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             return when (categoryId) {

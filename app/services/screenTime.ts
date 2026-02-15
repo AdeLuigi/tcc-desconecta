@@ -1,4 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
+import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, limit } from "@react-native-firebase/firestore"
+import type { AppCategory } from '@/utils/appCategories';
 
 const { ScreenTimeModule } = NativeModules;
 
@@ -14,6 +16,20 @@ export interface AppUsage {
 export interface DailyScreenTime {
   date: string;
   timeInMinutes: number;
+}
+
+export interface ScreenTimeData {
+  userId: string;
+  data: string; // formato: YYYY-MM-DD
+  tempo_total_minutos: number;
+  categorias: Record<string, number>; // categoria -> minutos
+  top_apps: {
+    packageName: string;
+    appName: string;
+    timeInMinutes: number;
+    category: string;
+  }[];
+  timestamp: Date;
 }
 
 /**
@@ -121,6 +137,76 @@ class ScreenTimeService {
       return `${hours}h`;
     }
     return `${hours}h ${mins}min`;
+  }
+
+  /**
+   * Salva os dados de tempo de tela no Firestore
+   * @param userId ID do usuário
+   * @param tempoTotal Tempo total em minutos
+   * @param apps Lista de apps com categorias
+   */
+  async saveScreenTimeData(
+    userId: string, 
+    tempoTotal: number, 
+    apps: (AppUsage & { category: AppCategory })[]
+  ): Promise<void> {
+    try {
+      const db = getFirestore();
+      const hoje = new Date();
+      const dataFormatada = hoje.toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      // Verificar se já existe registro para hoje
+      const tempoTelaRef = collection(db, "estatisticas");
+      const q = query(
+        tempoTelaRef, 
+        where("userId", "==", userId),
+        where("data", "==", dataFormatada),
+        limit(1)
+      );
+      
+      const existingDocs = await getDocs(q);
+      
+      // Se já existe, não salva novamente (evita duplicatas)
+      if (!existingDocs.empty) {
+        console.log('Dados de tempo de tela já salvos para hoje');
+        return;
+      }
+      
+      // Calcular tempo por categoria
+      const categorias: Record<string, number> = {};
+      apps.forEach(app => {
+        const categoria = app.category || 'outros';
+        if (categorias[categoria]) {
+          categorias[categoria] += app.timeInMinutes;
+        } else {
+          categorias[categoria] = app.timeInMinutes;
+        }
+      });
+      
+      // Preparar top 5 apps
+      const topApps = apps.slice(0, 5).map(app => ({
+        packageName: app.packageName,
+        appName: app.appName,
+        timeInMinutes: app.timeInMinutes,
+        category: app.category || 'outros',
+      }));
+      
+      // Criar documento
+      const screenTimeData: ScreenTimeData = {
+        userId,
+        data: dataFormatada,
+        tempo_total_minutos: tempoTotal,
+        categorias,
+        top_apps: topApps,
+        timestamp: new Date(),
+      };
+      
+      await addDoc(tempoTelaRef, screenTimeData);
+      console.log('Dados de tempo de tela salvos com sucesso para', dataFormatada);
+    } catch (error) {
+      console.error('Erro ao salvar dados de tempo de tela:', error);
+      throw error;
+    }
   }
 }
 

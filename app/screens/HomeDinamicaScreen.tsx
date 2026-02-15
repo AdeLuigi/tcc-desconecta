@@ -78,6 +78,9 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
       ])
       
+      console.log('DEBUG - Tempo total de hoje (bruto):', todayTime)
+      console.log('DEBUG - Apps:', apps.map(app => `${app.appName}: ${app.timeInMinutes}min`))
+      
       // Adicionar categoria com fallback para lista manual
       const appsWithCategory = apps.map(app => ({
         ...app,
@@ -86,6 +89,15 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       
       setScreenTimeToday(todayTime)
       setTopApps(appsWithCategory.slice(0, 3)) // Top 3 apps
+      
+      // Salvar dados no Firestore se o usuário estiver autenticado
+      if (userData?.uid && todayTime > 0) {
+        await ScreenTimeService.saveScreenTimeData(
+          userData.uid,
+          todayTime,
+          appsWithCategory
+        )
+      }
     } catch (error) {
       console.error('Erro ao carregar dados de tempo de tela:', error)
     }
@@ -112,6 +124,8 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
   const hours = Math.floor(screenTimeToday / 60)
   const minutes = screenTimeToday % 60
+
+  console.log('DEBUG - screenTimeToday:', screenTimeToday, '- hours:', hours, '- minutes:', minutes)
 
   const screenTimeData = {
     hours: hasPermission ? hours : 2,
