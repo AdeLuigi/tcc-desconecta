@@ -46,7 +46,7 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -65,10 +65,10 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
     try {
       setIsUploading(true)
       const filename = `profile/${userData?.uid}/${Date.now()}.jpg`
-      const reference = storage().ref(filename)
+      const storageRef = storage().ref(filename)
       
-      await reference.putFile(uri)
-      const downloadURL = await reference.getDownloadURL()
+      await storageRef.putFile(uri)
+      const downloadURL = await storageRef.getDownloadURL()
       
       return downloadURL
     } catch (error) {
