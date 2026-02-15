@@ -7,6 +7,15 @@ import {
 } from "@react-navigation/native"
 import { NativeStackScreenProps } from "@react-navigation/native-stack"
 
+// Bottom Tab Navigator types
+export type BottomTabParamList = {
+  Grupos: undefined
+  Desafios: undefined
+  Home: undefined
+  Conquistas: undefined
+  Ajustes: undefined
+}
+
 // Demo Tab Navigator types
 export type DemoTabParamList = {
   DemoCommunity: undefined
@@ -23,6 +32,7 @@ export type AppStackParamList = {
   Login: undefined
   Cadastro: undefined
   ConfiguracaoPrimeiroAcesso: undefined
+  MainTabs: NavigatorScreenParams<BottomTabParamList>
   HomeDinamica: undefined
   GruposDeAmigos: undefined
   CriarNovoGrupo: undefined
@@ -70,6 +80,11 @@ export type AppStackParamList = {
 export type AppStackScreenProps<T extends keyof AppStackParamList> = NativeStackScreenProps<
   AppStackParamList,
   T
+>
+
+export type BottomTabScreenPropsType<T extends keyof BottomTabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<BottomTabParamList, T>,
+  AppStackScreenProps<keyof AppStackParamList>
 >
 
 export type DemoTabScreenProps<T extends keyof DemoTabParamList> = CompositeScreenProps<
