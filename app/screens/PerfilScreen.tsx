@@ -126,12 +126,7 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           setUserData(updatedUserData)
         }
 
-        Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ])
+        Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
         setSelectedImage(null)
       } else {
         Alert.alert("Erro", "Não foi possível atualizar o perfil. Tente novamente.")
