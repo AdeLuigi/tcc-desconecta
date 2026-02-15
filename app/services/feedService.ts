@@ -10,6 +10,7 @@ export interface FeedPost {
   nome: string
   tipoAtividade: TipoAtividade
   userId: string
+  photoURL?: string
 }
 
 export interface Comment {
@@ -18,6 +19,7 @@ export interface Comment {
   nomeUsuario: string
   texto: string
   userId: string
+  photoURL?: string
 }
 
 /**
@@ -32,7 +34,7 @@ export async function getGroupFeed(groupId: string): Promise<FeedPost[]> {
 
     const posts: FeedPost[] = []
     
-    feedSnapshot.forEach((docSnap) => {
+    feedSnapshot.forEach((docSnap: any) => {
       const data = docSnap.data()
       posts.push({
         id: docSnap.id,
@@ -42,6 +44,7 @@ export async function getGroupFeed(groupId: string): Promise<FeedPost[]> {
         nome: data.nome || "",
         tipoAtividade: data.tipoAtividade || "progresso",
         userId: data.userId || "",
+        photoURL: data.photoURL || "",
       })
     })
 
@@ -62,6 +65,7 @@ export async function createFeedPost(
   descricao: string,
   tipoAtividade: TipoAtividade,
   foto?: string,
+  photoURL?: string,
 ): Promise<string | null> {
   try {
     const newPost = {
@@ -71,6 +75,7 @@ export async function createFeedPost(
       nome: userName,
       tipoAtividade,
       userId,
+      photoURL: photoURL || "",
     }
 
     const db = getFirestore()
@@ -99,7 +104,7 @@ export async function getPostComments(
 
     const comments: Comment[] = []
     
-    commentsSnapshot.forEach((docSnap) => {
+    commentsSnapshot.forEach((docSnap: any) => {
       const data = docSnap.data()
       comments.push({
         id: docSnap.id,
@@ -107,6 +112,7 @@ export async function getPostComments(
         nomeUsuario: data.nomeUsuario || "",
         texto: data.texto || "",
         userId: data.userId || "",
+        photoURL: data.photoURL || "",
       })
     })
 
@@ -126,6 +132,7 @@ export async function addComment(
   userId: string,
   userName: string,
   texto: string,
+  photoURL?: string,
 ): Promise<string | null> {
   try {
     const newComment = {
@@ -133,6 +140,7 @@ export async function addComment(
       nomeUsuario: userName,
       texto,
       userId,
+      photoURL: photoURL || "",
     }
 
     const db = getFirestore()
@@ -159,7 +167,7 @@ export async function deletePost(groupId: string, postId: string): Promise<boole
 
     const batch = writeBatch(db)
     
-    commentsSnapshot.forEach((docSnap) => {
+    commentsSnapshot.forEach((docSnap: any) => {
       batch.delete(docSnap.ref)
     })
 

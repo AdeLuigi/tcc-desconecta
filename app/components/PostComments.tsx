@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native"
+import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from "react-native"
 import { Text } from "./Text"
 import { Icon } from "./Icon"
 import { getPostComments, addComment, type Comment } from "@/services/feedService"
@@ -53,7 +53,8 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
         postId,
         userData.uid,
         userData.nome,
-        newComment.trim()
+        newComment.trim(),
+        userData.photoURL
       )
 
       if (commentId) {
@@ -64,6 +65,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
           nomeUsuario: userData.nome,
           texto: newComment.trim(),
           userId: userData.uid,
+          photoURL: userData.photoURL,
         }
 
         setComments([newCommentObj, ...comments])
@@ -83,9 +85,17 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
       <View style={styles.commentCard}>
         <View style={styles.commentHeader}>
           <View style={[styles.commentAvatar, isCurrentUser && styles.currentUserAvatar]}>
-            <Text style={styles.commentAvatarText}>
-              {item.nomeUsuario.charAt(0).toUpperCase()}
-            </Text>
+            {item.photoURL ? (
+              <Image
+                source={{ uri: item.photoURL }}
+                style={styles.commentAvatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.commentAvatarText}>
+                {item.nomeUsuario.charAt(0).toUpperCase()}
+              </Text>
+            )}
           </View>
           <View style={styles.commentContent}>
             <View style={styles.commentMeta}>
@@ -192,9 +202,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
+    overflow: "hidden",
   },
   currentUserAvatar: {
     backgroundColor: "#7C3AED",
+  },
+  commentAvatarImage: {
+    width: 36,
+    height: 36,
   },
   commentAvatarText: {
     fontSize: 14,

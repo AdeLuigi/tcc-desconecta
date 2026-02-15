@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext"
 import { createFeedPost, type TipoAtividade } from "@/services/feedService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
-import { getFirestore, collection, query, where, getDocs } from "@react-native-firebase/firestore"
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "@react-native-firebase/firestore"
 import ScreenTimeService from "@/services/screenTime"
 import { getAppCategory } from "@/utils/appCategories"
 
@@ -34,8 +34,10 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
     nome: string
     tempoMinutos: number | null
     temHoje: boolean
+    photoURL?: string
   }>>([])
   const [loadingRanking, setLoadingRanking] = useState(false)
+  const [rankingPeriodo, setRankingPeriodo] = useState<"diario" | "semanal">("diario")
 
   // Ordenar ranking por pontos
   const rankingOrdenado = [...grupo.ranking_mensal].sort((a, b) => b.pontos - a.pontos)
@@ -95,7 +97,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
    */
   const updateAndLoadRanking = async () => {
     await updateScreenTimeData()
-    await loadRankingTempoDeTela()
+    if (rankingPeriodo === "diario") {
+      await loadRankingTempoDeTela()
+    } else {
+      await loadRankingSemanal()
+    }
   }
 
   const loadRankingTempoDeTela = async () => {
@@ -117,6 +123,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             
             const snapshot = await getDocs(q)
             
+            // Buscar photoURL do usuário
+            const userRef = doc(db, "usuarios", membro.userId)
+            const userDoc = await getDoc(userRef)
+            const photoURL = userDoc.exists() ? userDoc.data()?.photoURL || "" : ""
+            
             if (!snapshot.empty) {
               const dados = snapshot.docs[0].data()
               return {
@@ -124,6 +135,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                 nome: membro.nome,
                 tempoMinutos: dados.tempo_total_minutos,
                 temHoje: true,
+                photoURL,
               }
             } else {
               return {
@@ -131,6 +143,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                 nome: membro.nome,
                 tempoMinutos: null,
                 temHoje: false,
+                photoURL,
               }
             }
           } catch (error) {
@@ -140,6 +153,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               nome: membro.nome,
               tempoMinutos: null,
               temHoje: false,
+              photoURL: "",
             }
           }
         })
@@ -157,6 +171,81 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       console.log('Ranking de tempo de tela carregado:', rankingOrdenado)
     } catch (error) {
       console.error('Erro ao carregar ranking de tempo de tela:', error)
+    } finally {
+      setLoadingRanking(false)
+    }
+  }
+
+  const loadRankingSemanal = async () => {
+    try {
+      setLoadingRanking(true)
+      const db = getFirestore()
+      
+      // Calcular datas dos últimos 7 dias
+      const ultimos7Dias: string[] = []
+      for (let i = 0; i < 7; i++) {
+        const data = new Date()
+        data.setDate(data.getDate() - i)
+        ultimos7Dias.push(data.toISOString().split('T')[0])
+      }
+      
+      const rankingData = await Promise.all(
+        grupo.membros.map(async (membro) => {
+          try {
+            // Buscar dados de tempo de tela dos últimos 7 dias para este usuário
+            const tempoTelaRef = collection(db, "estatisticas")
+            const q = query(
+              tempoTelaRef,
+              where("userId", "==", membro.userId),
+              where("data", "in", ultimos7Dias)
+            )
+            
+            const snapshot = await getDocs(q)
+            
+            // Buscar photoURL do usuário
+            const userRef = doc(db, "usuarios", membro.userId)
+            const userDoc = await getDoc(userRef)
+            const photoURL = userDoc.exists() ? userDoc.data()?.photoURL || "" : ""
+            
+            // Somar tempo de todos os dias
+            let tempoTotal = 0
+            snapshot.forEach((docSnap: any) => {
+              const dados = docSnap.data()
+              tempoTotal += dados.tempo_total_minutos || 0
+            })
+            
+            return {
+              userId: membro.userId,
+              nome: membro.nome,
+              tempoMinutos: tempoTotal > 0 ? tempoTotal : null,
+              temHoje: tempoTotal > 0,
+              photoURL,
+            }
+          } catch (error) {
+            console.error(`Erro ao buscar dados semanais de ${membro.nome}:`, error)
+            return {
+              userId: membro.userId,
+              nome: membro.nome,
+              tempoMinutos: null,
+              temHoje: false,
+              photoURL: "",
+            }
+          }
+        })
+      )
+      
+      // Ordenar: primeiro por quem tem dados, depois pelo menor tempo
+      const rankingOrdenado = rankingData.sort((a, b) => {
+        if (a.temHoje && !b.temHoje) return -1
+        if (!a.temHoje && b.temHoje) return 1
+        if (!a.temHoje && !b.temHoje) return 0
+        return (a.tempoMinutos || 0) - (b.tempoMinutos || 0)
+      })
+      
+      setRankingTempoDeTela(rankingOrdenado)
+      console.log('Ranking semanal carregado:', rankingOrdenado)
+    } catch (error) {
+      console.error('Erro ao carregar ranking semanal:', error)
     } finally {
       setLoadingRanking(false)
     }
@@ -258,7 +347,8 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         userData.nome,
         postDescription.trim(),
         selectedActivityType,
-        photoURL
+        photoURL,
+        userData.photoURL
       )
 
       if (postId) {
@@ -287,7 +377,9 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         userData!.uid,
         userData!.nome,
         postDescription.trim(),
-        selectedActivityType
+        selectedActivityType,
+        undefined,
+        userData!.photoURL
       )
 
       if (postId) {
@@ -432,11 +524,53 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         {/* Ranking de Hoje - Destaque Principal */}
         <View style={styles.highlightSection}>
           <View style={styles.sectionHeaderRow}>
-            <View>
-              <Text style={styles.highlightTitle}>Ranking de Hoje 📱</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.highlightTitle}>
+                {rankingPeriodo === "diario" ? "Ranking de Hoje 📱" : "Ranking Semanal 📅"}
+              </Text>
               <Text style={styles.highlightSubtitle}>
                 Menos tempo de tela = melhor posição
               </Text>
+            </View>
+            <View style={styles.rankingToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  rankingPeriodo === "diario" && styles.toggleButtonActive,
+                ]}
+                onPress={() => {
+                  setRankingPeriodo("diario")
+                  loadRankingTempoDeTela()
+                }}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    rankingPeriodo === "diario" && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Hoje
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  rankingPeriodo === "semanal" && styles.toggleButtonActive,
+                ]}
+                onPress={() => {
+                  setRankingPeriodo("semanal")
+                  loadRankingSemanal()
+                }}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    rankingPeriodo === "semanal" && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  7 dias
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
           
@@ -460,9 +594,17 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                     )}
                   </View>
                   <View style={styles.rankingAvatar}>
-                    <Text style={styles.rankingAvatarText}>
-                      {item.nome.charAt(0).toUpperCase()}
-                    </Text>
+                    {item.photoURL ? (
+                      <Image
+                        source={{ uri: item.photoURL }}
+                        style={styles.rankingAvatarImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={styles.rankingAvatarText}>
+                        {item.nome.charAt(0).toUpperCase()}
+                      </Text>
+                    )}
                   </View>
                   <View style={styles.rankingInfo}>
                     <Text style={styles.rankingName}>{item.nome}</Text>
@@ -734,6 +876,31 @@ const styles = StyleSheet.create({
     color: "#6881BA",
     marginBottom: 16,
   },
+  rankingToggle: {
+    flexDirection: "row",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 8,
+    padding: 3,
+    gap: 4,
+  },
+  toggleButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    minWidth: 60,
+    alignItems: "center",
+  },
+  toggleButtonActive: {
+    backgroundColor: "#322D70",
+  },
+  toggleButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6881BA",
+  },
+  toggleButtonTextActive: {
+    color: "#FFFFFF",
+  },
   sectionHeaderRow: {
     marginBottom: 12,
   },
@@ -917,6 +1084,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+    overflow: "hidden",
+  },
+  rankingAvatarImage: {
+    width: 40,
+    height: 40,
   },
   rankingAvatarText: {
     fontSize: 16,

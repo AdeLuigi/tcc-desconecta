@@ -69,9 +69,17 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
         {/* Post Header */}
         <View style={styles.postHeader}>
           <View style={styles.userAvatar}>
-            <Text style={styles.userAvatarText}>
-              {item.nome.charAt(0).toUpperCase()}
-            </Text>
+            {item.photoURL ? (
+              <Image
+                source={{ uri: item.photoURL }}
+                style={styles.userAvatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.userAvatarText}>
+                {item.nome.charAt(0).toUpperCase()}
+              </Text>
+            )}
           </View>
           <View style={styles.postHeaderInfo}>
             <Text style={styles.userName}>{item.nome}</Text>
@@ -208,6 +216,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+    overflow: "hidden",
+  },
+  userAvatarImage: {
+    width: 44,
+    height: 44,
   },
   userAvatarText: {
     fontSize: 18,
