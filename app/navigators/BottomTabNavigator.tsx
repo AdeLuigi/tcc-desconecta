@@ -5,14 +5,14 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
 import { useAppTheme } from "@/theme/context"
 
-// Screens - Main  
+// Screens - Main Tabs
 import { HomeDinamicaScreen } from "@/screens/HomeDinamicaScreen"
 import { GruposDeAmigosScreen } from "@/screens/GruposDeAmigosScreen"
 import { DesafiosPublicosScreen } from "@/screens/DesafiosPublicosScreen"
 import { EstatisticaPessoalResumidaScreen } from "@/screens/EstatisticaPessoalResumidaScreen"
 import { ConfiguracoesScreen } from "@/screens/ConfiguracoesScreen"
 
-// Screens - Secondary
+// Screens - Shared (accessible from any tab)
 import { CriarNovoGrupoScreen } from "@/screens/CriarNovoGrupoScreen"
 import { PaginaDoGrupoScreen } from "@/screens/PaginaDoGrupoScreen"
 import { AtividadeScreen } from "@/screens/AtividadeScreen"
@@ -34,58 +34,85 @@ import { NotificacoesScreen } from "@/screens/NotificacoesScreen"
 import type { BottomTabParamList } from "./navigationTypes"
 
 const Tab = createBottomTabNavigator<BottomTabParamList>()
-const GruposStack = createNativeStackNavigator()
-const DesafiosStack = createNativeStackNavigator()
-const HomeStack = createNativeStackNavigator()
-const ConquistasStack = createNativeStackNavigator()
-const AjustesStack = createNativeStackNavigator()
+const Stack = createNativeStackNavigator()
 
-// Stack Navigators for each tab
-const GruposStackNavigator = () => (
-  <GruposStack.Navigator screenOptions={{ headerShown: false }}>
-    <GruposStack.Screen name="GruposDeAmigosMain" component={GruposDeAmigosScreen as any} />
-    <GruposStack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
-    <GruposStack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
-    <GruposStack.Screen name="Atividade" component={AtividadeScreen as any} />
-    <GruposStack.Screen name="Ranking" component={RankingScreen as any} />
-    <GruposStack.Screen name="Batepapo" component={BatepapoScreen as any} />
-    <GruposStack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
-    <GruposStack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
-  </GruposStack.Navigator>
-)
+// Stack Navigator for Home Tab
+const HomeStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HomeDinamica" component={HomeDinamicaScreen as any} />
+      <Stack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
+      <Stack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
+      <Stack.Screen name="Atividade" component={AtividadeScreen as any} />
+      <Stack.Screen name="Ranking" component={RankingScreen as any} />
+      <Stack.Screen name="Batepapo" component={BatepapoScreen as any} />
+      <Stack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
+      <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
+      <Stack.Screen name="DesafiosPublicos" component={DesafiosPublicosScreen as any} />
+      <Stack.Screen name="DesafiosInscrito" component={DesafiosInscritoScreen as any} />
+      <Stack.Screen name="DesafiosDisponiveis" component={DesafiosDisponiveisScreen as any} />
+      <Stack.Screen name="AppModoFoco" component={AppModoFocoScreen as any} />
+      <Stack.Screen name="EstatisticasPessoais" component={EstatisticasPessoaisScreen as any} />
+      <Stack.Screen name="Perfil" component={PerfilScreen as any} />
+      <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
+      <Stack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
+      <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
+      <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
+    </Stack.Navigator>
+  )
+}
 
-const DesafiosStackNavigator = () => (
-  <DesafiosStack.Navigator screenOptions={{ headerShown: false }}>
-    <DesafiosStack.Screen name="DesafiosPublicosMain" component={DesafiosPublicosScreen as any} />
-    <DesafiosStack.Screen name="DesafiosInscrito" component={DesafiosInscritoScreen as any} />
-    <DesafiosStack.Screen name="DesafiosDisponiveis" component={DesafiosDisponiveisScreen as any} />
-  </DesafiosStack.Navigator>
-)
+// Stack Navigator for Grupos Tab
+const GruposStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="GruposDeAmigos" component={GruposDeAmigosScreen as any} />
+      <Stack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
+      <Stack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
+      <Stack.Screen name="Atividade" component={AtividadeScreen as any} />
+      <Stack.Screen name="Ranking" component={RankingScreen as any} />
+      <Stack.Screen name="Batepapo" component={BatepapoScreen as any} />
+      <Stack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
+      <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
+    </Stack.Navigator>
+  )
+}
 
-const HomeStackNavigator = () => (
-  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-    <HomeStack.Screen name="HomeDinamicaMain" component={HomeDinamicaScreen as any} />
-    <HomeStack.Screen name="AppModoFoco" component={AppModoFocoScreen as any} />
-    <HomeStack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
-  </HomeStack.Navigator>
-)
+// Stack Navigator for Desafios Tab
+const DesafiosStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DesafiosPublicos" component={DesafiosPublicosScreen as any} />
+      <Stack.Screen name="DesafiosInscrito" component={DesafiosInscritoScreen as any} />
+      <Stack.Screen name="DesafiosDisponiveis" component={DesafiosDisponiveisScreen as any} />
+    </Stack.Navigator>
+  )
+}
 
-const ConquistasStackNavigator = () => (
-  <ConquistasStack.Navigator screenOptions={{ headerShown: false }}>
-    <ConquistasStack.Screen name="EstatisticaPessoalResumidaMain" component={EstatisticaPessoalResumidaScreen as any} />
-    <ConquistasStack.Screen name="EstatisticasPessoais" component={EstatisticasPessoaisScreen as any} />
-  </ConquistasStack.Navigator>
-)
+// Stack Navigator for Conquistas Tab
+const ConquistasStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="EstatisticaPessoalResumida" component={EstatisticaPessoalResumidaScreen as any} />
+      <Stack.Screen name="EstatisticasPessoais" component={EstatisticasPessoaisScreen as any} />
+    </Stack.Navigator>
+  )
+}
 
-const AjustesStackNavigator = () => (
-  <AjustesStack.Navigator screenOptions={{ headerShown: false }}>
-    <AjustesStack.Screen name="ConfiguracoesMain" component={ConfiguracoesScreen as any} />
-    <AjustesStack.Screen name="Perfil" component={PerfilScreen as any} />
-    <AjustesStack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
-    <AjustesStack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
-    <AjustesStack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
-  </AjustesStack.Navigator>
-)
+// Stack Navigator for Ajustes Tab
+const AjustesStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Configuracoes" component={ConfiguracoesScreen as any} />
+      <Stack.Screen name="Perfil" component={PerfilScreen as any} />
+      <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
+      <Stack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
+      <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
+      <Stack.Screen name="AppModoFoco" component={AppModoFocoScreen as any} />
+      <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
+    </Stack.Navigator>
+  )
+}
 
 export const BottomTabNavigator = () => {
   const {
@@ -116,7 +143,7 @@ export const BottomTabNavigator = () => {
     >
       <Tab.Screen
         name="Grupos"
-        component={GruposStackNavigator}
+        component={GruposStack}
         options={{
           tabBarLabel: "Grupos",
           tabBarLabelStyle: { color: "#FFFFFF" },
@@ -132,7 +159,7 @@ export const BottomTabNavigator = () => {
 
       <Tab.Screen
         name="Desafios"
-        component={DesafiosStackNavigator}
+        component={DesafiosStack}
         options={{
           tabBarLabel: "Desafios",
           tabBarLabelStyle: { color: "#FFFFFF" },
@@ -148,7 +175,7 @@ export const BottomTabNavigator = () => {
 
       <Tab.Screen
         name="Home"
-        component={HomeStackNavigator}
+        component={HomeStack}
         options={{
           tabBarLabel: "Home",
           tabBarLabelStyle: { color: "#FFFFFF" },
@@ -164,7 +191,7 @@ export const BottomTabNavigator = () => {
 
       <Tab.Screen
         name="Conquistas"
-        component={ConquistasStackNavigator}
+        component={ConquistasStack}
         options={{
           tabBarLabel: "Conquistas",
           tabBarLabelStyle: { color: "#FFFFFF" },
@@ -180,7 +207,7 @@ export const BottomTabNavigator = () => {
 
       <Tab.Screen
         name="Ajustes"
-        component={AjustesStackNavigator}
+        component={AjustesStack}
         options={{
           tabBarLabel: "Ajustes",
           tabBarLabelStyle: { color: "#FFFFFF" },

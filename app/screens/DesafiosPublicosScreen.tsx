@@ -31,7 +31,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           />
           <Button
             text="Voltar → Home dinâmica"
-            onPress={() => navigation.navigate("HomeDinamica")}
+            onPress={() => navigation.navigate("Home")}
             style={styles.button}
           />
         </View>
