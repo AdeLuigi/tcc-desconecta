@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext"
 import { createFeedPost, type TipoAtividade } from "@/services/feedService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
+import { getFirestore, collection, query, where, getDocs } from "@react-native-firebase/firestore"
 
 interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> {}
 
@@ -25,6 +26,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const [feedKey, setFeedKey] = useState(0)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [rankingTempoDeTela, setRankingTempoDeTela] = useState<Array<{
+    userId: string
+    nome: string
+    tempoMinutos: number | null
+    temHoje: boolean
+  }>>([])
+  const [loadingRanking, setLoadingRanking] = useState(false)
 
   // Ordenar ranking por pontos
   const rankingOrdenado = [...grupo.ranking_mensal].sort((a, b) => b.pontos - a.pontos)
@@ -32,6 +40,83 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   // Calcular estatísticas do grupo
   const totalPontos = grupo.ranking_mensal.reduce((sum, item) => sum + item.pontos, 0)
   const mediaPontos = Math.round(totalPontos / grupo.ranking_mensal.length)
+
+  useEffect(() => {
+    loadRankingTempoDeTela()
+  }, [grupo.membros])
+
+  const loadRankingTempoDeTela = async () => {
+    try {
+      setLoadingRanking(true)
+      const db = getFirestore()
+      const hoje = new Date().toISOString().split('T')[0]
+      
+      const rankingData = await Promise.all(
+        grupo.membros.map(async (membro) => {
+          try {
+            // Buscar dados de tempo de tela de hoje para este usuário
+            const tempoTelaRef = collection(db, "tempo_de_tela")
+            const q = query(
+              tempoTelaRef,
+              where("userId", "==", membro.userId),
+              where("data", "==", hoje)
+            )
+            
+            const snapshot = await getDocs(q)
+            
+            if (!snapshot.empty) {
+              const dados = snapshot.docs[0].data()
+              return {
+                userId: membro.userId,
+                nome: membro.nome,
+                tempoMinutos: dados.tempo_total_minutos,
+                temHoje: true,
+              }
+            } else {
+              return {
+                userId: membro.userId,
+                nome: membro.nome,
+                tempoMinutos: null,
+                temHoje: false,
+              }
+            }
+          } catch (error) {
+            console.error(`Erro ao buscar dados de ${membro.nome}:`, error)
+            return {
+              userId: membro.userId,
+              nome: membro.nome,
+              tempoMinutos: null,
+              temHoje: false,
+            }
+          }
+        })
+      )
+      
+      // Ordenar: primeiro por quem tem dados de hoje, depois pelo menor tempo
+      const rankingOrdenado = rankingData.sort((a, b) => {
+        if (a.temHoje && !b.temHoje) return -1
+        if (!a.temHoje && b.temHoje) return 1
+        if (!a.temHoje && !b.temHoje) return 0
+        return (a.tempoMinutos || 0) - (b.tempoMinutos || 0)
+      })
+      
+      setRankingTempoDeTela(rankingOrdenado)
+      console.log('Ranking de tempo de tela carregado:', rankingOrdenado)
+    } catch (error) {
+      console.error('Erro ao carregar ranking de tempo de tela:', error)
+    } finally {
+      setLoadingRanking(false)
+    }
+  }
+
+  const formatarTempo = (minutos: number): string => {
+    const horas = Math.floor(minutos / 60)
+    const mins = minutos % 60
+    
+    if (horas === 0) return `${mins}min`
+    if (mins === 0) return `${horas}h`
+    return `${horas}h ${mins}min`
+  }
 
   const pickImage = async () => {
     try {
@@ -319,7 +404,77 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           })}
         </View>
 
-        {/* Ranking Section */}
+        {/* Ranking Section - Tempo de Tela de Hoje */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ranking de Hoje 📱</Text>
+          <Text style={styles.rankingSubtitle}>
+            Menos tempo de tela = melhor posição
+          </Text>
+          
+          {loadingRanking ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#322D70" />
+              <Text style={styles.loadingText}>Carregando ranking...</Text>
+            </View>
+          ) : rankingTempoDeTela.length > 0 ? (
+            rankingTempoDeTela.map((item, index) => {
+              const posicao = index + 1
+              const medalha = posicao === 1 ? "🥇" : posicao === 2 ? "🥈" : posicao === 3 ? "🥉" : ""
+              
+              return (
+                <View key={item.userId} style={styles.rankingCard}>
+                  <View style={styles.rankingPosition}>
+                    {medalha ? (
+                      <Text style={styles.medalEmoji}>{medalha}</Text>
+                    ) : (
+                      <Text style={styles.positionNumber}>{posicao}º</Text>
+                    )}
+                  </View>
+                  <View style={styles.rankingAvatar}>
+                    <Text style={styles.rankingAvatarText}>
+                      {item.nome.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.rankingInfo}>
+                    <Text style={styles.rankingName}>{item.nome}</Text>
+                    {item.temHoje ? (
+                      <View style={styles.rankingPointsBar}>
+                        <View 
+                          style={[
+                            styles.rankingPointsFill,
+                            { 
+                              width: rankingTempoDeTela[0].tempoMinutos && item.tempoMinutos 
+                                ? `${Math.min((item.tempoMinutos / (rankingTempoDeTela[rankingTempoDeTela.length - 1].tempoMinutos || 1)) * 100, 100)}%`
+                                : '0%',
+                              backgroundColor: posicao <= 3 ? '#10B981' : '#6881BA'
+                            }
+                          ]} 
+                        />
+                      </View>
+                    ) : (
+                      <Text style={styles.noDataText}>Sem dados hoje</Text>
+                    )}
+                  </View>
+                  {item.temHoje ? (
+                    <Text style={styles.rankingPoints}>
+                      {formatarTempo(item.tempoMinutos || 0)}
+                    </Text>
+                  ) : (
+                    <View style={styles.noDataBadge}>
+                      <Text style={styles.noDataBadgeText}>-</Text>
+                    </View>
+                  )}
+                </View>
+              )
+            })
+          ) : (
+            <View style={styles.emptyRankingContainer}>
+              <Text style={styles.emptyRankingText}>Nenhum dado disponível</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Ranking Mensal por Pontos */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ranking Mensal 🏆</Text>
           {rankingOrdenado.map((item, index) => {
@@ -845,6 +1000,43 @@ const styles = StyleSheet.create({
     color: "#322D70",
     minWidth: 60,
     textAlign: "right",
+  },
+  rankingSubtitle: {
+    fontSize: 13,
+    color: "#6881BA",
+    marginBottom: 12,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "#6881BA",
+    marginLeft: 12,
+  },
+  noDataText: {
+    fontSize: 12,
+    color: "#94A3B8",
+    fontStyle: "italic",
+  },
+  noDataBadge: {
+    minWidth: 60,
+    alignItems: "flex-end",
+  },
+  noDataBadgeText: {
+    fontSize: 18,
+    color: "#94A3B8",
+  },
+  emptyRankingContainer: {
+    paddingVertical: 32,
+    alignItems: "center",
+  },
+  emptyRankingText: {
+    fontSize: 14,
+    color: "#6881BA",
   },
   actionButton: {
     flexDirection: "row",
