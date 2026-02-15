@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share } from "react-native"
+import { useFocusEffect } from "@react-navigation/native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
@@ -11,6 +12,8 @@ import { createFeedPost, type TipoAtividade } from "@/services/feedService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
 import { getFirestore, collection, query, where, getDocs } from "@react-native-firebase/firestore"
+import ScreenTimeService from "@/services/screenTime"
+import { getAppCategory } from "@/utils/appCategories"
 
 interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> {}
 
@@ -41,9 +44,59 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const totalPontos = grupo.ranking_mensal.reduce((sum, item) => sum + item.pontos, 0)
   const mediaPontos = Math.round(totalPontos / grupo.ranking_mensal.length)
 
-  useEffect(() => {
-    loadRankingTempoDeTela()
-  }, [grupo.membros])
+  useFocusEffect(
+    useCallback(() => {
+      updateAndLoadRanking()
+    }, [grupo.membros])
+  )
+
+  /**
+   * Atualiza os dados de tempo de tela do usuário atual no Firestore
+   */
+  const updateScreenTimeData = async () => {
+    if (!userData?.uid) return
+    
+    try {
+      // Verificar permissão
+      const hasPermission = await ScreenTimeService.hasPermission()
+      if (!hasPermission) {
+        console.log('Usuário não concedeu permissão para tempo de tela')
+        return
+      }
+
+      // Buscar dados do dispositivo
+      const [todayTime, apps] = await Promise.all([
+        ScreenTimeService.getScreenTimeToday(),
+        ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
+      ])
+
+      if (todayTime > 0) {
+        // Adicionar categoria aos apps
+        const appsWithCategory = apps.map(app => ({
+          ...app,
+          category: getAppCategory(app.packageName, app.category),
+        }))
+
+        // Salvar no Firestore
+        await ScreenTimeService.saveScreenTimeData(
+          userData.uid,
+          todayTime,
+          appsWithCategory
+        )
+        console.log('Dados de tempo de tela atualizados com sucesso')
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar dados de tempo de tela:', error)
+    }
+  }
+
+  /**
+   * Atualiza os dados de tempo de tela e depois carrega o ranking
+   */
+  const updateAndLoadRanking = async () => {
+    await updateScreenTimeData()
+    await loadRankingTempoDeTela()
+  }
 
   const loadRankingTempoDeTela = async () => {
     try {
@@ -55,7 +108,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         grupo.membros.map(async (membro) => {
           try {
             // Buscar dados de tempo de tela de hoje para este usuário
-            const tempoTelaRef = collection(db, "tempo_de_tela")
+            const tempoTelaRef = collection(db, "estatisticas")
             const q = query(
               tempoTelaRef,
               where("userId", "==", membro.userId),

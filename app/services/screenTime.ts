@@ -1,5 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
-import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, limit } from "@react-native-firebase/firestore"
+import { getFirestore, collection, addDoc, updateDoc, doc, query, where, getDocs, orderBy, limit } from "@react-native-firebase/firestore"
 import type { AppCategory } from '@/utils/appCategories';
 
 const { ScreenTimeModule } = NativeModules;
@@ -166,12 +166,6 @@ class ScreenTimeService {
       
       const existingDocs = await getDocs(q);
       
-      // Se já existe, não salva novamente (evita duplicatas)
-      if (!existingDocs.empty) {
-        console.log('Dados de tempo de tela já salvos para hoje');
-        return;
-      }
-      
       // Calcular tempo por categoria
       const categorias: Record<string, number> = {};
       apps.forEach(app => {
@@ -191,8 +185,8 @@ class ScreenTimeService {
         category: app.category || 'outros',
       }));
       
-      // Criar documento
-      const screenTimeData: ScreenTimeData = {
+      // Criar dados de tempo de tela
+      const screenTimeData: Omit<ScreenTimeData, 'timestamp'> & { timestamp: Date } = {
         userId,
         data: dataFormatada,
         tempo_total_minutos: tempoTotal,
@@ -201,8 +195,16 @@ class ScreenTimeService {
         timestamp: new Date(),
       };
       
-      await addDoc(tempoTelaRef, screenTimeData);
-      console.log('Dados de tempo de tela salvos com sucesso para', dataFormatada);
+      // Se já existe, atualiza o documento existente
+      if (!existingDocs.empty) {
+        const existingDoc = existingDocs.docs[0];
+        await updateDoc(doc(db, "estatisticas", existingDoc.id), screenTimeData);
+        console.log('Dados de tempo de tela atualizados com sucesso para', dataFormatada);
+      } else {
+        // Se não existe, cria um novo documento
+        await addDoc(tempoTelaRef, screenTimeData);
+        console.log('Dados de tempo de tela salvos com sucesso para', dataFormatada);
+      }
     } catch (error) {
       console.error('Erro ao salvar dados de tempo de tela:', error);
       throw error;
