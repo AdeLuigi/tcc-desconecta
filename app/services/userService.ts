@@ -18,6 +18,12 @@ export interface UserData {
   }
   premios_colecionaveis: string[]
   streak: number
+  desafiosAtivos?: Array<{
+    uuid: string
+    imagem: string
+    nome?: string
+    progresso?: number
+  }>
 }
 
 /**
@@ -32,6 +38,7 @@ const DEFAULT_USER_DATA = {
   },
   premios_colecionaveis: [],
   streak: 0,
+  desafiosAtivos: [],
 }
 
 /**

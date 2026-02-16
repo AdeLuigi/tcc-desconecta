@@ -7,8 +7,8 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import { useAuth } from "@/context/AuthContext"
-import { createChallenge, uploadChallengeImage, Challenge } from "@/services/challengeService"
-import { Timestamp, getFirestore, collection, getDocs, query, where } from "@react-native-firebase/firestore"
+import { createChallenge, uploadChallengeImage, Challenge, getUserActiveChallenges, UserActiveChallenge, joinChallenge, leaveChallenge } from "@/services/challengeService"
+import { Timestamp, getFirestore, collection, getDocs } from "@react-native-firebase/firestore"
 import * as ImagePicker from 'expo-image-picker'
 
 const Logo = require("@assets/images/logo2.png")
@@ -20,7 +20,7 @@ interface DesafiosPublicosScreenProps extends AppStackScreenProps<"DesafiosPubli
 
 export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
-  const { authEmail } = useAuth()
+  const { authEmail, userData } = useAuth()
   const [modalVisible, setModalVisible] = useState(false)
   const [confirmExitModalVisible, setConfirmExitModalVisible] = useState(false)
   const [createChallengeModalVisible, setCreateChallengeModalVisible] = useState(false)
@@ -29,7 +29,9 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [availableChallenges, setAvailableChallenges] = useState<Challenge[]>([])
+  const [activeChallenges, setActiveChallenges] = useState<UserActiveChallenge[]>([])
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true)
+  const [isLoadingActiveChallenges, setIsLoadingActiveChallenges] = useState(true)
 
   // Form state for new challenge
   const [formData, setFormData] = useState({
@@ -41,6 +43,25 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   })
 
   const isAdmin = authEmail === "adeluigi@ic.ufrj.br"
+
+  // Buscar desafios ativos do usuário
+  const fetchUserActiveChallenges = async () => {
+    if (!userData?.uid) {
+      setIsLoadingActiveChallenges(false)
+      return
+    }
+    
+    try {
+      setIsLoadingActiveChallenges(true)
+      const challenges = await getUserActiveChallenges(userData.uid)
+      setActiveChallenges(challenges)
+    } catch (error) {
+      console.error("Erro ao buscar desafios ativos:", error)
+      Alert.alert("Erro", "Não foi possível carregar seus desafios ativos")
+    } finally {
+      setIsLoadingActiveChallenges(false)
+    }
+  }
 
   // Buscar desafios disponíveis do Firestore
   const fetchAvailableChallenges = async () => {
@@ -84,31 +105,8 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   // Buscar desafios quando o componente montar
   useEffect(() => {
     fetchAvailableChallenges()
+    fetchUserActiveChallenges()
   }, [])
-
-  const activeChallenges = [
-    { 
-      id: 1, 
-      title: "24 horas sem redes sociais", 
-      progress: 20, 
-      imageLogo: BadgeSocialNetwork,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-    { 
-      id: 2, 
-      title: "7 dias com menos de 3 horas", 
-      progress: 20, 
-      imageLogo: BadgeWeek,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-    { 
-      id: 3, 
-      title: "7 dias com menos de 3 horas diárias", 
-      progress: 20, 
-      imageLogo: BadgeWeek,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-  ]
 
   const handleOpenModal = (challenge: any) => {
     setSelectedChallenge(challenge)
@@ -128,11 +126,45 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
     setConfirmExitModalVisible(false)
   }
 
-  const handleConfirmExit = () => {
-    // Aqui você pode adicionar lógica para remover o usuário do desafio
-    setConfirmExitModalVisible(false)
-    setModalVisible(false)
-    setSelectedChallenge(null)
+  const handleConfirmExit = async () => {
+    if (!userData?.uid || !selectedChallenge?.id) {
+      return
+    }
+
+    try {
+      await leaveChallenge(userData.uid, selectedChallenge.id)
+      Alert.alert("Sucesso", "Você saiu do desafio")
+      
+      // Atualizar lista de desafios ativos
+      await fetchUserActiveChallenges()
+      
+      setConfirmExitModalVisible(false)
+      setModalVisible(false)
+      setSelectedChallenge(null)
+    } catch (error) {
+      console.error("Erro ao sair do desafio:", error)
+      Alert.alert("Erro", "Não foi possível sair do desafio. Tente novamente.")
+    }
+  }
+
+  const handleJoinChallenge = async () => {
+    if (!userData?.uid || !selectedChallenge?.id) {
+      Alert.alert("Erro", "Não foi possível se inscrever no desafio")
+      return
+    }
+
+    try {
+      await joinChallenge(userData.uid, selectedChallenge.id)
+      Alert.alert("Sucesso", "Você se inscreveu no desafio!")
+      
+      // Atualizar lista de desafios ativos
+      await fetchUserActiveChallenges()
+      
+      handleCloseModal()
+    } catch (error) {
+      console.error("Erro ao participar do desafio:", error)
+      Alert.alert("Erro", "Não foi possível se inscrever no desafio. Tente novamente.")
+    }
   }
 
   const handleOpenCreateChallengeModal = () => {
@@ -262,21 +294,32 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           {/* Active Challenges Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Desafios ativos</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {activeChallenges.map((challenge) => (
-                <TouchableOpacity 
-                  key={challenge.id} 
-                  style={styles.activeChallengeCard}
-                  onPress={() => handleOpenModal(challenge)}
-                >
-                  <View style={styles.challengeIcon}>
-                    <Image source={challenge.imageLogo} style={styles.badgeImage} />
-                  </View>
-                  <ProgressBar progress={challenge.progress} />
-                  <Text style={styles.activeChallengeTitle}>{challenge.title}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {isLoadingActiveChallenges ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#72C3E0" />
+                <Text style={styles.loadingText}>Carregando desafios ativos...</Text>
+              </View>
+            ) : activeChallenges.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                {activeChallenges.map((challenge) => (
+                  <TouchableOpacity 
+                    key={challenge.id} 
+                    style={styles.activeChallengeCard}
+                    onPress={() => handleOpenModal(challenge)}
+                  >
+                    <View style={styles.challengeIcon}>
+                      <Image source={{ uri: challenge.imagem }} style={styles.badgeImage} />
+                    </View>
+                    <ProgressBar progress={challenge.progresso || 0} />
+                    <Text style={styles.activeChallengeTitle}>{challenge.nome}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Você não está participando de nenhum desafio</Text>
+              </View>
+            )}
           </View>
 
           {/* Available Challenges Section */}
@@ -346,26 +389,25 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                   {selectedChallenge.description || selectedChallenge.descricao}
                 </Text>
 
-                {selectedChallenge.progress !== undefined && (
+                {selectedChallenge.progresso !== undefined && (
                   <View style={styles.modalProgressContainer}>
-                    <ProgressBar progress={selectedChallenge.progress} />
-                    <Text style={styles.modalProgressText}>{selectedChallenge.progress}%</Text>
+                    <ProgressBar progress={selectedChallenge.progresso} />
+                    <Text style={styles.modalProgressText}>{selectedChallenge.progresso}%</Text>
                   </View>
                 )}
 
                 <TouchableOpacity 
                   style={styles.participateButton}
                   onPress={() => {
-                    if (selectedChallenge.progress !== undefined) {
+                    if (selectedChallenge.progresso !== undefined) {
                       handleOpenConfirmExitModal()
                     } else {
-                      handleCloseModal()
-                      // Aqui você pode adicionar lógica para inscrever no desafio
+                      handleJoinChallenge()
                     }
                   }}
                 >
                   <Text style={styles.participateButtonText}>
-                    {selectedChallenge.progress !== undefined ? "sair do desafio" : "participar"}
+                    {selectedChallenge.progresso !== undefined ? "sair do desafio" : "participar"}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -386,7 +428,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
             <Text style={styles.confirmExitTitle}>Sair do desafio?</Text>
             
             <Text style={styles.confirmExitDescription}>
-              Tem certeza que quer sair do desafio "{selectedChallenge?.title}" e perder todo o seu progresso conquistado até aqui?
+              Tem certeza que quer sair do desafio "{selectedChallenge?.nome}" e perder todo o seu progresso conquistado até aqui?
             </Text>
 
             <View style={styles.confirmExitButtons}>
