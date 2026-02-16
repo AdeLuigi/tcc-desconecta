@@ -111,6 +111,7 @@ export function Icon(props: IconProps) {
 
 export const iconRegistry = {
   back: require("@assets/icons/back.png"),
+  swords: require("@assets/icons/swords.png"),
   bell: require("@assets/icons/bell.png"),
   vector: require("@assets/icons/vector.png"),
   chevron: require("@assets/icons/chevron.png"),
