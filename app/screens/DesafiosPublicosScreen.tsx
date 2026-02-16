@@ -20,9 +20,27 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null)
 
   const activeChallenges = [
-    { id: 1, title: "24 horas sem redes sociais", progress: 20, imageLogo: BadgeSocialNetwork },
-    { id: 2, title: "7 dias com menos de 3 horas", progress: 20, imageLogo: BadgeWeek },
-    { id: 3, title: "7 dias com menos de 3 horas diárias", progress: 20, imageLogo: BadgeWeek },
+    { 
+      id: 1, 
+      title: "24 horas sem redes sociais", 
+      progress: 20, 
+      imageLogo: BadgeSocialNetwork,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
+    { 
+      id: 2, 
+      title: "7 dias com menos de 3 horas", 
+      progress: 20, 
+      imageLogo: BadgeWeek,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
+    { 
+      id: 3, 
+      title: "7 dias com menos de 3 horas diárias", 
+      progress: 20, 
+      imageLogo: BadgeWeek,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
   ]
 
   const availableChallenges = [
@@ -101,7 +119,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                 <TouchableOpacity 
                   key={challenge.id} 
                   style={styles.activeChallengeCard}
-                  onPress={() => navigation.navigate("DesafiosInscrito")}
+                  onPress={() => handleOpenModal(challenge)}
                 >
                   <View style={styles.challengeIcon}>
                     <Image source={challenge.imageLogo} style={styles.badgeImage} />
@@ -164,6 +182,13 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                   {selectedChallenge.description}
                 </Text>
 
+                {selectedChallenge.progress !== undefined && (
+                  <View style={styles.modalProgressContainer}>
+                    <ProgressBar progress={selectedChallenge.progress} />
+                    <Text style={styles.modalProgressText}>{selectedChallenge.progress}%</Text>
+                  </View>
+                )}
+
                 <TouchableOpacity 
                   style={styles.participateButton}
                   onPress={() => {
@@ -171,7 +196,9 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                     // Aqui você pode adicionar lógica para inscrever no desafio
                   }}
                 >
-                  <Text style={styles.participateButtonText}>participar</Text>
+                  <Text style={styles.participateButtonText}>
+                    {selectedChallenge.progress !== undefined ? "sair do desafio" : "participar"}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -397,6 +424,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 24,
     opacity: 0.9,
+  },
+  modalProgressContainer: {
+    width: "100%",
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  modalProgressText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    marginTop: 8,
   },
   participateButton: {
     backgroundColor: "#72C3E0",
