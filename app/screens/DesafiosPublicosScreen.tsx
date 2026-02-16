@@ -6,6 +6,7 @@ import ProgressBar from "@/components/ProgressBar"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
+import { useFocusEffect } from "@react-navigation/native"
 import { useAuth } from "@/context/AuthContext"
 import { createChallenge, uploadChallengeImage, Challenge, getUserActiveChallenges, joinChallenge } from "@/services/challengeService"
 import { Timestamp, getFirestore, collection, getDocs } from "@react-native-firebase/firestore"
@@ -43,6 +44,14 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   })
 
   const isAdmin = authEmail === "adeluigi@ic.ufrj.br"
+
+  // Recarregar desafios quando a tela ganhar foco
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveChallengesRefreshKey(prev => prev + 1)
+      fetchAvailableChallenges()
+    }, [])
+  )
 
   // Buscar desafios disponíveis do Firestore
   const fetchAvailableChallenges = async () => {
@@ -82,11 +91,6 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
       setIsLoadingChallenges(false)
     }
   }
-
-  // Buscar desafios quando o componente montar
-  useEffect(() => {
-    fetchAvailableChallenges()
-  }, [])
 
   // Filtrar desafios disponíveis para remover os que o usuário já está participando
   useEffect(() => {

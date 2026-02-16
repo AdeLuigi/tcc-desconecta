@@ -6,6 +6,7 @@ import ProgressBar from "@/components/ProgressBar"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
+import { useFocusEffect } from "@react-navigation/native"
 import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
@@ -31,6 +32,14 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const [joinModalVisible, setJoinModalVisible] = useState(false)
   const [groupCode, setGroupCode] = useState("")
   const [isJoiningGroup, setIsJoiningGroup] = useState(false)
+  const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
+
+  // Recarregar desafios ativos quando a tela ganhar foco
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveChallengesRefreshKey(prev => prev + 1)
+    }, [])
+  )
 
   useEffect(() => {
     checkPermissionAndLoadData()
@@ -194,7 +203,9 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
               onPress: () => {
                 setJoinModalVisible(false)
                 setGroupCode("")
-                navigation.navigate("DetalhesDoGrupo", { grupo: result.group })
+                if (result.group) {
+                  navigation.navigate("DetalhesDoGrupo", { grupo: result.group })
+                }
               },
             },
             {
@@ -319,6 +330,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             userId={userData?.uid}
             horizontal={true}
             showTitle={false}
+            refreshKey={activeChallengesRefreshKey}
           />
         </View>
 
@@ -435,7 +447,6 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
               />
 
               <View style={styles.codeInputHelper}>
-                <Icon icon="info" size={16} color="#6881BA" />
                 <Text style={styles.codeInputHelperText}>
                   Você pode pedir o código ao administrador do grupo
                 </Text>
