@@ -1,11 +1,15 @@
 import React, { useState } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal } from "react-native"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
+import { useAuth } from "@/context/AuthContext"
+import { createChallenge, uploadChallengeImage } from "@/services/challengeService"
+import { Timestamp } from "@react-native-firebase/firestore"
+import * as ImagePicker from 'expo-image-picker'
 
 const Logo = require("@assets/images/logo2.png")
 const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
@@ -16,9 +20,25 @@ interface DesafiosPublicosScreenProps extends AppStackScreenProps<"DesafiosPubli
 
 export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
+  const { authEmail } = useAuth()
   const [modalVisible, setModalVisible] = useState(false)
   const [confirmExitModalVisible, setConfirmExitModalVisible] = useState(false)
+  const [createChallengeModalVisible, setCreateChallengeModalVisible] = useState(false)
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+
+  // Form state for new challenge
+  const [formData, setFormData] = useState({
+    nome: "",
+    descricao: "",
+    categoria: "",
+    duracao: "",
+    meta: "",
+  })
+
+  const isAdmin = authEmail === "adeluigi@ic.ufrj.br"
 
   const activeChallenges = [
     { 
@@ -94,6 +114,97 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
     setConfirmExitModalVisible(false)
     setModalVisible(false)
     setSelectedChallenge(null)
+  }
+
+  const handleOpenCreateChallengeModal = () => {
+    setCreateChallengeModalVisible(true)
+  }
+
+  const handleCloseCreateChallengeModal = () => {
+    setCreateChallengeModalVisible(false)
+    setFormData({
+      nome: "",
+      descricao: "",
+      categoria: "",
+      duracao: "",
+      meta: "",
+    })
+    setSelectedImage(null)
+  }
+
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      
+      if (!permissionResult.granted) {
+        Alert.alert("Permissão negada", "Você precisa permitir o acesso à galeria")
+        return
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri)
+      }
+    } catch (error) {
+      console.error("Erro ao selecionar imagem:", error)
+      Alert.alert("Erro", "Não foi possível selecionar a imagem")
+    }
+  }
+
+  const handleCreateChallenge = async () => {
+    // Validação básica
+    if (!formData.nome || !formData.descricao || !formData.categoria || !formData.duracao || !formData.meta) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos obrigatórios")
+      return
+    }
+
+    if (!selectedImage) {
+      Alert.alert("Erro", "Por favor, selecione uma imagem para o desafio")
+      return
+    }
+
+    setIsCreating(true)
+    try {
+      // Fazer upload da imagem primeiro
+      let imageURL = ""
+      if (selectedImage) {
+        setIsUploadingImage(true)
+        imageURL = await uploadChallengeImage(selectedImage)
+        setIsUploadingImage(false)
+      }
+
+      const now = Timestamp.now()
+      const duracao = parseInt(formData.duracao)
+      const dataFinal = Timestamp.fromDate(
+        new Date(now.toDate().getTime() + duracao * 24 * 60 * 60 * 1000)
+      )
+
+      await createChallenge({
+        nome: formData.nome,
+        descricao: formData.descricao,
+        categoria: formData.categoria,
+        duracao: duracao,
+        meta: parseInt(formData.meta),
+        imagem: imageURL,
+        dataInicio: now,
+        dataFinal: dataFinal,
+      })
+
+      Alert.alert("Sucesso", "Desafio criado com sucesso!")
+      handleCloseCreateChallengeModal()
+    } catch (error) {
+      console.error("Erro ao criar desafio:", error)
+      Alert.alert("Erro", "Não foi possível criar o desafio. Tente novamente.")
+    } finally {
+      setIsCreating(false)
+      setIsUploadingImage(false)
+    }
   }
 
   return (
@@ -259,6 +370,117 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           </View>
         </View>
       </Modal>
+
+      {/* Modal Create Challenge (Admin Only) */}
+      <Modal
+        visible={createChallengeModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseCreateChallengeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <ScrollView 
+            contentContainerStyle={styles.createChallengeScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.createChallengeModalContent}>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={handleCloseCreateChallengeModal}
+              >
+                <Icon icon="x" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              <Text style={styles.createChallengeTitle}>Criar Novo Desafio</Text>
+
+              <View style={styles.formContainer}>
+                <Text style={styles.formLabel}>Nome do Desafio *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={formData.nome}
+                  onChangeText={(text) => setFormData({ ...formData, nome: text })}
+                  placeholder="Ex: 24 horas sem redes sociais"
+                  placeholderTextColor="#999"
+                />
+
+                <Text style={styles.formLabel}>Descrição *</Text>
+                <TextInput
+                  style={[styles.formInput, styles.formTextArea]}
+                  value={formData.descricao}
+                  onChangeText={(text) => setFormData({ ...formData, descricao: text })}
+                  placeholder="Descreva o desafio..."
+                  placeholderTextColor="#999"
+                  multiline
+                  numberOfLines={4}
+                />
+
+                <Text style={styles.formLabel}>Categoria *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={formData.categoria}
+                  onChangeText={(text) => setFormData({ ...formData, categoria: text })}
+                  placeholder="Ex: social, produtividade, saúde"
+                  placeholderTextColor="#999"
+                />
+
+                <Text style={styles.formLabel}>Duração (dias) *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={formData.duracao}
+                  onChangeText={(text) => setFormData({ ...formData, duracao: text })}
+                  placeholder="Ex: 1, 7, 30"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+
+                <Text style={styles.formLabel}>Meta (pontos) *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={formData.meta}
+                  onChangeText={(text) => setFormData({ ...formData, meta: text })}
+                  placeholder="Ex: 720 (minutos ou pontos)"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+
+                <Text style={styles.formLabel}>Imagem do Desafio *</Text>
+                <TouchableOpacity 
+                  style={styles.imagePickerButton}
+                  onPress={pickImage}
+                >
+                  {selectedImage ? (
+                    <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+                  ) : (
+                    <View style={styles.imagePickerPlaceholder}>
+                      <Text style={styles.imagePickerText}>+ Selecionar Imagem</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.createButton, (isCreating || isUploadingImage) && styles.createButtonDisabled]}
+                  onPress={handleCreateChallenge}
+                  disabled={isCreating || isUploadingImage}
+                >
+                  <Text style={styles.createButtonText}>
+                    {isUploadingImage ? "Enviando imagem..." : isCreating ? "Criando..." : "Criar Desafio"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Floating Action Button (Admin Only) */}
+      {isAdmin && (
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={handleOpenCreateChallengeModal}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
     </Screen>
   )
 }
@@ -556,6 +778,118 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   exitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#72C3E0",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabText: {
+    fontSize: 36,
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    marginTop: -4,
+  },
+  createChallengeScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  createChallengeModalContent: {
+    backgroundColor: "#3F3A76",
+    borderRadius: 24,
+    width: "100%",
+    maxWidth: 500,
+    padding: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  createChallengeTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  formContainer: {
+    width: "100%",
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  formInput: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#322D70",
+    marginBottom: 8,
+  },
+  formTextArea: {
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  imagePickerButton: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  imagePickerPlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#72C3E0",
+    borderStyle: "dashed",
+    borderRadius: 12,
+  },
+  imagePickerText: {
+    fontSize: 16,
+    color: "#72C3E0",
+    fontWeight: "600",
+  },
+  createButton: {
+    backgroundColor: "#72C3E0",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  createButtonDisabled: {
+    backgroundColor: "#999",
+  },
+  createButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
