@@ -1,5 +1,5 @@
-import React from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground } from "react-native"
+import React, { useState } from "react"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -16,6 +16,8 @@ interface DesafiosPublicosScreenProps extends AppStackScreenProps<"DesafiosPubli
 
 export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedChallenge, setSelectedChallenge] = useState<any>(null)
 
   const activeChallenges = [
     { id: 1, title: "24 horas sem redes sociais", progress: 20, imageLogo: BadgeSocialNetwork },
@@ -24,11 +26,41 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   ]
 
   const availableChallenges = [
-    { id: 4, title: "24 horas sem redes sociais", imageLogo: BadgeSocialNetwork },
-    { id: 5, title: "7 dias com menos de 3 horas diárias", imageLogo: BadgeWeek },
-    { id: 6, title: "7 dias com menos de 3 horas diárias", imageLogo: BadgeWeek },
-    { id: 7, title: "7 dias com menos de 3 horas diárias", imageLogo: BadgeWeek },
+    { 
+      id: 4, 
+      title: "24 horas sem redes sociais", 
+      imageLogo: BadgeSocialNetwork,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
+    { 
+      id: 5, 
+      title: "7 dias com menos de 3 horas diárias", 
+      imageLogo: BadgeWeek,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
+    { 
+      id: 6, 
+      title: "7 dias com menos de 3 horas diárias", 
+      imageLogo: BadgeWeek,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
+    { 
+      id: 7, 
+      title: "7 dias com menos de 3 horas diárias", 
+      imageLogo: BadgeWeek,
+      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
+    },
   ]
+
+  const handleOpenModal = (challenge: any) => {
+    setSelectedChallenge(challenge)
+    setModalVisible(true)
+  }
+
+  const handleCloseModal = () => {
+    setModalVisible(false)
+    setSelectedChallenge(null)
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
@@ -93,7 +125,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                   <Text style={styles.availableChallengeTitle}>{challenge.title}</Text>
                   <TouchableOpacity 
                     style={styles.learnMoreButton}
-                    onPress={() => navigation.navigate("DesafiosDisponiveis")}
+                    onPress={() => handleOpenModal(challenge)}
                   >
                     <Text style={styles.learnMoreButtonText}>saiba mais</Text>
                   </TouchableOpacity>
@@ -103,6 +135,49 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           </View>
         </View>
       </ScrollView>
+
+      {/* Modal Challenge Details */}
+      <Modal
+        visible={modalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.challengeModalContent}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={handleCloseModal}
+            >
+              <Icon icon="x" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {selectedChallenge && (
+              <>
+                <View style={styles.modalBadgeContainer}>
+                  <Image source={selectedChallenge.imageLogo} style={styles.modalBadgeImage} />
+                </View>
+
+                <Text style={styles.modalChallengeTitle}>{selectedChallenge.title}</Text>
+                
+                <Text style={styles.modalChallengeDescription}>
+                  {selectedChallenge.description}
+                </Text>
+
+                <TouchableOpacity 
+                  style={styles.participateButton}
+                  onPress={() => {
+                    handleCloseModal()
+                    // Aqui você pode adicionar lógica para inscrever no desafio
+                  }}
+                >
+                  <Text style={styles.participateButtonText}>participar</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 }
@@ -261,6 +336,79 @@ const styles = StyleSheet.create({
   learnMoreButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  challengeModalContent: {
+    backgroundColor: "#3F3A76",
+    borderRadius: 24,
+    width: "100%",
+    maxWidth: 400,
+    padding: 32,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBadgeContainer: {
+    width: 120,
+    height: 120,
+    backgroundColor: "rgba(139, 152, 199, 0.3)",
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    padding: 20,
+  },
+  modalBadgeImage: {
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
+  },
+  modalChallengeTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  modalChallengeDescription: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+    opacity: 0.9,
+  },
+  participateButton: {
+    backgroundColor: "#72C3E0",
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    borderRadius: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  participateButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
     fontWeight: "600",
   },
 })
