@@ -7,9 +7,10 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import { useAuth } from "@/context/AuthContext"
-import { createChallenge, uploadChallengeImage, Challenge, getUserActiveChallenges, UserActiveChallenge, joinChallenge, leaveChallenge } from "@/services/challengeService"
+import { createChallenge, uploadChallengeImage, Challenge, getUserActiveChallenges, joinChallenge } from "@/services/challengeService"
 import { Timestamp, getFirestore, collection, getDocs } from "@react-native-firebase/firestore"
 import * as ImagePicker from 'expo-image-picker'
+import { ActiveChallengesSection } from "@/components/ActiveChallengesSection"
 
 const Logo = require("@assets/images/logo2.png")
 const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
@@ -22,17 +23,15 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const { theme } = useAppTheme()
   const { authEmail, userData } = useAuth()
   const [modalVisible, setModalVisible] = useState(false)
-  const [confirmExitModalVisible, setConfirmExitModalVisible] = useState(false)
+  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null)
   const [createChallengeModalVisible, setCreateChallengeModalVisible] = useState(false)
-  const [selectedChallenge, setSelectedChallenge] = useState<any>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [availableChallenges, setAvailableChallenges] = useState<Challenge[]>([])
-  const [activeChallenges, setActiveChallenges] = useState<UserActiveChallenge[]>([])
+  const [availableChallenges, setAvailableChallenges] = useState<Challenge[]>([]) 
   const [filteredAvailableChallenges, setFilteredAvailableChallenges] = useState<Challenge[]>([])
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true)
-  const [isLoadingActiveChallenges, setIsLoadingActiveChallenges] = useState(true)
+  const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
 
   // Form state for new challenge
   const [formData, setFormData] = useState({
@@ -44,25 +43,6 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   })
 
   const isAdmin = authEmail === "adeluigi@ic.ufrj.br"
-
-  // Buscar desafios ativos do usuário
-  const fetchUserActiveChallenges = async () => {
-    if (!userData?.uid) {
-      setIsLoadingActiveChallenges(false)
-      return
-    }
-    
-    try {
-      setIsLoadingActiveChallenges(true)
-      const challenges = await getUserActiveChallenges(userData.uid)
-      setActiveChallenges(challenges)
-    } catch (error) {
-      console.error("Erro ao buscar desafios ativos:", error)
-      Alert.alert("Erro", "Não foi possível carregar seus desafios ativos")
-    } finally {
-      setIsLoadingActiveChallenges(false)
-    }
-  }
 
   // Buscar desafios disponíveis do Firestore
   const fetchAvailableChallenges = async () => {
@@ -108,21 +88,29 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
     fetchAvailableChallenges()
   }, [])
 
-  // Buscar desafios ativos quando userData estiver disponível
-  useEffect(() => {
-    if (userData?.uid) {
-      fetchUserActiveChallenges()
-    }
-  }, [userData?.uid])
-
   // Filtrar desafios disponíveis para remover os que o usuário já está participando
   useEffect(() => {
-    const activeChallengeIds = new Set(activeChallenges.map(c => c.id))
-    const filtered = availableChallenges.filter(challenge => !activeChallengeIds.has(challenge.id))
-    setFilteredAvailableChallenges(filtered)
-  }, [availableChallenges, activeChallenges])
+    const filterChallenges = async () => {
+      if (!userData?.uid) {
+        setFilteredAvailableChallenges(availableChallenges)
+        return
+      }
+      
+      try {
+        const activeChallenges = await getUserActiveChallenges(userData.uid)
+        const activeChallengeIds = new Set(activeChallenges.map(c => c.id))
+        const filtered = availableChallenges.filter(challenge => !activeChallengeIds.has(challenge.id))
+        setFilteredAvailableChallenges(filtered)
+      } catch (error) {
+        console.error("Erro ao filtrar desafios:", error)
+        setFilteredAvailableChallenges(availableChallenges)
+      }
+    }
+    
+    filterChallenges()
+  }, [availableChallenges, userData?.uid])
 
-  const handleOpenModal = (challenge: any) => {
+  const handleOpenModal = (challenge: Challenge) => {
     setSelectedChallenge(challenge)
     setModalVisible(true)
   }
@@ -130,35 +118,6 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const handleCloseModal = () => {
     setModalVisible(false)
     setSelectedChallenge(null)
-  }
-
-  const handleOpenConfirmExitModal = () => {
-    setConfirmExitModalVisible(true)
-  }
-
-  const handleCloseConfirmExitModal = () => {
-    setConfirmExitModalVisible(false)
-  }
-
-  const handleConfirmExit = async () => {
-    if (!userData?.uid || !selectedChallenge?.id) {
-      return
-    }
-
-    try {
-      await leaveChallenge(userData.uid, selectedChallenge.id)
-      Alert.alert("Sucesso", "Você saiu do desafio")
-      
-      // Atualizar lista de desafios ativos
-      await fetchUserActiveChallenges()
-      
-      setConfirmExitModalVisible(false)
-      setModalVisible(false)
-      setSelectedChallenge(null)
-    } catch (error) {
-      console.error("Erro ao sair do desafio:", error)
-      Alert.alert("Erro", "Não foi possível sair do desafio. Tente novamente.")
-    }
   }
 
   const handleJoinChallenge = async () => {
@@ -171,8 +130,11 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
       await joinChallenge(userData.uid, selectedChallenge.id)
       Alert.alert("Sucesso", "Você se inscreveu no desafio!")
       
-      // Atualizar lista de desafios ativos
-      await fetchUserActiveChallenges()
+      // Recarregar lista de desafios disponíveis
+      await fetchAvailableChallenges()
+      
+      // Forçar atualização dos desafios ativos
+      setActiveChallengesRefreshKey(prev => prev + 1)
       
       handleCloseModal()
     } catch (error) {
@@ -306,35 +268,13 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           </View>
 
           {/* Active Challenges Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Desafios ativos</Text>
-            {isLoadingActiveChallenges ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#72C3E0" />
-                <Text style={styles.loadingText}>Carregando desafios ativos...</Text>
-              </View>
-            ) : activeChallenges.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                {activeChallenges.map((challenge) => (
-                  <TouchableOpacity 
-                    key={challenge.id} 
-                    style={styles.activeChallengeCard}
-                    onPress={() => handleOpenModal(challenge)}
-                  >
-                    <View style={styles.challengeIcon}>
-                      <Image source={{ uri: challenge.imagem }} style={styles.badgeImage} />
-                    </View>
-                    <ProgressBar progress={challenge.progresso || 0} />
-                    <Text style={styles.activeChallengeTitle}>{challenge.nome}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Você não está participando de nenhum desafio</Text>
-              </View>
-            )}
-          </View>
+          <ActiveChallengesSection 
+            userId={userData?.uid}
+            onChallengeUpdate={fetchAvailableChallenges}
+            horizontal={true}
+            showTitle={true}
+            refreshKey={activeChallengesRefreshKey}
+          />
 
           {/* Available Challenges Section */}
           <View style={styles.section}>
@@ -390,76 +330,27 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
               <>
                 <View style={styles.modalBadgeContainer}>
                   <Image 
-                    source={selectedChallenge.imageLogo ? selectedChallenge.imageLogo : { uri: selectedChallenge.imagem }} 
+                    source={{ uri: selectedChallenge.imagem }} 
                     style={styles.modalBadgeImage} 
                   />
                 </View>
 
                 <Text style={styles.modalChallengeTitle}>
-                  {selectedChallenge.title || selectedChallenge.nome}
+                  {selectedChallenge.nome}
                 </Text>
                 
                 <Text style={styles.modalChallengeDescription}>
-                  {selectedChallenge.description || selectedChallenge.descricao}
+                  {selectedChallenge.descricao}
                 </Text>
-
-                {selectedChallenge.progresso !== undefined && (
-                  <View style={styles.modalProgressContainer}>
-                    <ProgressBar progress={selectedChallenge.progresso} />
-                    <Text style={styles.modalProgressText}>{selectedChallenge.progresso}%</Text>
-                  </View>
-                )}
 
                 <TouchableOpacity 
                   style={styles.participateButton}
-                  onPress={() => {
-                    if (selectedChallenge.progresso !== undefined) {
-                      handleOpenConfirmExitModal()
-                    } else {
-                      handleJoinChallenge()
-                    }
-                  }}
+                  onPress={handleJoinChallenge}
                 >
-                  <Text style={styles.participateButtonText}>
-                    {selectedChallenge.progresso !== undefined ? "sair do desafio" : "participar"}
-                  </Text>
+                  <Text style={styles.participateButtonText}>participar</Text>
                 </TouchableOpacity>
               </>
             )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal Confirm Exit Challenge */}
-      <Modal
-        visible={confirmExitModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={handleCloseConfirmExitModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.confirmExitModalContent}>
-            <Text style={styles.confirmExitTitle}>Sair do desafio?</Text>
-            
-            <Text style={styles.confirmExitDescription}>
-              Tem certeza que quer sair do desafio "{selectedChallenge?.nome}" e perder todo o seu progresso conquistado até aqui?
-            </Text>
-
-            <View style={styles.confirmExitButtons}>
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={handleCloseConfirmExitModal}
-              >
-                <Text style={styles.cancelButtonText}>cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.exitButton}
-                onPress={handleConfirmExit}
-              >
-                <Text style={styles.exitButtonText}>sair do desafio</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>

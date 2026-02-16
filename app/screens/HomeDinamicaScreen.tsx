@@ -9,9 +9,8 @@ import { Icon } from "@/components/Icon"
 import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
+import { ActiveChallengesSection } from "@/components/ActiveChallengesSection"
 const Logo = require("@assets/images/logo2.png")
-const BadgeSocialNetwork = require("@assets/images/badge-social-network.png")
-const BadgeWeek = require("@assets/images/badge-week.png")
 const BackgroundImage = require("@assets/images/frame home 1.png")
 const brainrot = require("@assets/images/brainrot.png")
 const familia = require("@assets/images/familia.png")
@@ -149,12 +148,6 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const isAboveAverage = screenTimeToday > averageScreenTime
   const comparisonColor = isAboveAverage ? "#EF4444" : "#10B981" // vermelho : verde
   const comparisonText = isAboveAverage ? "acima" : "abaixo"
-
-  const activeChallenges = [
-    { id: 1, title: "24 horas sem redes sociais", progress: 20, imageLogo: BadgeSocialNetwork },
-    { id: 2, title: "7 dias com menos de 3 horas", progress: 20, imageLogo: BadgeWeek },
-    { id: 3, title: "7 dias...", progress: 20, imageLogo: BadgeSocialNetwork },
-  ]
 
   // Imagens padrão para grupos sem foto
   const defaultGroupImages: Record<string, any> = {
@@ -315,22 +308,18 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
         {/* Active Challenges Section */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.sectionHeader}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => navigation.navigate("DesafiosPublicos")}
+          >
             <Text style={styles.sectionTitle}>Desafios ativos</Text>
             <Icon icon="chevron" size={20} />
           </TouchableOpacity>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            {activeChallenges.map((challenge) => (
-              <TouchableOpacity key={challenge.id} style={styles.challengeCard}>
-                <View style={styles.challengeIcon}>
-                  <Image source={challenge.imageLogo} />
-                </View>
-                <ProgressBar progress={challenge.progress} />
-                <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <ActiveChallengesSection 
+            userId={userData?.uid}
+            horizontal={true}
+            showTitle={false}
+          />
         </View>
 
         {/* Groups Section */}
