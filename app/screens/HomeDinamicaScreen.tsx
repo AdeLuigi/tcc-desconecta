@@ -140,6 +140,16 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     mostUsedApps: ["📱", "🎵", "⏰"],
   }
 
+  // Cálculo de comparação com a média
+  const averageScreenTime = 560 // minutos (média de referência)
+  const difference = screenTimeToday - averageScreenTime
+  const percentageDifference = averageScreenTime > 0 
+    ? Math.abs((difference / averageScreenTime) * 100).toFixed(0) 
+    : 0
+  const isAboveAverage = screenTimeToday > averageScreenTime
+  const comparisonColor = isAboveAverage ? "#EF4444" : "#10B981" // vermelho : verde
+  const comparisonText = isAboveAverage ? "acima" : "abaixo"
+
   const activeChallenges = [
     { id: 1, title: "24 horas sem redes sociais", progress: 20, imageLogo: BadgeSocialNetwork },
     { id: 2, title: "7 dias com menos de 3 horas", progress: 20, imageLogo: BadgeWeek },
@@ -286,11 +296,16 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         {/* Comparison Message */}
         <TouchableOpacity style={styles.comparisonCard} onPress={() => logout()}>
           <View >
-            <Icon icon="vector" size={14} color="#72C3E0" />
+            <Icon 
+              icon="vector" 
+              size={14} 
+              color={isAboveAverage ? "#EF4444" : "#10B981"} 
+              style={{ transform: [{ rotate: isAboveAverage ? '0deg' : '180deg' }] }}
+            />
           </View>
           <View style={{ width:"80%"}}>
             <Text style={styles.comparisonText} >
-             <Text style={{fontWeight: "bold"}} >Você está 28%</Text> abaixo da média dos usuários
+             <Text style={{fontWeight: "bold", color: comparisonColor}}>Você está {percentageDifference}%</Text> {comparisonText} da média dos usuários
             </Text>
           </View>
           <View>
