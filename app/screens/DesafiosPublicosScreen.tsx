@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert } from "react-native"
+import React, { useState, useEffect } from "react"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert, ActivityIndicator } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -7,8 +7,8 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import { useAuth } from "@/context/AuthContext"
-import { createChallenge, uploadChallengeImage } from "@/services/challengeService"
-import { Timestamp } from "@react-native-firebase/firestore"
+import { createChallenge, uploadChallengeImage, Challenge } from "@/services/challengeService"
+import { Timestamp, getFirestore, collection, getDocs, query, where } from "@react-native-firebase/firestore"
 import * as ImagePicker from 'expo-image-picker'
 
 const Logo = require("@assets/images/logo2.png")
@@ -28,6 +28,8 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const [isCreating, setIsCreating] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [availableChallenges, setAvailableChallenges] = useState<Challenge[]>([])
+  const [isLoadingChallenges, setIsLoadingChallenges] = useState(true)
 
   // Form state for new challenge
   const [formData, setFormData] = useState({
@@ -39,6 +41,50 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   })
 
   const isAdmin = authEmail === "adeluigi@ic.ufrj.br"
+
+  // Buscar desafios disponíveis do Firestore
+  const fetchAvailableChallenges = async () => {
+    try {
+      setIsLoadingChallenges(true)
+      const db = getFirestore()
+      const challengesRef = collection(db, "desafios")
+      
+      // Buscar todos os desafios
+      const snapshot = await getDocs(challengesRef)
+      const now = Timestamp.now()
+      
+      const challenges: Challenge[] = []
+      snapshot.forEach((doc: any) => {
+        const data = doc.data()
+        // Filtrar apenas desafios que ainda não expiraram
+        if (data.dataFinal && data.dataFinal.toMillis() > now.toMillis()) {
+          challenges.push({
+            id: doc.id,
+            nome: data.nome,
+            descricao: data.descricao,
+            categoria: data.categoria,
+            duracao: data.duracao,
+            meta: data.meta,
+            imagem: data.imagem,
+            dataInicio: data.dataInicio,
+            dataFinal: data.dataFinal,
+          })
+        }
+      })
+      
+      setAvailableChallenges(challenges)
+    } catch (error) {
+      console.error("Erro ao buscar desafios:", error)
+      Alert.alert("Erro", "Não foi possível carregar os desafios")
+    } finally {
+      setIsLoadingChallenges(false)
+    }
+  }
+
+  // Buscar desafios quando o componente montar
+  useEffect(() => {
+    fetchAvailableChallenges()
+  }, [])
 
   const activeChallenges = [
     { 
@@ -59,33 +105,6 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
       id: 3, 
       title: "7 dias com menos de 3 horas diárias", 
       progress: 20, 
-      imageLogo: BadgeWeek,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-  ]
-
-  const availableChallenges = [
-    { 
-      id: 4, 
-      title: "24 horas sem redes sociais", 
-      imageLogo: BadgeSocialNetwork,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-    { 
-      id: 5, 
-      title: "7 dias com menos de 3 horas diárias", 
-      imageLogo: BadgeWeek,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-    { 
-      id: 6, 
-      title: "7 dias com menos de 3 horas diárias", 
-      imageLogo: BadgeWeek,
-      description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
-    },
-    { 
-      id: 7, 
-      title: "7 dias com menos de 3 horas diárias", 
       imageLogo: BadgeWeek,
       description: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias"
     },
@@ -198,6 +217,8 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
 
       Alert.alert("Sucesso", "Desafio criado com sucesso!")
       handleCloseCreateChallengeModal()
+      // Recarregar a lista de desafios
+      fetchAvailableChallenges()
     } catch (error) {
       console.error("Erro ao criar desafio:", error)
       Alert.alert("Erro", "Não foi possível criar o desafio. Tente novamente.")
@@ -261,22 +282,33 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           {/* Available Challenges Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Desafios disponíveis</Text>
-            <View style={styles.availableChallengesGrid}>
-              {availableChallenges.map((challenge) => (
-                <View key={challenge.id} style={styles.availableChallengeCard}>
-                  <View style={styles.challengeIconLarge}>
-                    <Image source={challenge.imageLogo} style={styles.badgeImageLarge} />
+            {isLoadingChallenges ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#72C3E0" />
+                <Text style={styles.loadingText}>Carregando desafios...</Text>
+              </View>
+            ) : availableChallenges.length > 0 ? (
+              <View style={styles.availableChallengesGrid}>
+                {availableChallenges.map((challenge) => (
+                  <View key={challenge.id} style={styles.availableChallengeCard}>
+                    <View style={styles.challengeIconLarge}>
+                      <Image source={{ uri: challenge.imagem }} style={styles.badgeImageLarge} />
+                    </View>
+                    <Text style={styles.availableChallengeTitle}>{challenge.nome}</Text>
+                    <TouchableOpacity 
+                      style={styles.learnMoreButton}
+                      onPress={() => handleOpenModal(challenge)}
+                    >
+                      <Text style={styles.learnMoreButtonText}>saiba mais</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.availableChallengeTitle}>{challenge.title}</Text>
-                  <TouchableOpacity 
-                    style={styles.learnMoreButton}
-                    onPress={() => handleOpenModal(challenge)}
-                  >
-                    <Text style={styles.learnMoreButtonText}>saiba mais</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Nenhum desafio disponível no momento</Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -300,13 +332,18 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
             {selectedChallenge && (
               <>
                 <View style={styles.modalBadgeContainer}>
-                  <Image source={selectedChallenge.imageLogo} style={styles.modalBadgeImage} />
+                  <Image 
+                    source={selectedChallenge.imageLogo ? selectedChallenge.imageLogo : { uri: selectedChallenge.imagem }} 
+                    style={styles.modalBadgeImage} 
+                  />
                 </View>
 
-                <Text style={styles.modalChallengeTitle}>{selectedChallenge.title}</Text>
+                <Text style={styles.modalChallengeTitle}>
+                  {selectedChallenge.title || selectedChallenge.nome}
+                </Text>
                 
                 <Text style={styles.modalChallengeDescription}>
-                  {selectedChallenge.description}
+                  {selectedChallenge.description || selectedChallenge.descricao}
                 </Text>
 
                 {selectedChallenge.progress !== undefined && (
@@ -893,5 +930,28 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#72C3E0",
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginHorizontal: 16,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
   },
 })
