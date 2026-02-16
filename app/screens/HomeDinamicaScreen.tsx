@@ -33,6 +33,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const [groupCode, setGroupCode] = useState("")
   const [isJoiningGroup, setIsJoiningGroup] = useState(false)
   const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
+  const [hasLoadedHistoricalData, setHasLoadedHistoricalData] = useState(false)
 
   // Recarregar desafios ativos quando a tela ganhar foco
   useFocusEffect(
@@ -45,6 +46,33 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     checkPermissionAndLoadData()
     loadUserGroups()
   }, [userData])
+
+  // Sincronizar dados dos últimos 7 dias apenas uma vez por sessão
+  useEffect(() => {
+    if (!hasLoadedHistoricalData && userData?.uid && hasPermission) {
+      syncHistoricalData()
+    }
+  }, [userData?.uid, hasPermission, hasLoadedHistoricalData])
+
+  const syncHistoricalData = async () => {
+    try {
+      if (!userData?.uid) return
+      
+      console.log('🔄 Iniciando sincronização dos últimos 7 dias em background...')
+      setHasLoadedHistoricalData(true)
+      
+      // Executar em background sem bloquear a UI
+      ScreenTimeService.saveLastSevenDaysData(userData.uid)
+        .then(() => {
+          console.log('✅ Sincronização dos últimos 7 dias concluída')
+        })
+        .catch((error) => {
+          console.error('❌ Erro na sincronização dos últimos 7 dias:', error)
+        })
+    } catch (error) {
+      console.error('Erro ao iniciar sincronização:', error)
+    }
+  }
 
   const loadUserGroups = async () => {
     try {

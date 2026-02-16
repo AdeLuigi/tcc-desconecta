@@ -8,6 +8,7 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { useAuth } from "@/context/AuthContext"
 import { updateUserData, getUserData } from "@/services/userService"
+import statisticsService from "@/services/statisticsService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
 
@@ -15,7 +16,7 @@ interface PerfilScreenProps extends AppStackScreenProps<"Perfil"> {}
 
 export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
-  const { userData, setUserData } = useAuth()
+  const { userData, setUserData, logout } = useAuth()
   
   const [photoURL, setPhotoURL] = useState(userData?.photoURL || "")
   const [descricao, setDescricao] = useState(userData?.descricao || "")
@@ -137,6 +138,76 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleDeleteStatistics = async () => {
+    if (!userData) {
+      Alert.alert("Erro", "Você precisa estar logado")
+      return
+    }
+
+    Alert.alert(
+      "Confirmar exclusão",
+      "Tem certeza que deseja apagar TODAS as suas estatísticas de todos os tempos? Esta ação não pode ser desfeita.",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Apagar Tudo",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsSaving(true)
+              const deletedCount = await statisticsService.deleteAllUserStatistics(userData.uid)
+              
+              if (deletedCount >= 0) {
+                if (deletedCount === 0) {
+                  Alert.alert("Aviso", "Você não possui estatísticas para apagar.")
+                } else {
+                  Alert.alert(
+                    "Sucesso", 
+                    `${deletedCount} ${deletedCount === 1 ? 'estatística foi apagada' : 'estatísticas foram apagadas'} com sucesso.`
+                  )
+                }
+              } else {
+                Alert.alert("Erro", "Não foi possível apagar as estatísticas. Tente novamente.")
+              }
+            } catch (error) {
+              console.error("Erro ao apagar estatísticas:", error)
+              Alert.alert("Erro", "Ocorreu um erro ao apagar as estatísticas")
+            } finally {
+              setIsSaving(false)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Sair",
+      "Tem certeza que deseja sair da sua conta?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: () => {
+            logout()
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'BemVindo' }],
+            })
+          }
+        }
+      ]
+    )
   }
 
   const displayImage = selectedImage || photoURL || undefined
@@ -290,6 +361,27 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
               text={isSaving ? "Salvando..." : "Salvar Alterações"}
               onPress={handleSave}
               style={styles.button}
+              disabled={isSaving || isUploading}
+            />
+          </View>
+
+          {/* Zona de Perigo */}
+          <View style={styles.dangerZone}>
+            <Text style={styles.dangerTitle}>Zona de Perigo</Text>
+            
+            <Button
+              text="Apagar Todas as Estatísticas"
+              onPress={handleDeleteStatistics}
+              style={styles.dangerButton}
+              textStyle={styles.dangerButtonText}
+              disabled={isSaving || isUploading}
+            />
+            
+            <Button
+              text="Sair da Conta"
+              onPress={handleLogout}
+              style={styles.logoutButton}
+              textStyle={styles.logoutButtonText}
               disabled={isSaving || isUploading}
             />
           </View>
@@ -489,6 +581,41 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "100%",
+  },
+  dangerZone: {
+    width: "100%",
+    backgroundColor: "#FEF2F2",
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  dangerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#991B1B",
+    marginBottom: 16,
+  },
+  dangerButton: {
+    width: "100%",
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#DC2626",
+    marginBottom: 12,
+  },
+  dangerButtonText: {
+    color: "#DC2626",
+  },
+  logoutButton: {
+    width: "100%",
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#6B7280",
+  },
+  logoutButtonText: {
+    color: "#374151",
   },
   configLink: {
     paddingVertical: 12,

@@ -203,6 +203,62 @@ class StatisticsService {
     
     return colors[category.toLowerCase()] || '#9E9E9E'
   }
+
+  /**
+   * Deleta todas as estatísticas de um usuário (sem limite de data)
+   * @param userId ID do usuário
+   * @returns Promise<number> número de estatísticas deletadas, ou -1 em caso de erro
+   */
+  async deleteAllUserStatistics(userId: string): Promise<number> {
+    try {
+      const BATCH_SIZE = 500 // Limite do Firestore por batch
+      let totalDeleted = 0
+      
+      // Loop para deletar em batches até não haver mais documentos
+      while (true) {
+        // Query para buscar estatísticas do usuário (limitado a BATCH_SIZE)
+        const querySnapshot = await firestore()
+          .collection('estatisticas')
+          .where('userId', '==', userId)
+          .limit(BATCH_SIZE)
+          .get()
+        
+        // Se não houver mais documentos, termina o loop
+        if (querySnapshot.empty) {
+          break
+        }
+
+        // Criar batch para deletar os documentos encontrados
+        const batch = firestore().batch()
+        
+        querySnapshot.forEach((doc) => {
+          batch.delete(doc.ref)
+        })
+        
+        // Executar o batch
+        await batch.commit()
+        
+        totalDeleted += querySnapshot.size
+        console.log(`🗑️ Deletados ${querySnapshot.size} documentos (total: ${totalDeleted})`)
+        
+        // Se deletou menos que BATCH_SIZE, significa que acabou
+        if (querySnapshot.size < BATCH_SIZE) {
+          break
+        }
+      }
+      
+      if (totalDeleted === 0) {
+        console.log("⚠️ Nenhuma estatística encontrada para deletar")
+      } else {
+        console.log(`✅ Total de ${totalDeleted} estatísticas deletadas com sucesso`)
+      }
+      
+      return totalDeleted
+    } catch (error) {
+      console.error("❌ Erro ao deletar estatísticas do usuário:", error)
+      return -1
+    }
+  }
 }
 
 export default new StatisticsService()
