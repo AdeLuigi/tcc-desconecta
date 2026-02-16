@@ -251,8 +251,9 @@ class ScreenTimeService {
       const skippedDays: string[] = [];
       const errorDays: string[] = [];
 
-      // Percorrer os últimos 7 dias (0 = hoje, 1 = ontem, etc)
-      for (let daysAgo = 0; daysAgo < 7; daysAgo++) {
+      // Percorrer os últimos 7 dias (1 = ontem, até 7 dias atrás)
+      // Começamos do dia 1 para não duplicar o salvamento de hoje
+      for (let daysAgo = 1; daysAgo <= 7; daysAgo++) {
         try {
           // Buscar dados do dia específico
           const dayData = await this.getScreenTimeForSpecificDay(daysAgo);

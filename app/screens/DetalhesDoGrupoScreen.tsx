@@ -12,8 +12,6 @@ import { createFeedPost, type TipoAtividade } from "@/services/feedService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
 import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "@react-native-firebase/firestore"
-import ScreenTimeService from "@/services/screenTime"
-import { getAppCategory } from "@/utils/appCategories"
 
 interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> {}
 
@@ -53,50 +51,10 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   )
 
   /**
-   * Atualiza os dados de tempo de tela do usuário atual no Firestore
-   */
-  const updateScreenTimeData = async () => {
-    if (!userData?.uid) return
-    
-    try {
-      // Verificar permissão
-      const hasPermission = await ScreenTimeService.hasPermission()
-      if (!hasPermission) {
-        console.log('Usuário não concedeu permissão para tempo de tela')
-        return
-      }
-
-      // Buscar dados do dispositivo
-      const [todayTime, apps] = await Promise.all([
-        ScreenTimeService.getScreenTimeToday(),
-        ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
-      ])
-
-      if (todayTime > 0) {
-        // Adicionar categoria aos apps
-        const appsWithCategory = apps.map(app => ({
-          ...app,
-          category: getAppCategory(app.packageName, app.category),
-        }))
-
-        // Salvar no Firestore
-        await ScreenTimeService.saveScreenTimeData(
-          userData.uid,
-          todayTime,
-          appsWithCategory
-        )
-        console.log('Dados de tempo de tela atualizados com sucesso')
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar dados de tempo de tela:', error)
-    }
-  }
-
-  /**
-   * Atualiza os dados de tempo de tela e depois carrega o ranking
+   * Carrega o ranking baseado no período selecionado
+   * Nota: Os dados de tempo de tela já são salvos pela HomeDinamicaScreen
    */
   const updateAndLoadRanking = async () => {
-    await updateScreenTimeData()
     if (rankingPeriodo === "diario") {
       await loadRankingTempoDeTela()
     } else {

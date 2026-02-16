@@ -100,18 +100,14 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       
       // Salvar dados no Firestore se o usuário estiver autenticado
       if (userData?.uid && todayTime > 0) {
-        // Salvar dados de hoje
+        // Salvar apenas os dados de hoje
+        // saveLastSevenDaysData foi removido daqui para evitar duplicação
+        // Os dados retroativos devem ser salvos apenas uma vez, manualmente ou em outro fluxo
         await ScreenTimeService.saveScreenTimeData(
           userData.uid,
           todayTime,
           appsWithCategory
         )
-
-        // Salvar dados retroativos dos últimos 7 dias (em background)
-        // Isso só salvará os dias que ainda não existem no Firestore
-        ScreenTimeService.saveLastSevenDaysData(userData.uid).catch(error => {
-          console.error('Erro ao salvar dados retroativos:', error)
-        })
       }
     } catch (error) {
       console.error('Erro ao carregar dados de tempo de tela:', error)
