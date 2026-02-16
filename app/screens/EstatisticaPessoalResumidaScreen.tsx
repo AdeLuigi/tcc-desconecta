@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react"
-import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from "react-native"
+import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Image, ImageBackground, TouchableOpacity } from "react-native"
 import { LineChart, BarChart, PieChart } from "react-native-chart-kit"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
+import { Icon } from "@/components/Icon"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { useAuth } from "@/context/AuthContext"
 import StatisticsService, { type StatisticsSummary } from "@/services/statisticsService"
+
+const Logo = require("@assets/images/logo2.png")
+const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
 
 interface EstatisticaPessoalResumidaScreenProps extends AppStackScreenProps<"EstatisticaPessoalResumida"> {}
 
@@ -43,41 +47,72 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   }
 
   const chartConfig = {
-    backgroundColor: theme.colors.background,
-    backgroundGradientFrom: theme.colors.background,
-    backgroundGradientTo: theme.colors.background,
+    backgroundColor: "#FFFFFF",
+    backgroundGradientFrom: "#FFFFFF",
+    backgroundGradientTo: "#FFFFFF",
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(74, 144, 226, ${opacity})`,
-    labelColor: (opacity = 1) => theme.colors.text,
+    color: (opacity = 1) => `rgba(114, 195, 224, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(50, 45, 112, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
       r: "6",
       strokeWidth: "2",
-      stroke: theme.colors.tint,
+      stroke: "#72C3E0",
     },
   }
 
   if (loading) {
     return (
-      <Screen preset="fixed" safeAreaEdges={["top", "bottom"]} contentContainerStyle={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.tint} />
-        <Text style={styles.loadingText}>Carregando estatísticas...</Text>
+      <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
+        <ImageBackground 
+          source={HeaderBackground}
+          style={styles.headerBanner}
+          resizeMode="cover"
+        >
+          <View style={styles.header}>
+            <Image source={Logo} resizeMode="contain" />
+            <TouchableOpacity onPress={() => navigation.navigate("Notificacoes")}>
+              <Icon icon="notifications" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.headerBannerOverlay} />
+        </ImageBackground>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#72C3E0" />
+          <Text style={styles.loadingText}>Carregando estatísticas...</Text>
+        </View>
       </Screen>
     )
   }
 
   if (!statistics || statistics.dailyStats.length === 0) {
     return (
-      <Screen preset="fixed" safeAreaEdges={["top", "bottom"]} contentContainerStyle={styles.container}>
-        <View style={styles.emptyContent}>
-          <Text preset="heading" style={styles.title}>
-            Estatísticas Pessoais
-          </Text>
-          <Text style={styles.emptyText}>
-            Ainda não há dados de uso registrados. Use o aplicativo por alguns dias para ver suas estatísticas.
-          </Text>
+      <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
+        <ImageBackground 
+          source={HeaderBackground}
+          style={styles.headerBanner}
+          resizeMode="cover"
+        >
+          <View style={styles.header}>
+            <Image source={Logo} resizeMode="contain" />
+            <TouchableOpacity onPress={() => navigation.navigate("Notificacoes")}>
+              <Icon icon="notifications" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.headerBannerOverlay} />
+        </ImageBackground>
+        <View style={styles.mainContent}>
+          <View style={styles.titleCard}>
+            <Icon icon="view" size={24} color="#322D70" />
+            <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
+          </View>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              Ainda não há dados de uso registrados. Use o aplicativo por alguns dias para ver suas estatísticas.
+            </Text>
+          </View>
         </View>
       </Screen>
     )
@@ -96,7 +131,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
       name: StatisticsService.translateCategory(category),
       population: minutes,
       color: StatisticsService.getCategoryColor(category),
-      legendFontColor: theme.colors.text,
+      legendFontColor: "#322D70",
       legendFontSize: 12,
     }))
 
@@ -108,30 +143,45 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const appData = topAppsForChart.map(app => app.timeInMinutes)
 
   return (
-    <Screen preset="scroll" safeAreaEdges={["top", "bottom"]}>
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text preset="heading" style={styles.title}>
-            Estatísticas Pessoais
-          </Text>
-          
+    <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ImageBackground 
+          source={HeaderBackground}
+          style={styles.headerBanner}
+          resizeMode="cover"
+        >
+          <View style={styles.header}>
+            <Image source={Logo} resizeMode="contain" />
+            <TouchableOpacity onPress={() => navigation.navigate("Notificacoes")}>
+              <Icon icon="notifications" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.headerBannerOverlay} />
+        </ImageBackground>
+
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* Title Card */}
+          <View style={styles.titleCard}>
+            <Icon icon="view" size={24} color="#322D70" />
+            <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
+          </View>
+
           {/* Seletor de período */}
           <View style={styles.periodSelector}>
-            <Button
-              text="7 dias"
+            <TouchableOpacity 
+              style={[styles.periodButton, period === 7 && styles.periodButtonActive]}
               onPress={() => setPeriod(7)}
-              preset={period === 7 ? "default" : "filled"}
-              style={styles.periodButton}
-            />
-            <Button
-              text="30 dias"
+            >
+              <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>7 dias</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.periodButton, period === 30 && styles.periodButtonActive]}
               onPress={() => setPeriod(30)}
-              preset={period === 30 ? "default" : "filled"}
-              style={styles.periodButton}
-            />
+            >
+              <Text style={[styles.periodButtonText, period === 30 && styles.periodButtonTextActive]}>30 dias</Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
         {/* Cards de resumo */}
         <View style={styles.summaryCards}>
@@ -265,13 +315,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           ))}
         </View>
 
-        {/* Botão voltar */}
-        <View style={styles.buttonContainer}>
-          <Button
-            text="Voltar"
-            onPress={() => navigation.navigate("AppModoFoco")}
-            style={styles.button}
-          />
         </View>
       </ScrollView>
     </Screen>
@@ -279,50 +322,120 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
+  container: {
     flex: 1,
+    backgroundColor: "#F5F5F5",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   scrollContent: {
-    padding: 16,
+    flex: 1,
+  },
+  headerBanner: {
+    width: "100%",
+    height: 200,
+  },
+  headerBannerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(50, 45, 112, 0.2)",
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    marginTop: -14,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+  titleCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#322D70",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#F5F5F5",
   },
   loadingText: {
     marginTop: 16,
+    color: "#322D70",
   },
-  container: {
-    flex: 1,
+  emptyContainer: {
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  emptyContent: {
-    width: "100%",
-    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   emptyText: {
     textAlign: "center",
-    marginVertical: 24,
-    paddingHorizontal: 16,
-  },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    marginBottom: 16,
-    textAlign: "center",
+    fontSize: 16,
+    color: "#322D70",
+    lineHeight: 24,
   },
   periodSelector: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 12,
+    marginBottom: 24,
   },
   periodButton: {
     flex: 1,
-    maxWidth: 120,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+  },
+  periodButtonActive: {
+    backgroundColor: "#72C3E0",
+    borderColor: "#72C3E0",
+  },
+  periodButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+  },
+  periodButtonTextActive: {
+    color: "#FFFFFF",
   },
   summaryCards: {
     flexDirection: "row",
@@ -333,7 +446,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -345,16 +458,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     marginBottom: 8,
-    color: "#333",
+    color: "#322D70",
   },
   summaryValue: {
     fontSize: 24,
-    color: "#000",
+    color: "#72C3E0",
+    fontWeight: "bold",
   },
   infoCard: {
     padding: 16,
     marginBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -366,22 +480,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     marginBottom: 8,
-    color: "#333",
+    color: "#322D70",
   },
   infoValue: {
     fontSize: 20,
     marginBottom: 4,
-    color: "#000",
+    color: "#322D70",
+    fontWeight: "bold",
   },
   infoSubValue: {
     fontSize: 16,
     opacity: 0.8,
-    color: "#333",
+    color: "#72C3E0",
+    fontWeight: "600",
   },
   chartCard: {
     padding: 16,
     marginBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -393,7 +509,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 16,
     textAlign: "center",
-    color: "#000",
+    color: "#322D70",
+    fontWeight: "bold",
   },
   chart: {
     marginVertical: 8,
@@ -402,7 +519,7 @@ const styles = StyleSheet.create({
   listCard: {
     padding: 16,
     marginBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -413,7 +530,8 @@ const styles = StyleSheet.create({
   listTitle: {
     fontSize: 18,
     marginBottom: 16,
-    color: "#000",
+    color: "#322D70",
+    fontWeight: "bold",
   },
   appItem: {
     flexDirection: "row",
@@ -421,7 +539,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.1)",
+    borderBottomColor: "#F0F0F0",
   },
   appInfo: {
     flexDirection: "row",
@@ -432,8 +550,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     width: 30,
-    opacity: 0.5,
-    color: "#333",
+    color: "#72C3E0",
   },
   appDetails: {
     flex: 1,
@@ -442,7 +559,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 2,
-    color: "#000",
+    color: "#322D70",
   },
   appCategory: {
     fontSize: 12,
@@ -452,13 +569,6 @@ const styles = StyleSheet.create({
   appTime: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#000",
-  },
-  buttonContainer: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  button: {
-    width: "100%",
+    color: "#72C3E0",
   },
 })
