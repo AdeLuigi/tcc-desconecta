@@ -30,6 +30,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [availableChallenges, setAvailableChallenges] = useState<Challenge[]>([])
   const [activeChallenges, setActiveChallenges] = useState<UserActiveChallenge[]>([])
+  const [filteredAvailableChallenges, setFilteredAvailableChallenges] = useState<Challenge[]>([])
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true)
   const [isLoadingActiveChallenges, setIsLoadingActiveChallenges] = useState(true)
 
@@ -105,8 +106,21 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   // Buscar desafios quando o componente montar
   useEffect(() => {
     fetchAvailableChallenges()
-    fetchUserActiveChallenges()
   }, [])
+
+  // Buscar desafios ativos quando userData estiver disponível
+  useEffect(() => {
+    if (userData?.uid) {
+      fetchUserActiveChallenges()
+    }
+  }, [userData?.uid])
+
+  // Filtrar desafios disponíveis para remover os que o usuário já está participando
+  useEffect(() => {
+    const activeChallengeIds = new Set(activeChallenges.map(c => c.id))
+    const filtered = availableChallenges.filter(challenge => !activeChallengeIds.has(challenge.id))
+    setFilteredAvailableChallenges(filtered)
+  }, [availableChallenges, activeChallenges])
 
   const handleOpenModal = (challenge: any) => {
     setSelectedChallenge(challenge)
@@ -330,9 +344,9 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                 <ActivityIndicator size="large" color="#72C3E0" />
                 <Text style={styles.loadingText}>Carregando desafios...</Text>
               </View>
-            ) : availableChallenges.length > 0 ? (
+            ) : filteredAvailableChallenges.length > 0 ? (
               <View style={styles.availableChallengesGrid}>
-                {availableChallenges.map((challenge) => (
+                {filteredAvailableChallenges.map((challenge) => (
                   <View key={challenge.id} style={styles.availableChallengeCard}>
                     <View style={styles.challengeIconLarge}>
                       <Image source={{ uri: challenge.imagem }} style={styles.badgeImageLarge} />
