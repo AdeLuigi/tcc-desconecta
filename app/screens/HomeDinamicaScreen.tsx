@@ -320,7 +320,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         {/* Active Challenges Section */}
         <View style={styles.section}>
           <TouchableOpacity 
-            style={styles.sectionHeader}
+            style={[styles.sectionHeader, {marginBottom:8}]}
             onPress={() => navigation.navigate("DesafiosPublicos")}
           >
             <Text style={styles.sectionTitle}>Desafios ativos</Text>
