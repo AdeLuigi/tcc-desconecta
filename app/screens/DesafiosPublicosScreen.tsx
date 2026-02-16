@@ -17,6 +17,7 @@ interface DesafiosPublicosScreenProps extends AppStackScreenProps<"DesafiosPubli
 export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
   const [modalVisible, setModalVisible] = useState(false)
+  const [confirmExitModalVisible, setConfirmExitModalVisible] = useState(false)
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null)
 
   const activeChallenges = [
@@ -76,6 +77,21 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   }
 
   const handleCloseModal = () => {
+    setModalVisible(false)
+    setSelectedChallenge(null)
+  }
+
+  const handleOpenConfirmExitModal = () => {
+    setConfirmExitModalVisible(true)
+  }
+
+  const handleCloseConfirmExitModal = () => {
+    setConfirmExitModalVisible(false)
+  }
+
+  const handleConfirmExit = () => {
+    // Aqui você pode adicionar lógica para remover o usuário do desafio
+    setConfirmExitModalVisible(false)
     setModalVisible(false)
     setSelectedChallenge(null)
   }
@@ -192,8 +208,12 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                 <TouchableOpacity 
                   style={styles.participateButton}
                   onPress={() => {
-                    handleCloseModal()
-                    // Aqui você pode adicionar lógica para inscrever no desafio
+                    if (selectedChallenge.progress !== undefined) {
+                      handleOpenConfirmExitModal()
+                    } else {
+                      handleCloseModal()
+                      // Aqui você pode adicionar lógica para inscrever no desafio
+                    }
                   }}
                 >
                   <Text style={styles.participateButtonText}>
@@ -202,6 +222,40 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
                 </TouchableOpacity>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Confirm Exit Challenge */}
+      <Modal
+        visible={confirmExitModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseConfirmExitModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmExitModalContent}>
+            <Text style={styles.confirmExitTitle}>Sair do desafio?</Text>
+            
+            <Text style={styles.confirmExitDescription}>
+              Tem certeza que quer sair do desafio "{selectedChallenge?.title}" e perder todo o seu progresso conquistado até aqui?
+            </Text>
+
+            <View style={styles.confirmExitButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={handleCloseConfirmExitModal}
+              >
+                <Text style={styles.cancelButtonText}>cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.exitButton}
+                onPress={handleConfirmExit}
+              >
+                <Text style={styles.exitButtonText}>sair do desafio</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -445,6 +499,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   participateButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  confirmExitModalContent: {
+    backgroundColor: "#3F3A76",
+    borderRadius: 24,
+    width: "100%",
+    maxWidth: 400,
+    padding: 32,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  confirmExitTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  confirmExitDescription: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 32,
+    opacity: 0.9,
+  },
+  confirmExitButtons: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#72C3E0",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  exitButton: {
+    flex: 1,
+    backgroundColor: "#E07272",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  exitButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
