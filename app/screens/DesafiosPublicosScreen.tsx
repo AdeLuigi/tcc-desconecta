@@ -26,6 +26,8 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const availableChallenges = [
     { id: 4, title: "24 horas sem redes sociais", imageLogo: BadgeSocialNetwork },
     { id: 5, title: "7 dias com menos de 3 horas diárias", imageLogo: BadgeWeek },
+    { id: 6, title: "7 dias com menos de 3 horas diárias", imageLogo: BadgeWeek },
+    { id: 7, title: "7 dias com menos de 3 horas diárias", imageLogo: BadgeWeek },
   ]
 
   return (
@@ -82,20 +84,22 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
           {/* Available Challenges Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Desafios disponíveis</Text>
-            {availableChallenges.map((challenge) => (
-              <View key={challenge.id} style={styles.availableChallengeCard}>
-                <View style={styles.challengeIconLarge}>
-                  <Image source={challenge.imageLogo} style={styles.badgeImageLarge} />
+            <View style={styles.availableChallengesGrid}>
+              {availableChallenges.map((challenge) => (
+                <View key={challenge.id} style={styles.availableChallengeCard}>
+                  <View style={styles.challengeIconLarge}>
+                    <Image source={challenge.imageLogo} style={styles.badgeImageLarge} />
+                  </View>
+                  <Text style={styles.availableChallengeTitle}>{challenge.title}</Text>
+                  <TouchableOpacity 
+                    style={styles.learnMoreButton}
+                    onPress={() => navigation.navigate("DesafiosDisponiveis")}
+                  >
+                    <Text style={styles.learnMoreButtonText}>saiba mais</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.availableChallengeTitle}>{challenge.title}</Text>
-                <TouchableOpacity 
-                  style={styles.learnMoreButton}
-                  onPress={() => navigation.navigate("DesafiosDisponiveis")}
-                >
-                  <Text style={styles.learnMoreButtonText}>saiba mais</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -176,6 +180,12 @@ const styles = StyleSheet.create({
     marginHorizontal: -16,
     paddingHorizontal: 16,
   },
+  availableChallengesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   activeChallengeCard: {
     backgroundColor: "#1E1B4B",
     borderRadius: 16,
@@ -211,13 +221,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
-    marginBottom: 12,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    width: "48%",
   },
   challengeIconLarge: {
     width: 100,
