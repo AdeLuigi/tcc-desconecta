@@ -2,6 +2,7 @@ import React from "react"
 import { ViewStyle, TextStyle, Platform } from "react-native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { useAppTheme } from "@/theme/context"
 
@@ -118,6 +119,7 @@ export const BottomTabNavigator = () => {
   const {
     theme: { colors, spacing },
   } = useAppTheme()
+  const insets = useSafeAreaInsets()
 
   return (
     <Tab.Navigator
@@ -128,8 +130,8 @@ export const BottomTabNavigator = () => {
           backgroundColor: "#322D70",
           borderTopColor: "#322D70",
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 85 : 65,
-          paddingBottom: Platform.OS === "ios" ? 25 : 10,
+          height: Platform.OS === "ios" ? 85 : 65 + insets.bottom,
+          paddingBottom: Platform.OS === "ios" ? 25 : 10 + insets.bottom,
           paddingTop: 8,
         } as ViewStyle,
         tabBarActiveTintColor: colors.tint,
