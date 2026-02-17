@@ -173,7 +173,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     : 0
   const isAboveAverage = screenTimeToday > averageScreenTime
   const comparisonColor = isAboveAverage ? "#EF4444" : "#10B981" // vermelho : verde
-  const comparisonText = isAboveAverage ? "acima" : "abaixo"
+  const comparisonText = isAboveAverage ? "mais" : "menos"
 
   // Imagens padrão para grupos sem foto
   const defaultGroupImages: Record<string, any> = {
@@ -315,7 +315,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         </TouchableOpacity>
 
         {/* Comparison Message */}
-        <TouchableOpacity style={styles.comparisonCard} onPress={() => logout()}>
+        <TouchableOpacity style={styles.comparisonCard} onPress={() => navigation.navigate("EstatisticaPessoalResumida")}>
           <View >
             <Icon 
               icon="vector" 
@@ -326,7 +326,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
           </View>
           <View style={{ width:"80%"}}>
             <Text style={styles.comparisonText} >
-             <Text style={{fontWeight: "bold", color: comparisonColor}}>Você está {percentageDifference}%</Text> {comparisonText} da média dos usuários
+             <Text style={{fontWeight: "bold", color: comparisonColor}}>Você está usando {percentageDifference}%</Text> <Text style={{color:"black"}}>{comparisonText} o celular que a média dos usuários</Text>
             </Text>
           </View>
           <View>
