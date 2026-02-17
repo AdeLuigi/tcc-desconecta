@@ -53,6 +53,7 @@ const HomeStack = () => {
       <Stack.Screen name="DesafiosInscrito" component={DesafiosInscritoScreen as any} />
       <Stack.Screen name="DesafiosDisponiveis" component={DesafiosDisponiveisScreen as any} />
       <Stack.Screen name="AppModoFoco" component={AppModoFocoScreen as any} />
+      <Stack.Screen name="EstatisticaPessoalResumida" component={EstatisticaPessoalResumidaScreen as any} />
       <Stack.Screen name="EstatisticasPessoais" component={EstatisticasPessoaisScreen as any} />
       <Stack.Screen name="Perfil" component={PerfilScreen as any} />
       <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />

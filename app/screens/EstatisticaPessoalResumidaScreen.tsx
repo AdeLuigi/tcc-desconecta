@@ -22,7 +22,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const { userData } = useAuth()
   const [statistics, setStatistics] = useState<StatisticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<1 | 7 | 30>(7)
+  const [period, setPeriod] = useState<1 | 7>(7)
 
   useEffect(() => {
     loadStatistics()
@@ -122,12 +122,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             >
               <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>7 dias</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.periodButton, period === 30 && styles.periodButtonActive]}
-              onPress={() => setPeriod(30)}
-            >
-              <Text style={[styles.periodButtonText, period === 30 && styles.periodButtonTextActive]}>30 dias</Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.emptyContainer}>
@@ -202,12 +196,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
               onPress={() => setPeriod(7)}
             >
               <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>7 dias</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.periodButton, period === 30 && styles.periodButtonActive]}
-              onPress={() => setPeriod(30)}
-            >
-              <Text style={[styles.periodButtonText, period === 30 && styles.periodButtonTextActive]}>30 dias</Text>
             </TouchableOpacity>
           </View>
 

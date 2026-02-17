@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share } from "react-native"
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share, KeyboardAvoidingView, Platform } from "react-native"
 import { useFocusEffect } from "@react-navigation/native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -627,110 +627,115 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nova Postagem</Text>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                disabled={isCreatingPost}
-              >
-                <Icon icon="x" size={24} color="#322D70" />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Nova Postagem</Text>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(false)}
+                  disabled={isCreatingPost}
+                >
+                  <Icon icon="x" size={24} color="#322D70" />
+                </TouchableOpacity>
+              </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>Tipo de Atividade</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.activityTypesScroll}
-              >
-                {activityTypes.map((type) => (
-                  <TouchableOpacity
-                    key={type.value}
-                    style={[
-                      styles.activityTypeChip,
-                      selectedActivityType === type.value && styles.activityTypeChipActive,
-                    ]}
-                    onPress={() => setSelectedActivityType(type.value)}
-                    disabled={isCreatingPost}
-                  >
-                    <Text style={styles.activityTypeEmoji}>{type.emoji}</Text>
-                    <Text
+              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                <Text style={styles.inputLabel}>Tipo de Atividade</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.activityTypesScroll}
+                >
+                  {activityTypes.map((type) => (
+                    <TouchableOpacity
+                      key={type.value}
                       style={[
-                        styles.activityTypeLabel,
-                        selectedActivityType === type.value && styles.activityTypeLabelActive,
+                        styles.activityTypeChip,
+                        selectedActivityType === type.value && styles.activityTypeChipActive,
                       ]}
+                      onPress={() => setSelectedActivityType(type.value)}
+                      disabled={isCreatingPost}
                     >
-                      {type.label}
-                    </Text>
+                      <Text style={styles.activityTypeEmoji}>{type.emoji}</Text>
+                      <Text
+                        style={[
+                          styles.activityTypeLabel,
+                          selectedActivityType === type.value && styles.activityTypeLabelActive,
+                        ]}
+                      >
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={styles.inputLabel}>Descrição</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Compartilhe seu progresso, conquista ou pensamento..."
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  numberOfLines={6}
+                  value={postDescription}
+                  onChangeText={setPostDescription}
+                  textAlignVertical="top"
+                  editable={!isCreatingPost}
+                />
+
+                <Text style={styles.inputLabel}>Foto (opcional)</Text>
+                {selectedImage ? (
+                  <View style={styles.imagePreviewContainer}>
+                    <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => setSelectedImage(null)}
+                      disabled={isCreatingPost}
+                    >
+                      <Icon icon="x" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.addImageButton}
+                    onPress={pickImage}
+                    disabled={isCreatingPost || isUploadingImage}
+                  >
+                    <Text style={styles.addImageIcon}>📷</Text>
+                    <Text style={styles.addImageText}>Adicionar foto</Text>
                   </TouchableOpacity>
-                ))}
+                )}
               </ScrollView>
 
-              <Text style={styles.inputLabel}>Descrição</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Compartilhe seu progresso, conquista ou pensamento..."
-                placeholderTextColor="#94A3B8"
-                multiline
-                numberOfLines={6}
-                value={postDescription}
-                onChangeText={setPostDescription}
-                textAlignVertical="top"
-                editable={!isCreatingPost}
-              />
-
-              <Text style={styles.inputLabel}>Foto (opcional)</Text>
-              {selectedImage ? (
-                <View style={styles.imagePreviewContainer}>
-                  <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setSelectedImage(null)}
-                    disabled={isCreatingPost}
-                  >
-                    <Icon icon="x" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
+              <View style={styles.modalFooter}>
                 <TouchableOpacity
-                  style={styles.addImageButton}
-                  onPress={pickImage}
-                  disabled={isCreatingPost || isUploadingImage}
+                  style={styles.cancelButton}
+                  onPress={() => setModalVisible(false)}
+                  disabled={isCreatingPost}
                 >
-                  <Text style={styles.addImageIcon}>📷</Text>
-                  <Text style={styles.addImageText}>Adicionar foto</Text>
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
                 </TouchableOpacity>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setModalVisible(false)}
-                disabled={isCreatingPost}
-              >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.postButton,
-                  (isCreatingPost || !postDescription.trim()) && styles.postButtonDisabled,
-                ]}
-                onPress={handleCreatePost}
-                disabled={isCreatingPost || !postDescription.trim()}
-              >
-                {isCreatingPost ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.postButtonText}>Publicar</Text>
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.postButton,
+                    (isCreatingPost || !postDescription.trim()) && styles.postButtonDisabled,
+                  ]}
+                  onPress={handleCreatePost}
+                  disabled={isCreatingPost || !postDescription.trim()}
+                >
+                  {isCreatingPost ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.postButtonText}>Publicar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   )
@@ -1159,6 +1164,9 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     color: "#FFFFFF",
     lineHeight: 32,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   modalOverlay: {
     flex: 1,

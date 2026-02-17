@@ -183,7 +183,7 @@ export const ActiveChallengesSection: React.FC<ActiveChallengesSectionProps> = (
 
                 <View style={styles.modalProgressContainer}>
                   <ProgressBar progress={selectedChallenge.progresso || 0} />
-                  <Text style={styles.modalProgressText}>{selectedChallenge.progresso || 0}%</Text>
+
                 </View>
 
                 <TouchableOpacity 
