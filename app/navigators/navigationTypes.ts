@@ -59,6 +59,9 @@ export type AppStackParamList = {
       }>
     }
   }
+  DetalhesDoUsuario: {
+    userId: string
+  }
   DesafiosPublicos: undefined
   DesafiosInscrito: undefined
   DesafiosDisponiveis: undefined

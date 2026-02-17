@@ -20,6 +20,7 @@ import { AtividadeScreen } from "@/screens/AtividadeScreen"
 import { RankingScreen } from "@/screens/RankingScreen"
 import { BatepapoScreen } from "@/screens/BatepapoScreen"
 import { DetalhesDoGrupoScreen } from "@/screens/DetalhesDoGrupoScreen"
+import { DetalhesDoUsuarioScreen } from "@/screens/DetalhesDoUsuarioScreen"
 import { DesafiosInscritoScreen } from "@/screens/DesafiosInscritoScreen"
 import { DesafiosDisponiveisScreen } from "@/screens/DesafiosDisponiveisScreen"
 import { AppModoFocoScreen } from "@/screens/AppModoFocoScreen"
@@ -48,6 +49,7 @@ const HomeStack = () => {
       <Stack.Screen name="Ranking" component={RankingScreen as any} />
       <Stack.Screen name="Batepapo" component={BatepapoScreen as any} />
       <Stack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
+      <Stack.Screen name="DetalhesDoUsuario" component={DetalhesDoUsuarioScreen as any} />
       <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
       <Stack.Screen name="DesafiosPublicos" component={DesafiosPublicosScreen as any} />
       <Stack.Screen name="DesafiosInscrito" component={DesafiosInscritoScreen as any} />
@@ -75,6 +77,7 @@ const GruposStack = () => {
       <Stack.Screen name="Ranking" component={RankingScreen as any} />
       <Stack.Screen name="Batepapo" component={BatepapoScreen as any} />
       <Stack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
+      <Stack.Screen name="DetalhesDoUsuario" component={DetalhesDoUsuarioScreen as any} />
       <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
     </Stack.Navigator>
   )

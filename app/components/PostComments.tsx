@@ -4,6 +4,8 @@ import { Text } from "./Text"
 import { Icon } from "./Icon"
 import { getPostComments, addComment, type Comment } from "@/services/feedService"
 import { useAuth } from "@/context/AuthContext"
+import { useNavigation } from "@react-navigation/native"
+import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 interface PostCommentsProps {
   groupId: string
@@ -11,6 +13,7 @@ interface PostCommentsProps {
 }
 
 export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) => {
+  const navigation = useNavigation<AppStackScreenProps<"DetalhesDoGrupo">["navigation"]>()
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -83,7 +86,11 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
 
     return (
       <View style={styles.commentCard}>
-        <View style={styles.commentHeader}>
+        <TouchableOpacity 
+          style={styles.commentHeader}
+          onPress={() => navigation.navigate("DetalhesDoUsuario", { userId: item.userId })}
+          activeOpacity={0.7}
+        >
           <View style={[styles.commentAvatar, isCurrentUser && styles.currentUserAvatar]}>
             {item.photoURL ? (
               <Image
@@ -104,7 +111,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({ groupId, postId }) =
             </View>
             <Text style={styles.commentText}>{item.texto}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     )
   }

@@ -4,6 +4,8 @@ import { Text } from "./Text"
 import { Icon } from "./Icon"
 import { PostComments } from "@/components/PostComments"
 import { getGroupFeed, type FeedPost, type TipoAtividade } from "@/services/feedService"
+import { useNavigation } from "@react-navigation/native"
+import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 export type { FeedPost, TipoAtividade }
 
@@ -20,6 +22,7 @@ const ACTIVITY_TYPES: Record<TipoAtividade, { label: string; emoji: string; colo
 }
 
 export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
+  const navigation = useNavigation<AppStackScreenProps<"DetalhesDoGrupo">["navigation"]>()
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,7 +70,11 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
     return (
       <View style={styles.postCard}>
         {/* Post Header */}
-        <View style={styles.postHeader}>
+        <TouchableOpacity 
+          style={styles.postHeader}
+          onPress={() => navigation.navigate("DetalhesDoUsuario", { userId: item.userId })}
+          activeOpacity={0.7}
+        >
           <View style={styles.userAvatar}>
             {item.photoURL ? (
               <Image
@@ -88,7 +95,7 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
           <View style={[styles.activityBadge, { backgroundColor: activityInfo.color }]}>
             <Text style={styles.activityEmoji}>{activityInfo.emoji}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Post Description */}
         <Text style={styles.postDescription}>{item.descricao}</Text>

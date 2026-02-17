@@ -541,7 +541,12 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               const medalha = posicao === 1 ? "🥇" : posicao === 2 ? "🥈" : posicao === 3 ? "🥉" : ""
               
               return (
-                <View key={item.userId} style={styles.rankingCard}>
+                <TouchableOpacity 
+                  key={item.userId} 
+                  style={styles.rankingCard}
+                  onPress={() => navigation.navigate("DetalhesDoUsuario", { userId: item.userId })}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.rankingPosition}>
                     {medalha ? (
                       <Text style={styles.medalEmoji}>{medalha}</Text>
@@ -591,7 +596,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                       <Text style={styles.noDataBadgeText}>-</Text>
                     </View>
                   )}
-                </View>
+                </TouchableOpacity>
               )
             })
           ) : (
@@ -644,35 +649,6 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               </View>
 
               <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                <Text style={styles.inputLabel}>Tipo de Atividade</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.activityTypesScroll}
-                >
-                  {activityTypes.map((type) => (
-                    <TouchableOpacity
-                      key={type.value}
-                      style={[
-                        styles.activityTypeChip,
-                        selectedActivityType === type.value && styles.activityTypeChipActive,
-                      ]}
-                      onPress={() => setSelectedActivityType(type.value)}
-                      disabled={isCreatingPost}
-                    >
-                      <Text style={styles.activityTypeEmoji}>{type.emoji}</Text>
-                      <Text
-                        style={[
-                          styles.activityTypeLabel,
-                          selectedActivityType === type.value && styles.activityTypeLabelActive,
-                        ]}
-                      >
-                        {type.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
                 <Text style={styles.inputLabel}>Descrição</Text>
                 <TextInput
                   style={styles.textInput}
