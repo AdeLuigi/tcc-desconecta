@@ -30,7 +30,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
 
   const loadStatistics = async () => {
     if (!userData?.uid) {
-      console.log('❌ Nenhum userData.uid disponível')
       setLoading(false)
       return
     }

@@ -226,11 +226,9 @@ class ScreenTimeService {
       if (!existingDocs.empty) {
         const existingDoc = existingDocs.docs[0];
         await updateDoc(doc(db, "estatisticas", existingDoc.id), screenTimeData);
-        console.log('Dados de tempo de tela atualizados com sucesso para', dataFormatada);
       } else {
         // Se não existe, cria um novo documento
         await addDoc(tempoTelaRef, screenTimeData);
-        console.log('Dados de tempo de tela salvos com sucesso para', dataFormatada);
       }
     } catch (error) {
       console.error('Erro ao salvar dados de tempo de tela:', error);
@@ -245,8 +243,6 @@ class ScreenTimeService {
    */
   async saveLastSevenDaysData(userId: string): Promise<void> {
     try {
-      console.log('Iniciando salvamento de dados retroativos dos últimos 7 dias...');
-      
       const savedDays: string[] = [];
       const skippedDays: string[] = [];
       const errorDays: string[] = [];
@@ -259,7 +255,6 @@ class ScreenTimeService {
           const dayData = await this.getScreenTimeForSpecificDay(daysAgo);
           
           if (!dayData || dayData.totalTimeInMinutes === 0) {
-            console.log(`Dia ${dayData?.date || daysAgo}: Sem dados de tempo de tela`);
             skippedDays.push(dayData?.date || `${daysAgo} dias atrás`);
             continue;
           }
@@ -277,7 +272,6 @@ class ScreenTimeService {
           const existingDocs = await getDocs(q);
           
           if (!existingDocs.empty) {
-            console.log(`Dia ${dayData.date}: Já existe registro, pulando...`);
             skippedDays.push(dayData.date);
             continue;
           }
@@ -297,18 +291,11 @@ class ScreenTimeService {
           );
 
           savedDays.push(dayData.date);
-          console.log(`Dia ${dayData.date}: Salvos ${dayData.totalTimeInMinutes} minutos com ${dayData.apps.length} apps`);
         } catch (error) {
           console.error(`Erro ao processar dia ${daysAgo}:`, error);
           errorDays.push(`${daysAgo} dias atrás`);
         }
       }
-
-      console.log('=== Resumo do salvamento retroativo ===');
-      console.log(`Dias salvos: ${savedDays.length} - ${savedDays.join(', ')}`);
-      console.log(`Dias pulados (já existiam ou sem dados): ${skippedDays.length}`);
-      console.log(`Dias com erro: ${errorDays.length}`);
-      console.log('========================================');
     } catch (error) {
       console.error('Erro ao salvar dados retroativos:', error);
       throw error;

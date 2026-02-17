@@ -239,18 +239,11 @@ class StatisticsService {
         await batch.commit()
         
         totalDeleted += querySnapshot.size
-        console.log(`🗑️ Deletados ${querySnapshot.size} documentos (total: ${totalDeleted})`)
         
         // Se deletou menos que BATCH_SIZE, significa que acabou
         if (querySnapshot.size < BATCH_SIZE) {
           break
         }
-      }
-      
-      if (totalDeleted === 0) {
-        console.log("⚠️ Nenhuma estatística encontrada para deletar")
-      } else {
-        console.log(`✅ Total de ${totalDeleted} estatísticas deletadas com sucesso`)
       }
       
       return totalDeleted

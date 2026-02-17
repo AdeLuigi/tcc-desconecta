@@ -58,13 +58,11 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     try {
       if (!userData?.uid) return
       
-      console.log('🔄 Iniciando sincronização dos últimos 7 dias em background...')
       setHasLoadedHistoricalData(true)
       
       // Executar em background sem bloquear a UI
       ScreenTimeService.saveLastSevenDaysData(userData.uid)
         .then(() => {
-          console.log('✅ Sincronização dos últimos 7 dias concluída')
         })
         .catch((error) => {
           console.error('❌ Erro na sincronização dos últimos 7 dias:', error)
@@ -77,14 +75,12 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const loadUserGroups = async () => {
     try {
       if (!userData?.uid) {
-        console.log("Usuário não autenticado, não é possível carregar grupos")
         return
       }
 
       setLoadingGroups(true)
       const userGroups = await getUserGroups(userData.uid)
       setGroups(userGroups)
-      console.log(`Carregados ${userGroups.length} grupos do usuário`)
     } catch (error) {
       console.error("Erro ao carregar grupos:", error)
     } finally {
@@ -113,9 +109,6 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         ScreenTimeService.getScreenTimeToday(),
         ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
       ])
-      
-      console.log('DEBUG - Tempo total de hoje (bruto):', todayTime)
-      console.log('DEBUG - Apps:', apps.map(app => `${app.appName}: ${app.timeInMinutes}min`))
       
       // Adicionar categoria com fallback para lista manual
       const appsWithCategory = apps.map(app => ({
@@ -163,8 +156,6 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
   const hours = Math.floor(screenTimeToday / 60)
   const minutes = screenTimeToday % 60
-
-  console.log('DEBUG - screenTimeToday:', screenTimeToday, '- hours:', hours, '- minutes:', minutes)
 
   const screenTimeData = {
     hours: hasPermission ? hours : 2,

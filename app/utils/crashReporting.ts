@@ -51,7 +51,6 @@ export const reportCrash = (error: Error, type: ErrorType = ErrorType.FATAL) => 
     // Log to console and Reactotron in development
     const message = error.message || "Unknown"
     console.error(error)
-    console.log(message, type)
   } else {
     // In production, utilize crash reporting service of choice below:
     // RN

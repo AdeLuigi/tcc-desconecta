@@ -31,14 +31,12 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
   const loadUserGroups = async () => {
     try {
       if (!userData?.uid) {
-        console.log("Usuário não autenticado, não é possível carregar grupos")
         return
       }
 
       setLoadingGroups(true)
       const userGroups = await getUserGroups(userData.uid)
       setGroups(userGroups)
-      console.log(`Carregados ${userGroups.length} grupos do usuário`)
     } catch (error) {
       console.error("Erro ao carregar grupos:", error)
     } finally {

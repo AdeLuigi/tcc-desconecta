@@ -72,7 +72,6 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
         
         if (userData) {
           setUserData(userData)
-          console.log("Usuário sincronizado com sucesso:", userData)
           
           // Mostra mensagem de sucesso
           Alert.alert(

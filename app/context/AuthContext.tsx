@@ -33,7 +33,6 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
       if (storedUserData) {
         const parsedData = JSON.parse(storedUserData)
         setUserData(parsedData)
-        console.log("Dados do usuário carregados do storage")
       }
     } catch (error) {
       console.error("Erro ao carregar dados do usuário:", error)
@@ -45,7 +44,6 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
     try {
       if (userData) {
         storage.set("AuthProvider.userData", JSON.stringify(userData))
-        console.log("Dados do usuário salvos no storage")
       }
     } catch (error) {
       console.error("Erro ao salvar dados do usuário:", error)
@@ -58,7 +56,6 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
     setUserData(null)
     // Limpar userData do storage
     storage.delete("AuthProvider.userData")
-    console.log("Dados do usuário removidos do storage")
   }, [setAuthEmail, setAuthToken])
 
   const validationError = useMemo(() => {

@@ -68,12 +68,10 @@ export async function syncUserWithFirestore(): Promise<UserData | null> {
 
     if (userDoc.exists()) {
       // Usuário já existe, retorna os dados
-      console.log("Usuário já existe no Firestore, buscando dados...")
       const userData = userDoc.data() as UserData
       return userData
     } else {
       // Usuário novo, cria documento
-      console.log("Criando novo usuário no Firestore...")
       const newUserData: UserData = {
         uid,
         email,
@@ -84,7 +82,6 @@ export async function syncUserWithFirestore(): Promise<UserData | null> {
       }
 
       await setDoc(userRef, newUserData)
-      console.log("Usuário criado com sucesso no Firestore")
       return newUserData
     }
   } catch (error) {
@@ -124,7 +121,6 @@ export async function updateUserData(
     const db = getFirestore()
     const userRef = doc(db, "usuarios", uid)
     await updateDoc(userRef, data)
-    console.log("Dados do usuário atualizados com sucesso")
     return true
   } catch (error) {
     console.error("Erro ao atualizar dados do usuário:", error)
@@ -158,7 +154,6 @@ export async function updateUserSettings(
       },
     })
 
-    console.log("Configurações atualizadas com sucesso")
     return true
   } catch (error) {
     console.error("Erro ao atualizar configurações:", error)

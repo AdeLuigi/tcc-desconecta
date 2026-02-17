@@ -126,7 +126,6 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       })
       
       setRankingTempoDeTela(rankingOrdenado)
-      console.log('Ranking de tempo de tela carregado:', rankingOrdenado)
     } catch (error) {
       console.error('Erro ao carregar ranking de tempo de tela:', error)
     } finally {
@@ -201,7 +200,6 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       })
       
       setRankingTempoDeTela(rankingOrdenado)
-      console.log('Ranking semanal carregado:', rankingOrdenado)
     } catch (error) {
       console.error('Erro ao carregar ranking semanal:', error)
     } finally {

@@ -53,7 +53,6 @@ export async function createChallenge(challenge: Omit<Challenge, "id">): Promise
       dataFinal: challenge.dataFinal,
     })
     
-    console.log("Desafio criado com ID:", docRef.id)
     return docRef.id
   } catch (error) {
     console.error("Erro ao criar desafio:", error)
@@ -98,7 +97,6 @@ export async function joinChallenge(userId: string, challengeId: string): Promis
       }),
     })
     
-    console.log("Usuário inscrito no desafio com sucesso")
     return true
   } catch (error) {
     console.error("Erro ao inscrever no desafio:", error)
@@ -135,7 +133,6 @@ export async function leaveChallenge(userId: string, challengeId: string): Promi
       await updateDoc(userRef, {
         desafiosAtivos: arrayRemove(desafioToRemove),
       })
-      console.log("Usuário saiu do desafio com sucesso")
       return true
     }
     

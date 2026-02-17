@@ -39,8 +39,6 @@ export async function signInWithGoogle() {
     // Get the users ID token
     const signInResult = await GoogleSignin.signIn()
     
-    console.log("Google Sign-In Result:", JSON.stringify(signInResult, null, 2))
-
     // Tenta acessar o idToken de diferentes formas (versões diferentes da lib)
     const idToken = (signInResult as any).idToken || (signInResult as any).data?.idToken
 
