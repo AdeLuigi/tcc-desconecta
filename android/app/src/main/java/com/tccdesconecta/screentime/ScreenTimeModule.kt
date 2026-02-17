@@ -9,6 +9,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -28,6 +29,50 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     // Retorna o nome do módulo que será usado no JavaScript
     override fun getName(): String {
         return "ScreenTimeModule"
+    }
+
+    // Verifica se um app é relevante para o usuário
+    private fun isAppRelevant(pkg: String, packageManager: PackageManager): Boolean {
+        try {
+            val appInfo = packageManager.getApplicationInfo(pkg, 0)
+            
+            // Log para debug
+            Log.d("ScreenTimeModule", "Verificando app: $pkg")
+
+            // 1. Apps com intent de Launcher são sempre relevantes (apps instalados pelo usuário)
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(pkg)
+            val list = packageManager.queryIntentActivities(intent, 0)
+            if (list.isNotEmpty()) {
+                Log.d("ScreenTimeModule", "App relevante (Launcher): $pkg")
+                return true
+            }
+
+            // 2. Apps de sistema que foram atualizados (ex: Chrome, Gmail que vêm de fábrica mas atualizam)
+            val isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+            val isUpdatedSystemApp = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            
+            if (!isSystemApp || isUpdatedSystemApp) {
+                Log.d("ScreenTimeModule", "App relevante (Usuário/Atualizado): $pkg")
+                return true
+            }
+            
+            // 3. Flexibilização extra: Apps que têm permissão de internet (muitos apps úteis sem launcher explícito)
+            // Isso pode trazer falsos positivos, mas garante que não perdemos redes sociais "escondidas" ou apps integrados
+            val hasInternet = packageManager.checkPermission(android.Manifest.permission.INTERNET, pkg) == PackageManager.PERMISSION_GRANTED
+            if (hasInternet) {
+                 Log.d("ScreenTimeModule", "App relevante (Internet Permission): $pkg")
+                 return true
+            }
+
+            Log.d("ScreenTimeModule", "App ignorado: $pkg")
+            return false
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.d("ScreenTimeModule", "App não encontrado (desinstalado ou sem permissão): $pkg")
+            return false
+        } catch (e: Exception) {
+            Log.e("ScreenTimeModule", "Erro ao verificar app $pkg", e)
+            return false
+        }
     }
 
     // Converte um ícone do tipo Drawable para uma string Base64 para ser usada no React Native
@@ -118,10 +163,10 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val startTime = calendar.timeInMillis // Obtém o timestamp do início do dia
             val endTime = System.currentTimeMillis() // Obtém o timestamp atual
 
-            // Obtém o gerenciador de pacotes para verificar apps lançáveis
+            // Obtém o gerenciador de pacotes para verificar apps
             val packageManager = reactApplicationContext.packageManager
-            // Cria um conjunto para armazenar pacotes que são apps lançáveis (não serviços de sistema)
-            val launchable = mutableSetOf<String>()
+            // Cria um conjunto para armazenar pacotes validados (apps de usuário)
+            val validatedApps = mutableSetOf<String>()
 
             // Consulta todos os eventos de uso de apps no período
             val events = usageStatsManager.queryEvents(startTime, endTime)
@@ -137,13 +182,12 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 events.getNextEvent(event) // Lê o próximo evento
                 val pkg = event.packageName ?: continue // Obtém o nome do pacote, pula se for nulo
 
-                // Verifica se o pacote é um app lançável (não é serviço de sistema)
-                if (!launchable.contains(pkg)) {
-                    // Se o PackageManager consegue obter uma intent de lançamento, é um app lançável
-                    if (packageManager.getLaunchIntentForPackage(pkg) != null) {
-                        launchable.add(pkg) // Adiciona ao conjunto de apps lançáveis
+                // Verifica se o pacote é um app relevante usando a função auxiliar
+                if (!validatedApps.contains(pkg)) {
+                    if (isAppRelevant(pkg, packageManager)) {
+                        validatedApps.add(pkg)
                     } else {
-                        continue // Pula este pacote se não for lançável
+                        continue
                     }
                 }
 
@@ -222,8 +266,8 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
             // Obtém o gerenciador de pacotes para filtrar apps
             val packageManager = reactApplicationContext.packageManager
-            // Conjunto para armazenar apps lançáveis
-            val launchable = mutableSetOf<String>()
+            // Conjunto para armazenar apps validados (apps de usuário)
+            val validatedApps = mutableSetOf<String>()
 
             // Consulta todos os eventos de uso no período
             val events = usageStatsManager.queryEvents(startTime, endTime)
@@ -243,13 +287,12 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 eventCount++
                 val pkg = event.packageName ?: continue // Obtém o pacote, pula se nulo
 
-                // Verifica se o pacote é um app lançável
-                if (!launchable.contains(pkg)) {
-                    // Tenta obter a intent de lançamento
-                    if (packageManager.getLaunchIntentForPackage(pkg) != null) {
-                        launchable.add(pkg) // Adiciona à lista de lançáveis
+                // Verifica se o pacote é um app relevante usando a função auxiliar
+                if (!validatedApps.contains(pkg)) {
+                    if (isAppRelevant(pkg, packageManager)) {
+                        validatedApps.add(pkg)
                     } else {
-                        continue // Pula pacotes não lançáveis (serviços de sistema)
+                        continue
                     }
                 }
 
@@ -297,9 +340,9 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             
             Log.d("ScreenTimeModule", "Total de eventos processados: $eventCount")
             Log.d("ScreenTimeModule", "Total de apps com uso detectado: ${appUsageMap.size}")
-            Log.d("ScreenTimeModule", "Apps lançáveis identificados: ${launchable.size}")
-            Log.d("ScreenTimeModule", "=== Lista dos ${launchable.size} apps lançáveis ===")
-            launchable.forEachIndexed { index, pkg ->
+            Log.d("ScreenTimeModule", "Apps validados identificados: ${validatedApps.size}")
+            Log.d("ScreenTimeModule", "=== Lista dos ${validatedApps.size} apps validados ===")
+            validatedApps.forEachIndexed { index, pkg ->
                 val tempoUso = appUsageMap[pkg]?.let { (it / 1000 / 60).toInt() } ?: 0
                 Log.d("ScreenTimeModule", "${index + 1}. $pkg (tempo: ${tempoUso}min)")
             }
@@ -464,8 +507,8 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
             // Obtém o gerenciador de pacotes para filtrar apps
             val packageManager = reactApplicationContext.packageManager
-            // Conjunto para armazenar apps lançáveis
-            val launchable = mutableSetOf<String>()
+            // Conjunto para armazenar apps validados (apps de usuário)
+            val validatedApps = mutableSetOf<String>()
 
             // Consulta todos os eventos de uso no dia específico
             val events = usageStatsManager.queryEvents(startTime, endTime)
@@ -481,13 +524,12 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 events.getNextEvent(event) // Lê o próximo evento
                 val pkg = event.packageName ?: continue // Obtém o pacote, pula se nulo
 
-                // Verifica se o pacote é um app lançável
-                if (!launchable.contains(pkg)) {
-                    // Tenta obter a intent de lançamento
-                    if (packageManager.getLaunchIntentForPackage(pkg) != null) {
-                        launchable.add(pkg) // Adiciona à lista de lançáveis
+                // Verifica se o pacote é um app relevante usando a função auxiliar
+                if (!validatedApps.contains(pkg)) {
+                    if (isAppRelevant(pkg, packageManager)) {
+                        validatedApps.add(pkg)
                     } else {
-                        continue // Pula pacotes não lançáveis (serviços de sistema)
+                        continue
                     }
                 }
 

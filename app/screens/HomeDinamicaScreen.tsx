@@ -110,6 +110,8 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
       ])
       
+      console.log('✅ Tempo de tela de hoje:', todayTime, 'minutos')
+
       // Adicionar categoria com fallback para lista manual
       const appsWithCategory = apps.map(app => ({
         ...app,
