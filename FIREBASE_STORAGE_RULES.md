@@ -9,24 +9,36 @@ service firebase.storage {
   match /b/{bucket}/o {
     // Regra para uploads de fotos do feed
     match /feed/{groupId}/{fileName} {
-      // Permite leitura para usuários autenticados
       allow read: if request.auth != null;
-      
-      // Permite escrita apenas para usuários autenticados
       allow write: if request.auth != null
-                   && request.resource.size < 5 * 1024 * 1024 // Máximo 5MB
-                   && request.resource.contentType.matches('image/.*'); // Apenas imagens
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
     
     // Regra para uploads de fotos de grupos
     match /groups/{fileName} {
-      // Permite leitura para usuários autenticados
       allow read: if request.auth != null;
-      
-      // Permite escrita apenas para usuários autenticados
       allow write: if request.auth != null
-                   && request.resource.size < 5 * 1024 * 1024 // Máximo 5MB
-                   && request.resource.contentType.matches('image/.*'); // Apenas imagens
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Regra para fotos de perfil
+    match /profile/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Regra para imagens de desafios (apenas admin pode fazer upload)
+    match /desafios/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.auth.token.email == 'adeluigi@ic.ufrj.br'
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
     
     // Regra geral: negar acesso por padrão
