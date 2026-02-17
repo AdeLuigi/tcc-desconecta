@@ -34,6 +34,72 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     // Verifica se um app é relevante para o usuário
     private fun isAppRelevant(pkg: String, packageManager: PackageManager): Boolean {
         try {
+            // Lista de exclusão explícita para apps de sistema comuns que não são "consumo"
+            val excludedPackages = setOf(
+                // --- Google / Android Puro ---
+                "com.android.vending", // Play Store
+                "com.google.android.packageinstaller",
+                "com.android.packageinstaller",
+                "com.android.systemui", // Interface do sistema
+                "com.google.android.apps.nexuslauncher", // Pixel Launcher
+                "com.android.launcher3", // Launcher genérico
+                "com.android.launcher", // Launcher antigo
+                "com.google.android.deskclock", // Relógio do Google
+                "com.android.deskclock", // Relógio genérico
+                "com.google.android.apps.wellbeing", // Bem-estar digital
+                "com.google.android.gms", // Google Play Services
+                "com.google.android.googlequicksearchbox", // Google App (muitas vezes conta como launcher)
+
+                // --- Samsung ---
+                "com.sec.android.app.launcher", // One UI Home
+                "com.sec.android.app.clockpackage", // Relógio
+                "com.samsung.android.dialer", // Telefone (UI)
+                "com.samsung.android.incallui", // Tela de chamada
+                "com.sec.android.daemonapp", // Clima/Weather daemon
+                "com.samsung.android.app.cocktailbarservice", // Edge panels
+
+                // --- Motorola ---
+                "com.motorola.launcher3", // Motorola Launcher
+                "com.motorola.ccc.notification", // Notificações Moto
+
+                // --- Xiaomi (MIUI / HyperOS) ---
+                "com.miui.home", // MIUI Launcher
+                "com.mi.android.globallauncher", // POCO Launcher
+                "com.miui.securitycenter", // Central de segurança (muito usada em segundo plano)
+                
+                // --- LG ---
+                "com.lge.launcher2",
+                "com.lge.launcher3",
+                
+                // --- ASUS ---
+                "com.asus.launcher",
+                
+                // --- Outros Launchers Populares (Marcas Chinesas/Outros) ---
+                "com.huawei.android.launcher", // Huawei
+                "com.oppo.launcher", // Oppo
+                "com.bbk.launcher2", // Vivo
+                "com.oneplus.launcher", // OnePlus
+                "com.transsion.launcher", // Infinix/Tecno
+                "com.hios.launcher", // Tecno
+
+                // --- Launchers de Terceiros (Opcional - mas geralmente não é "consumo") ---
+                "com.teslacoilsw.launcher", // Nova Launcher
+                "com.microsoft.launcher" // Microsoft Launcher
+            )
+
+            if (excludedPackages.contains(pkg)) {
+                Log.d("ScreenTimeModule", "App ignorado (Blacklist): $pkg")
+                return false
+            }
+
+            // Ignora launchers de terceiros ou OEM verificando a categoria HOME
+            val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(pkg)
+            val homeList = packageManager.queryIntentActivities(homeIntent, 0)
+            if (homeList.isNotEmpty()) {
+                Log.d("ScreenTimeModule", "App ignorado (Launcher/Home): $pkg")
+                return false
+            }
+
             val appInfo = packageManager.getApplicationInfo(pkg, 0)
             
             // Log para debug
@@ -57,7 +123,6 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             }
             
             // 3. Flexibilização extra: Apps que têm permissão de internet (muitos apps úteis sem launcher explícito)
-            // Isso pode trazer falsos positivos, mas garante que não perdemos redes sociais "escondidas" ou apps integrados
             val hasInternet = packageManager.checkPermission(android.Manifest.permission.INTERNET, pkg) == PackageManager.PERMISSION_GRANTED
             if (hasInternet) {
                  Log.d("ScreenTimeModule", "App relevante (Internet Permission): $pkg")
