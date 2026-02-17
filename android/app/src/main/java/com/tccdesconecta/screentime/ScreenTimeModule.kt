@@ -33,6 +33,12 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
     // Verifica se um app é relevante para o usuário
     private fun isAppRelevant(pkg: String, packageManager: PackageManager): Boolean {
+        // Regra zero: Sempre inclui o próprio app (Desconecta)
+        if (pkg == reactApplicationContext.packageName) {
+            Log.d("ScreenTimeModule", "App relevante (Próprio App): $pkg")
+            return true
+        }
+
         try {
             // Lista de exclusão explícita para apps de sistema comuns que não são "consumo"
             val excludedPackages = setOf(
@@ -90,6 +96,14 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             if (excludedPackages.contains(pkg)) {
                 Log.d("ScreenTimeModule", "App ignorado (Blacklist): $pkg")
                 return false
+            }
+
+            // Exceção explícita para o app de Configurações (Settings)
+            // Apps de configurações são do sistema e muitas vezes não têm permissão de internet ou updates,
+            // mas o usuário gasta tempo neles.
+            if (pkg == "com.android.settings" || pkg == "com.hawei.android.libs.services" || pkg == "com.google.android.settings.intelligence") {
+                Log.d("ScreenTimeModule", "App relevante (Configurações): $pkg")
+                return true
             }
 
             // Ignora launchers de terceiros ou OEM verificando a categoria HOME
