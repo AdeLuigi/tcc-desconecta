@@ -11,6 +11,7 @@ export interface UserData {
   photoURL: string
   descricao?: string
   dataCriacao: string
+  fcmToken?: string // Token para notificações push
   configuracoes: {
     bloqueio_apps: boolean
     limite_tela_minutos: number

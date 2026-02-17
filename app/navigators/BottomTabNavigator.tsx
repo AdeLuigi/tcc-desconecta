@@ -79,6 +79,7 @@ const GruposStack = () => {
       <Stack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
       <Stack.Screen name="DetalhesDoUsuario" component={DetalhesDoUsuarioScreen as any} />
       <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
+      <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>
   )
 }
@@ -90,6 +91,7 @@ const DesafiosStack = () => {
       <Stack.Screen name="DesafiosPublicos" component={DesafiosPublicosScreen as any} />
       <Stack.Screen name="DesafiosInscrito" component={DesafiosInscritoScreen as any} />
       <Stack.Screen name="DesafiosDisponiveis" component={DesafiosDisponiveisScreen as any} />
+      <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>
   )
 }
@@ -100,6 +102,7 @@ const ConquistasStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="EstatisticaPessoalResumida" component={EstatisticaPessoalResumidaScreen as any} />
       <Stack.Screen name="EstatisticasPessoais" component={EstatisticasPessoaisScreen as any} />
+      <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>
   )
 }

@@ -13,6 +13,7 @@ import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { signInWithGoogle, configureGoogleSignIn } from "@/services/auth"
 import { syncUserWithFirestore } from "@/services/userService"
+import { initializeNotifications, setupNotificationListeners } from "@/services/notificationService"
 
 const Logo = require("@assets/images/logonovo.png")
 const BackgroundImage = require("@assets/images/background.png")
@@ -36,6 +37,13 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
   // Configura o Google Sign-In quando o componente é montado
   useEffect(() => {
     configureGoogleSignIn()
+    // Configurar listeners de notificação
+    const unsubscribe = setupNotificationListeners()
+    
+    return () => {
+      // Limpar listeners ao desmontar
+      if (unsubscribe) unsubscribe()
+    }
   }, [])
 
   const error = isSubmitted ? validationError : ""
@@ -72,6 +80,15 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
         
         if (userData) {
           setUserData(userData)
+          
+          // Inicializar notificações após login bem-sucedido
+          try {
+            await initializeNotifications(userData.uid)
+            console.log('Notificações inicializadas com sucesso')
+          } catch (notifError) {
+            console.error('Erro ao inicializar notificações:', notifError)
+            // Não falhar o login se houver erro nas notificações
+          }
           
           // Mostra mensagem de sucesso
           Alert.alert(
