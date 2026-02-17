@@ -22,7 +22,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const { userData } = useAuth()
   const [statistics, setStatistics] = useState<StatisticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<7 | 30>(7)
+  const [period, setPeriod] = useState<1 | 7 | 30>(7)
 
   useEffect(() => {
     loadStatistics()
@@ -107,6 +107,29 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             <Icon icon="view" size={24} color="#322D70" />
             <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
           </View>
+
+          {/* Seletor de período */}
+          <View style={styles.periodSelector}>
+            <TouchableOpacity 
+              style={[styles.periodButton, period === 1 && styles.periodButtonActive]}
+              onPress={() => setPeriod(1)}
+            >
+              <Text style={[styles.periodButtonText, period === 1 && styles.periodButtonTextActive]}>Hoje</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.periodButton, period === 7 && styles.periodButtonActive]}
+              onPress={() => setPeriod(7)}
+            >
+              <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>7 dias</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.periodButton, period === 30 && styles.periodButtonActive]}
+              onPress={() => setPeriod(30)}
+            >
+              <Text style={[styles.periodButtonText, period === 30 && styles.periodButtonTextActive]}>30 dias</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               Ainda não há dados de uso registrados. Use o aplicativo por alguns dias para ver suas estatísticas.
@@ -169,6 +192,12 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           {/* Seletor de período */}
           <View style={styles.periodSelector}>
             <TouchableOpacity 
+              style={[styles.periodButton, period === 1 && styles.periodButtonActive]}
+              onPress={() => setPeriod(1)}
+            >
+              <Text style={[styles.periodButtonText, period === 1 && styles.periodButtonTextActive]}>Hoje</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
               style={[styles.periodButton, period === 7 && styles.periodButtonActive]}
               onPress={() => setPeriod(7)}
             >
@@ -224,27 +253,29 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
         )}
 
         {/* Gráfico de linha - Tempo de tela diário */}
-        <View style={styles.chartCard}>
-          <Text preset="subheading" style={styles.chartTitle}>
-            Tempo de Tela Diário (minutos)
-          </Text>
-          <LineChart
-            data={{
-              labels: dailyLabels,
-              datasets: [{ data: dailyData }],
-            }}
-            width={screenWidth - 64}
-            height={220}
-            chartConfig={chartConfig}
-            bezier
-            style={styles.chart}
-            withVerticalLabels={true}
-            withHorizontalLabels={true}
-            withDots={true}
-            withShadow={false}
-            fromZero={true}
-          />
-        </View>
+        {period > 1 && (
+          <View style={styles.chartCard}>
+            <Text preset="subheading" style={styles.chartTitle}>
+              Tempo de Tela Diário (minutos)
+            </Text>
+            <LineChart
+              data={{
+                labels: dailyLabels,
+                datasets: [{ data: dailyData }],
+              }}
+              width={screenWidth - 64}
+              height={220}
+              chartConfig={chartConfig}
+              bezier
+              style={styles.chart}
+              withVerticalLabels={true}
+              withHorizontalLabels={true}
+              withDots={true}
+              withShadow={false}
+              fromZero={true}
+            />
+          </View>
+        )}
 
         {/* Gráfico de barras - Top Apps */}
         {topAppsForChart.length > 0 && (
