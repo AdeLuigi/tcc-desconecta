@@ -1,6 +1,7 @@
 package com.tccdesconecta.screentime
 
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -79,7 +80,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     fun getScreenTimeToday(promise: Promise) {
         try {
             val usageStatsManager = reactApplicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            
+
             val calendar = Calendar.getInstance()
             calendar.set(Calendar.HOUR_OF_DAY, 0)
             calendar.set(Calendar.MINUTE, 0)
@@ -88,21 +89,52 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val startTime = calendar.timeInMillis
             val endTime = System.currentTimeMillis()
 
-            val usageStatsList = usageStatsManager.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY,
-                startTime,
-                endTime
-            )
+            // Em vez de usar buckets agregados (queryUsageStats), percorre eventos e recorta cada sessão ao intervalo do dia
+            val packageManager = reactApplicationContext.packageManager
+            val launchable = mutableSetOf<String>()
 
-            val aggregatedStats = mutableMapOf<String, Long>()
-            usageStatsList?.forEach { usageStats ->
-                val existing = aggregatedStats[usageStats.packageName] ?: 0L
-                aggregatedStats[usageStats.packageName] = existing + usageStats.totalTimeInForeground
+            val events = usageStatsManager.queryEvents(startTime, endTime)
+            val lastForeground = mutableMapOf<String, Long>()
+            var totalTime = 0L
+
+            val event = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                val pkg = event.packageName ?: continue
+
+                // Filtra apenas apps lançáveis (evita serviços de sistema)
+                if (!launchable.contains(pkg)) {
+                    if (packageManager.getLaunchIntentForPackage(pkg) != null) {
+                        launchable.add(pkg)
+                    } else {
+                        continue
+                    }
+                }
+
+                when (event.eventType) {
+                    UsageEvents.Event.MOVE_TO_FOREGROUND -> {
+                        lastForeground[pkg] = event.timeStamp
+                    }
+                    UsageEvents.Event.MOVE_TO_BACKGROUND -> {
+                        val start = lastForeground.remove(pkg)
+                        if (start != null && event.timeStamp >= start) {
+                            val sessionStart = maxOf(start, startTime)
+                            val sessionEnd = minOf(event.timeStamp, endTime)
+                            if (sessionEnd > sessionStart) {
+                                totalTime += (sessionEnd - sessionStart)
+                            }
+                        }
+                    }
+                }
             }
 
-            var totalTime = 0L
-            aggregatedStats.values.forEach { time ->
-                totalTime += time
+            // Se algum app está em primeiro plano sem evento de background, fecha a sessão até endTime
+            lastForeground.forEach { (_, startedAt) ->
+                val sessionStart = maxOf(startedAt, startTime)
+                val sessionEnd = endTime
+                if (sessionEnd > sessionStart) {
+                    totalTime += (sessionEnd - sessionStart)
+                }
             }
 
             promise.resolve((totalTime / 1000 / 60).toInt())
