@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView } from "react-native"
+import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView, RefreshControl } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -23,6 +23,7 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
   const [joinModalVisible, setJoinModalVisible] = useState(false)
   const [groupCode, setGroupCode] = useState("")
   const [isJoiningGroup, setIsJoiningGroup] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     loadUserGroups()
@@ -114,6 +115,12 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
     }
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadUserGroups()
+    setRefreshing(false)
+  }
+
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
       {/* Header */}
@@ -124,7 +131,18 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#322D70"]}
+            tintColor="#322D70"
+          />
+        }
+      >
         <View style={styles.content}>
           <Text preset="heading" style={styles.title}>
             Grupos de amigos

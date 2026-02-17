@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator, TextInput, Modal } from "react-native"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator, TextInput, Modal, RefreshControl } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -34,6 +34,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const [isJoiningGroup, setIsJoiningGroup] = useState(false)
   const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
   const [hasLoadedHistoricalData, setHasLoadedHistoricalData] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Recarregar desafios ativos quando a tela ganhar foco
   useFocusEffect(
@@ -156,6 +157,16 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
     )
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true)
+    setActiveChallengesRefreshKey(prev => prev + 1)
+    await Promise.all([
+      checkPermissionAndLoadData(),
+      loadUserGroups(),
+    ])
+    setRefreshing(false)
+  }
+
   const hours = Math.floor(screenTimeToday / 60)
   const minutes = screenTimeToday % 60
 
@@ -256,7 +267,18 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#322D70"]}
+            tintColor="#322D70"
+          />
+        }
+      >
         {/* Screen Time Card */}
             
         <TouchableOpacity 

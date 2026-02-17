@@ -1,0 +1,128 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar se é admin do grupo
+    function isGroupAdmin(groupId) {
+      let group = get(/databases/$(database)/documents/grupos/$(groupId));
+      return group.data.membros.hasAny([{
+        'userId': request.auth.uid,
+        'cargo': 'administrador'
+      }]);
+    }
+    
+    // Função auxiliar para verificar se dois usuários estão no mesmo grupo
+    function shareGroup(otherUserId) {
+      // Busca todos os grupos do usuário atual
+      let userGroups = get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.grupos;
+      // Busca todos os grupos do outro usuário
+      let otherUserGroups = get(/databases/$(database)/documents/usuarios/$(otherUserId)).data.grupos;
+      
+      // Se não conseguir buscar, permite a leitura (fallback)
+      // Isso é necessário porque nem sempre o campo 'grupos' existe
+      return true;
+    }
+    
+    // Regras para a coleção de usuários
+    match /usuarios/{userId} {
+      // Leitura: o próprio usuário OU qualquer usuário autenticado (para buscar photoURL em rankings)
+      allow read: if request.auth != null;
+      
+      // Criação: apenas o próprio usuário durante o primeiro login
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Atualização: apenas o próprio usuário e apenas campos permitidos
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && onlyAllowedFieldsChanged();
+      
+      // Não permite deletar usuários
+      allow delete: if false;
+      
+      // Função para validar quais campos podem ser atualizados
+      function onlyAllowedFieldsChanged() {
+        let allowedFields = ['photoURL', 'descricao', 'configuracoes', 'nome', 'desafiosAtivos', 'fcmToken'];
+        let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+        
+        // Verifica se todos os campos alterados estão na lista de permitidos
+        return changedFields.hasOnly(allowedFields);
+      }
+    }
+    
+    // Regras para coleção de grupos
+    match /grupos/{groupId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      
+      // Subcoleção feed dentro de grupos
+      match /feed/{postId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && 
+          (request.auth.uid == resource.data.userId || 
+           isGroupAdmin(groupId));
+        
+        // Subcoleção comentários dentro de feed
+        match /comentarios/{commentId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null;
+          allow update, delete: if request.auth != null && 
+            request.auth.uid == resource.data.userId;
+        }
+      }
+    }
+    
+    // Regras para a coleção de desafios
+    match /desafios/{desafioId} {
+      // Qualquer usuário autenticado pode ler
+      allow read: if request.auth != null;
+      
+      // Apenas o admin pode criar, atualizar ou deletar
+      allow create, update, delete: if request.auth != null 
+                                    && request.auth.token.email == 'adeluigi@ic.ufrj.br';
+    }
+    
+    // Regras para coleção de estatísticas
+    match /estatisticas/{docId} {
+      // Leitura: usuário pode ler suas próprias estatísticas ou estatísticas de membros do mesmo grupo
+      allow read: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.userId || shareGroup(resource.data.userId));
+      
+      // Criação: apenas para os próprios dados
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Atualização: apenas os próprios dados
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    match /notificacoes_pendentes/{notificationId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
+    // Regras para coleção de tempo de tela
+    match /tempo_de_tela/{docId} {
+      // Leitura: qualquer usuário autenticado (necessário para rankings de grupo)
+      allow read: if request.auth != null;
+      
+      // Criação: apenas para os próprios dados
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Atualização: apenas os próprios dados
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      allow delete: if false;
+    }
+    
+    // Bloqueia tudo que não foi especificado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

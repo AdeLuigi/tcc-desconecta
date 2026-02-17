@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share, KeyboardAvoidingView, Platform } from "react-native"
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share, KeyboardAvoidingView, Platform, RefreshControl } from "react-native"
 import { useFocusEffect } from "@react-navigation/native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -36,6 +36,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   }>>([])
   const [loadingRanking, setLoadingRanking] = useState(false)
   const [rankingPeriodo, setRankingPeriodo] = useState<"diario" | "semanal">("diario")
+  const [refreshing, setRefreshing] = useState(false)
 
   // Ordenar ranking por pontos
   const rankingOrdenado = [...grupo.ranking_mensal].sort((a, b) => b.pontos - a.pontos)
@@ -361,6 +362,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
     { value: "leitura", label: "Leitura", emoji: "📚" },
   ]
 
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await updateAndLoadRanking()
+    setFeedKey(prev => prev + 1)
+    setRefreshing(false)
+  }
+
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
       {/* Header */}
@@ -372,7 +380,18 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#322D70"]}
+            tintColor="#322D70"
+          />
+        }
+      >
         {/* Group Header Card */}
         <View style={styles.groupHeaderCard}>
           <View style={styles.groupAvatarLarge}>

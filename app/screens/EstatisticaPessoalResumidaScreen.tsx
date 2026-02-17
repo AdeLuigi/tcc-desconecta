@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Image, ImageBackground, TouchableOpacity } from "react-native"
+import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Image, ImageBackground, TouchableOpacity, RefreshControl } from "react-native"
 import { LineChart, BarChart, PieChart } from "react-native-chart-kit"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
@@ -23,6 +23,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const [statistics, setStatistics] = useState<StatisticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<1 | 7>(7)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     loadStatistics()
@@ -43,6 +44,12 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
     } finally {
       setLoading(false)
     }
+  }
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadStatistics()
+    setRefreshing(false)
   }
 
   const chartConfig = {
@@ -160,7 +167,18 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#322D70"]}
+            tintColor="#322D70"
+          />
+        }
+      >
         <ImageBackground 
           source={HeaderBackground}
           style={styles.headerBanner}

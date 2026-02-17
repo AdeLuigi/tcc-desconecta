@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert, ActivityIndicator } from "react-native"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert, ActivityIndicator, RefreshControl } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -33,6 +33,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const [filteredAvailableChallenges, setFilteredAvailableChallenges] = useState<Challenge[]>([])
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true)
   const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Form state for new challenge
   const [formData, setFormData] = useState({
@@ -240,13 +241,31 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
     }
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true)
+    setActiveChallengesRefreshKey(prev => prev + 1)
+    await fetchAvailableChallenges()
+    setRefreshing(false)
+  }
+
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
       {/* Header */}
                     {/* Header Banner */}
 
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#322D70"]}
+            tintColor="#322D70"
+          />
+        }
+      >
                 <ImageBackground 
           source={HeaderBackground}
           style={styles.headerBanner}
