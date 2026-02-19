@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator, TextInput, Modal, RefreshControl, AppState } from "react-native"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator, TextInput, Modal, RefreshControl, AppState, KeyboardAvoidingView, Platform } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -474,8 +474,12 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         transparent={true}
         onRequestClose={() => setJoinModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.joinModalContent}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.joinModalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Entrar em um Grupo</Text>
               <TouchableOpacity
@@ -539,8 +543,9 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
                 )}
               </TouchableOpacity>
             </View>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   )

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react"
-import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView, RefreshControl, AppState } from "react-native"
+import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView, RefreshControl, AppState, KeyboardAvoidingView, Platform } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -244,8 +244,12 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
         transparent={true}
         onRequestClose={() => setJoinModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.joinModalContent}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.joinModalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Entrar em um Grupo</Text>
               <TouchableOpacity
@@ -309,8 +313,9 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
                 )}
               </TouchableOpacity>
             </View>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   )
