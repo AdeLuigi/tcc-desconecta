@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react"
-import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView, RefreshControl } from "react-native"
+import React, { useEffect, useState, useRef } from "react"
+import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView, RefreshControl, AppState } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -24,9 +24,28 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
   const [groupCode, setGroupCode] = useState("")
   const [isJoiningGroup, setIsJoiningGroup] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const appState = useRef(AppState.currentState)
 
   useEffect(() => {
     loadUserGroups()
+  }, [userData])
+
+  // Recarregar dados quando o app voltar do background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App voltou para foreground, recarregar grupos
+        loadUserGroups()
+      }
+      appState.current = nextAppState
+    })
+
+    return () => {
+      subscription.remove()
+    }
   }, [userData])
 
   const loadUserGroups = async () => {

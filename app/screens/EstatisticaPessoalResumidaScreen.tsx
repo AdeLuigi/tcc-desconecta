@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react"
-import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Image, ImageBackground, TouchableOpacity, RefreshControl } from "react-native"
+import React, { useEffect, useState, useRef } from "react"
+import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Image, ImageBackground, TouchableOpacity, RefreshControl, AppState } from "react-native"
 import { LineChart, BarChart, PieChart } from "react-native-chart-kit"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
@@ -24,10 +24,29 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<1 | 7>(7)
   const [refreshing, setRefreshing] = useState(false)
+  const appState = useRef(AppState.currentState)
 
   useEffect(() => {
     loadStatistics()
   }, [period])
+
+  // Recarregar dados quando o app voltar do background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App voltou para foreground, recarregar estatísticas
+        loadStatistics()
+      }
+      appState.current = nextAppState
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [userData, period])
 
   const loadStatistics = async () => {
     if (!userData?.uid) {

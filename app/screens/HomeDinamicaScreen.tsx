@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator, TextInput, Modal, RefreshControl } from "react-native"
+import React, { useEffect, useState, useRef } from "react"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Alert, ActivityIndicator, TextInput, Modal, RefreshControl, AppState } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -35,6 +35,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
   const [hasLoadedHistoricalData, setHasLoadedHistoricalData] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const appState = useRef(AppState.currentState)
 
   // Recarregar desafios ativos quando a tela ganhar foco
   useFocusEffect(
@@ -42,6 +43,26 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       setActiveChallengesRefreshKey(prev => prev + 1)
     }, [])
   )
+
+  // Recarregar dados quando o app voltar do background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App voltou para foreground, recarregar dados
+        checkPermissionAndLoadData()
+        loadUserGroups()
+        setActiveChallengesRefreshKey(prev => prev + 1)
+      }
+      appState.current = nextAppState
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [userData])
 
   useEffect(() => {
     checkPermissionAndLoadData()

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert, ActivityIndicator, RefreshControl } from "react-native"
+import React, { useState, useEffect, useRef } from "react"
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert, ActivityIndicator, RefreshControl, AppState } from "react-native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"
@@ -34,6 +34,7 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true)
   const [activeChallengesRefreshKey, setActiveChallengesRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const appState = useRef(AppState.currentState)
 
   // Form state for new challenge
   const [formData, setFormData] = useState({
@@ -53,6 +54,25 @@ export const DesafiosPublicosScreen: React.FC<DesafiosPublicosScreenProps> = ({ 
       fetchAvailableChallenges()
     }, [])
   )
+
+  // Recarregar dados quando o app voltar do background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App voltou para foreground, recarregar desafios
+        fetchAvailableChallenges()
+        setActiveChallengesRefreshKey(prev => prev + 1)
+      }
+      appState.current = nextAppState
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [userData])
 
   // Buscar desafios disponíveis do Firestore
   const fetchAvailableChallenges = async () => {
