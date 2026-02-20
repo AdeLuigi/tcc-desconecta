@@ -253,6 +253,8 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val lastForeground = mutableMapOf<String, Long>()
             // Variável para acumular o tempo total de uso
             var totalTime = 0L
+            // Timeout máximo para uma sessão sem evento de background (5 minutos em milissegundos)
+            val SESSION_TIMEOUT = 5 * 60 * 1000L
 
             // Objeto reutilizável para ler cada evento
             val event = UsageEvents.Event()
@@ -274,7 +276,18 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 when (event.eventType) {
                     // Quando o app vai para primeiro plano
                     UsageEvents.Event.MOVE_TO_FOREGROUND -> {
-                        lastForeground[pkg] = event.timeStamp // Registra o momento em que foi para primeiro plano
+                        // Se já existe um foreground anterior, fecha essa sessão antes de iniciar nova
+                        val previousStart = lastForeground[pkg]
+                        if (previousStart != null && event.timeStamp > previousStart) {
+                            val sessionStart = maxOf(previousStart, startTime)
+                            // Aplica timeout: se a diferença for maior que o timeout, limita a sessão
+                            val maxSessionEnd = previousStart + SESSION_TIMEOUT
+                            val sessionEnd = minOf(event.timeStamp, endTime, maxSessionEnd)
+                            if (sessionEnd > sessionStart) {
+                                totalTime += (sessionEnd - sessionStart)
+                            }
+                        }
+                        lastForeground[pkg] = event.timeStamp // Registra o novo foreground
                     }
                     // Quando o app vai para segundo plano
                     UsageEvents.Event.MOVE_TO_BACKGROUND -> {
@@ -299,8 +312,9 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             lastForeground.forEach { (_, startedAt) ->
                 // Calcula o início da sessão
                 val sessionStart = maxOf(startedAt, startTime)
-                // Usa o momento atual como fim da sessão
-                val sessionEnd = endTime
+                // Aplica timeout para apps ainda em foreground
+                val maxSessionEnd = startedAt + SESSION_TIMEOUT
+                val sessionEnd = minOf(endTime, maxSessionEnd)
                 // Se a sessão tem duração válida
                 if (sessionEnd > sessionStart) {
                     // Adiciona a duração ao tempo total
@@ -356,6 +370,8 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val lastForeground = mutableMapOf<String, Long>()
             // Mapa para acumular tempo de uso por app
             val appUsageMap = mutableMapOf<String, Long>()
+            // Timeout máximo para uma sessão sem evento de background (5 minutos em milissegundos)
+            val SESSION_TIMEOUT = 5 * 60 * 1000L
 
             // Objeto reutilizável para ler eventos
             val event = UsageEvents.Event()
@@ -365,6 +381,20 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 events.getNextEvent(event) // Lê o próximo evento
                 eventCount++
                 val pkg = event.packageName ?: continue // Obtém o pacote, pula se nulo
+
+                // Log especial para apps de telefone
+                if (pkg.contains("phone", ignoreCase = true) || 
+                    pkg.contains("dialer", ignoreCase = true) ||
+                    pkg.contains("call", ignoreCase = true)) {
+                    val eventType = when(event.eventType) {
+                        UsageEvents.Event.MOVE_TO_FOREGROUND -> "FOREGROUND"
+                        UsageEvents.Event.MOVE_TO_BACKGROUND -> "BACKGROUND"
+                        else -> "OTHER(${event.eventType})"
+                    }
+                    val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                        .format(java.util.Date(event.timeStamp))
+                    Log.d("ScreenTimeModule", "📞 TELEFONE: $pkg - $eventType às $timestamp")
+                }
 
                 // Verifica se o pacote é um app relevante usando a função auxiliar
                 if (!validatedApps.contains(pkg)) {
@@ -379,7 +409,28 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 when (event.eventType) {
                     // App foi para primeiro plano
                     UsageEvents.Event.MOVE_TO_FOREGROUND -> {
-                        lastForeground[pkg] = event.timeStamp // Registra o timestamp
+                        // Se já existe um foreground anterior, fecha essa sessão antes de iniciar nova
+                        val previousStart = lastForeground[pkg]
+                        if (previousStart != null && event.timeStamp > previousStart) {
+                            val sessionStart = maxOf(previousStart, startTime)
+                            // Aplica timeout: se a diferença for maior que o timeout, limita a sessão
+                            val maxSessionEnd = previousStart + SESSION_TIMEOUT
+                            val sessionEnd = minOf(event.timeStamp, endTime, maxSessionEnd)
+                            if (sessionEnd > sessionStart) {
+                                val sessionTime = sessionEnd - sessionStart
+                                appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + sessionTime
+                                
+                                // Log de sessão fechada para telefone
+                                if (pkg.contains("phone", ignoreCase = true) || 
+                                    pkg.contains("dialer", ignoreCase = true) ||
+                                    pkg.contains("call", ignoreCase = true)) {
+                                    val minutosAdicionados = (sessionTime / 1000 / 60).toInt()
+                                    val totalAtual = (appUsageMap[pkg]!! / 1000 / 60).toInt()
+                                    Log.d("ScreenTimeModule", "📞 SESSÃO FECHADA (novo foreground): +${minutosAdicionados}min (total: ${totalAtual}min)")
+                                }
+                            }
+                        }
+                        lastForeground[pkg] = event.timeStamp // Registra o novo foreground
                     }
                     // App foi para segundo plano
                     UsageEvents.Event.MOVE_TO_BACKGROUND -> {
@@ -396,6 +447,15 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                                 val sessionTime = sessionEnd - sessionStart
                                 // Adiciona ao tempo acumulado do app (soma com o valor existente ou 0)
                                 appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + sessionTime
+                                
+                                // Log de sessão normal para telefone
+                                if (pkg.contains("phone", ignoreCase = true) || 
+                                    pkg.contains("dialer", ignoreCase = true) ||
+                                    pkg.contains("call", ignoreCase = true)) {
+                                    val minutosAdicionados = (sessionTime / 1000 / 60).toInt()
+                                    val totalAtual = (appUsageMap[pkg]!! / 1000 / 60).toInt()
+                                    Log.d("ScreenTimeModule", "📞 SESSÃO NORMAL (background): +${minutosAdicionados}min (total: ${totalAtual}min)")
+                                }
                             }
                         }
                     }
@@ -406,8 +466,9 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             lastForeground.forEach { (pkg, startedAt) ->
                 // Calcula o início da sessão
                 val sessionStart = maxOf(startedAt, startTime)
-                // Usa o momento atual como fim
-                val sessionEnd = endTime
+                // Aplica timeout para apps ainda em foreground
+                val maxSessionEnd = startedAt + SESSION_TIMEOUT
+                val sessionEnd = minOf(endTime, maxSessionEnd)
                 // Se a sessão é válida
                 if (sessionEnd > sessionStart) {
                     // Calcula a duração
@@ -432,6 +493,17 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             appUsageMap.entries.sortedByDescending { it.value }.forEach { entry ->
                 val timeInMinutes = (entry.value / 1000 / 60).toInt()
                 Log.d("ScreenTimeModule", "App: ${entry.key}, Tempo: $timeInMinutes min")
+                
+                // Log final para o telefone
+                if (entry.key.contains("phone", ignoreCase = true) || 
+                    entry.key.contains("dialer", ignoreCase = true) ||
+                    entry.key.contains("call", ignoreCase = true)) {
+                    Log.d("ScreenTimeModule", "📞 ═══════════════════════════════════")
+                    Log.d("ScreenTimeModule", "📞 TEMPO FINAL DO TELEFONE: ${entry.key}")
+                    Log.d("ScreenTimeModule", "📞 TOTAL: ${timeInMinutes} minutos")
+                    Log.d("ScreenTimeModule", "📞 ═══════════════════════════════════")
+                }
+                
                 // Cria um mapa para os dados do app
                 val appData = WritableNativeMap()
                 // Adiciona o nome do pacote
@@ -595,6 +667,8 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val lastForeground = mutableMapOf<String, Long>()
             // Mapa para acumular tempo de uso por app
             val appUsageMap = mutableMapOf<String, Long>()
+            // Timeout máximo para uma sessão sem evento de background (5 minutos em milissegundos)
+            val SESSION_TIMEOUT = 5 * 60 * 1000L
 
             // Objeto reutilizável para ler eventos
             val event = UsageEvents.Event()
@@ -616,7 +690,19 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 when (event.eventType) {
                     // App foi para primeiro plano
                     UsageEvents.Event.MOVE_TO_FOREGROUND -> {
-                        lastForeground[pkg] = event.timeStamp // Registra o timestamp
+                        // Se já existe um foreground anterior, fecha essa sessão antes de iniciar nova
+                        val previousStart = lastForeground[pkg]
+                        if (previousStart != null && event.timeStamp > previousStart) {
+                            val sessionStart = maxOf(previousStart, startTime)
+                            // Aplica timeout: se a diferença for maior que o timeout, limita a sessão
+                            val maxSessionEnd = previousStart + SESSION_TIMEOUT
+                            val sessionEnd = minOf(event.timeStamp, endTime, maxSessionEnd)
+                            if (sessionEnd > sessionStart) {
+                                val sessionTime = sessionEnd - sessionStart
+                                appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + sessionTime
+                            }
+                        }
+                        lastForeground[pkg] = event.timeStamp // Registra o novo foreground
                     }
                     // App foi para segundo plano
                     UsageEvents.Event.MOVE_TO_BACKGROUND -> {
@@ -643,8 +729,9 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             lastForeground.forEach { (pkg, startedAt) ->
                 // Calcula o início da sessão
                 val sessionStart = maxOf(startedAt, startTime)
-                // Usa o fim do dia como fim da sessão
-                val sessionEnd = endTime
+                // Aplica timeout para apps ainda em foreground
+                val maxSessionEnd = startedAt + SESSION_TIMEOUT
+                val sessionEnd = minOf(endTime, maxSessionEnd)
                 // Se a sessão é válida
                 if (sessionEnd > sessionStart) {
                     // Calcula a duração
