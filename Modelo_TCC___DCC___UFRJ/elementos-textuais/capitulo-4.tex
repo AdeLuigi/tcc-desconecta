@@ -1,58 +1,65 @@
 \chapter{PROJETO E IMPLEMENTAÇÃO DA APLICAÇÃO PROPOSTA}
 
-Este capítulo apresenta o projeto e a implementação da aplicação Desconecta, descrevendo desde a concepção da arquitetura até as escolhas tecnológicas adotadas. A organização do capítulo segue uma sequência lógica: inicialmente, são apresentados os componentes principais do sistema e suas responsabilidades, sem entrar em detalhes de implementação; em seguida, é descrita a forma como esses componentes foram distribuídos entre o dispositivo móvel e a nuvem; por fim, são apresentadas as tecnologias escolhidas, com suas respectivas justificativas.
-
-O desenvolvimento da aplicação foi guiado pela necessidade de construir um \textit{MVP} (\textit{Minimum Viable Product}) funcional com uma equipe reduzida de dois desenvolvedores. Essa limitação de recursos influenciou diretamente as decisões arquiteturais e tecnológicas, priorizando soluções que permitissem agilidade no desenvolvimento e redução da complexidade técnica, sem comprometer a qualidade e a segurança da aplicação.
+Este capítulo apresenta o projeto e a implementação do aplicativo Desconecta. O foco está nas decisões de projeto e na justificativa das escolhas adotadas, detalhamentos técnicos específicos encontram-se nos apêndices. A Seção~\ref{sec:arq-logica} descreve a arquitetura lógica do sistema, definindo suas camadas e responsabilidades de forma independente de tecnologia. A Seção~\ref{sec:arq-sistema} detalha a arquitetura de sistema, mostrando como essas camadas foram instanciadas e distribuídas entre o dispositivo do usuário e a nuvem. Por fim, a Seção~\ref{sec:implementacao} apresenta as tecnologias escolhidas para cada camada e as justificativas dessas escolhas.
 
 \section{Arquitetura Lógica}
+\label{sec:arq-logica}
 
-A arquitetura lógica do Desconecta foi definida com base em dois componentes principais: o aplicativo móvel e o servidor remoto. Essa separação permite uma divisão clara de responsabilidades, em que o aplicativo concentra-se na interface e interação com o usuário, enquanto o servidor gerencia a persistência e o compartilhamento de dados entre usuários.
+A arquitetura lógica do Desconecta foi organizada em três camadas, cada uma com responsabilidades bem definidas e independentes de tecnologia ou ambiente de execução.
 
-O primeiro componente, o \textbf{aplicativo móvel}, atua como ponto central de interação do usuário com o sistema. Suas principais responsabilidades incluem: apresentar a interface gráfica para visualização de estatísticas e configurações; coletar automaticamente dados de uso do dispositivo, quando permitido pelo sistema operacional; processar localmente informações como cálculos de tempo total de uso e ordenação de aplicativos mais utilizados; gerenciar a navegação entre as diferentes telas da aplicação; e realizar validações básicas dos dados antes de enviá-los ao servidor. Além disso, esse componente também é responsável por exibir notificações e alertas relacionados ao tempo de uso, permitindo que o usuário acompanhe suas metas de forma proativa.
+A \textbf{camada de Interface com o Usuário} é responsável por tudo que o usuário visualiza e com o que interage: telas de navegação, exibição de estatísticas de uso, formulários de configuração de metas, \textit{feed} de postagens dos grupos e notificações visuais. É essa camada que traduz as ações do usuário em operações do sistema.
 
-O segundo componente, o \textbf{servidor remoto}, centraliza o armazenamento e a sincronização dos dados entre múltiplos usuários. Esse componente tem como responsabilidade: persistir de forma estruturada os dados de perfis, grupos, desafios e estatísticas de uso; autenticar usuários e controlar o acesso aos dados do sistema; gerenciar as regras de privacidade e segurança, garantindo que cada usuário acesse apenas seus próprios dados e os dados dos grupos aos quais pertence; armazenar arquivos de mídia, como fotos de perfil e capturas de tela; processar e enviar notificações \textit{push} para alertar usuários sobre eventos importantes; e sincronizar dados entre dispositivos diferentes do mesmo usuário.
+A \textbf{camada de Lógica de Negócio} concentra as regras que definem o comportamento do sistema: cálculo do tempo total de uso diário e semanal, verificação de metas e disparo de alertas, cálculo de \textit{rankings} entre membros de grupos, controle de permissões de acesso (como quem pode editar ou remover membros de um grupo) e validações antes de qualquer operação de escrita ou leitura de dados.
 
-A comunicação entre os dois componentes ocorre por meio de requisições iniciadas pelo aplicativo móvel. O servidor não controla diretamente a coleta de dados do dispositivo, pois essa atividade é sensível e deve ser realizada localmente, respeitando as permissões concedidas pelo usuário. O fluxo típico de funcionamento envolve o aplicativo coletando os dados de uso, processando-os localmente e, quando necessário, enviando os resultados ao servidor para armazenamento e compartilhamento com outros usuários em grupos ou rankings.
+A \textbf{camada de Persistência} é responsável pelo armazenamento e recuperação de dados, incluindo perfis de usuários, histórico de tempo de uso, configurações de grupos, postagens e arquivos de mídia. Ela abstrai o mecanismo de armazenamento do restante do sistema.
 
-A Figura~\ref{fig:Arquitetura} ilustra a arquitetura lógica do sistema, destacando os dois componentes principais e o fluxo de comunicação entre eles.
+O fluxo de comunicação entre as camadas segue uma direção de cima para baixo: a camada de interface aciona a lógica de negócio para executar operações, que por sua vez consulta ou grava na camada de persistência quando necessário. A Figura~\ref{fig:Arquitetura} ilustra essa organização.
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figuras/arquitetura-logica.png}
+    \includegraphics[width=0.8\textwidth]{figuras/arqutetura-logica.drawio.png}
     \caption{Arquitetura Lógica}
     \label{fig:Arquitetura}
 \end{figure}
 
 \section{Arquitetura de Sistema}
+\label{sec:arq-sistema}
 
-A instanciação da arquitetura lógica apresentada na seção anterior foi realizada com base no paradigma \textit{Backend-as-a-Service} (\textit{BaaS}), em que os serviços de \textit{backend} são terceirizados para uma plataforma gerenciada em nuvem. Essa decisão arquitetural eliminou a necessidade de implementar e manter um servidor intermediário próprio, simplificando significativamente a infraestrutura do projeto.
+A instanciação da arquitetura lógica apresentada na seção anterior foi realizada com base no paradigma \textit{Backend-as-a-Service} (\textit{BaaS}), em que os serviços de \textit{backend} são terceirizados para uma plataforma gerenciada em nuvem. Essa decisão direcionou o esforço da equipe para o desenvolvimento das funcionalidades do aplicativo, eliminando a necessidade de configurar e manter infraestrutura própria.
 
-Em uma arquitetura tradicional cliente-servidor, seria necessário desenvolver uma \textit{API REST} com \textit{endpoints} para cada operação, configurar um servidor de aplicação, gerenciar um banco de dados, implementar mecanismos de autenticação e autorização, configurar sistemas de armazenamento de arquivos e implementar um serviço de envio de notificações \textit{push}. Cada um desses componentes demandaria escolha de tecnologias específicas, configuração de ambientes de desenvolvimento e produção, além de manutenção contínua para garantir disponibilidade e segurança.
+No modelo \textit{BaaS} adotado, a camada de Persistência da arquitetura lógica foi mapeada para um conjunto de serviços gerenciados em nuvem que funcionam de forma integrada. Parte da camada de Lógica de Negócio também é executada na nuvem, como o envio de notificações e a geração de agregações para \textit{rankings} globais. O aplicativo móvel, executado no dispositivo Android do usuário, comunica-se diretamente com esses serviços por meio de \textit{Software Development Kits} (\textit{SDKs}) específicos, sem necessidade de um servidor intermediário. Essa abordagem caracteriza uma arquitetura cliente-nuvem, em que o cliente acessa diretamente os recursos de \textit{backend} disponibilizados pelo provedor de serviços.
 
-No modelo \textit{BaaS} adotado, o componente servidor remoto da arquitetura lógica foi mapeado para um conjunto de serviços gerenciados em nuvem que funcionam de forma integrada. O aplicativo móvel, executado no dispositivo Android do usuário, comunica-se diretamente com esses serviços por meio de \textit{Software Development Kits} (\textit{SDKs}) específicos, sem necessidade de um servidor intermediário. Essa abordagem caracteriza uma arquitetura cliente-nuvem, em que o cliente acessa diretamente os recursos de \textit{backend} disponibilizados pelo provedor de serviços.
+A distribuição das responsabilidades entre o dispositivo móvel e a nuvem foi definida considerando aspectos de privacidade, desempenho e requisitos do sistema operacional. No \textbf{dispositivo móvel (cliente)}, são executadas as seguintes atividades: coleta automática de dados de tempo de uso, por meio de \textit{APIs} nativas do Android que requerem permissões sensíveis do usuário; processamento local dos dados coletados, incluindo agregações, cálculos e ordenações; renderização da interface gráfica e gerenciamento da navegação entre telas; validação inicial dos dados antes do envio para a nuvem; e \textit{cache} local de informações para permitir funcionamento \textit{offline} limitado.
 
-A distribuição das responsabilidades entre o dispositivo móvel e a nuvem foi definida considerando aspectos de privacidade, desempenho e requisitos do sistema operacional. No \textbf{dispositivo móvel (cliente)}, são executadas as seguintes atividades: coleta automática de dados de tempo de uso, por meio de \textit{APIs} nativas do Android que requerem permissões sensíveis do usuário; processamento local dos dados coletados, incluindo agregações, cálculos e ordenações; renderização da interface gráfica e gerenciamento da navegação entre telas; validação inicial dos dados antes do envio para a nuvem; e cache local de informações para permitir funcionamento offline limitado.
+Na \textbf{nuvem (servidor remoto)}, são executados: armazenamento persistente de perfis de usuários, dados de grupos, estatísticas históricas e configurações; autenticação e gerenciamento de sessões de usuários; controle de acesso e aplicação de regras de segurança; armazenamento de arquivos de mídia (fotos de perfil, imagens de postagens); sincronização em tempo real de dados entre múltiplos dispositivos; processamento e envio de notificações \textit{push}; e agregações complexas para geração de \textit{rankings} globais.
 
-Na \textbf{nuvem (servidor remoto)}, são executados: armazenamento persistente de perfis de usuários, dados de grupos, estatísticas históricas e configurações; autenticação e gerenciamento de sessões de usuários; controle de acesso e aplicação de regras de segurança; armazenamento de arquivos de mídia (fotos de perfil, imagens de postagens); sincronização em tempo real de dados entre múltiplos dispositivos; processamento e envio de notificações \textit{push}; e agregações complexas para geração de rankings globais.
+Essa distribuição garante que dados sensíveis relacionados ao uso do dispositivo sejam tratados localmente, respeitando a privacidade do usuário, enquanto dados que precisam ser compartilhados (como estatísticas de grupos e \textit{rankings}) são armazenados de forma centralizada na nuvem. A comunicação entre o aplicativo e a nuvem ocorre por meio de conexão criptografada, seguindo protocolos seguros definidos pelo provedor de serviços.
 
-Essa distribuição garante que dados sensíveis relacionados ao uso do dispositivo sejam tratados localmente, respeitando a privacidade do usuário, enquanto dados que precisam ser compartilhados (como estatísticas de grupos e rankings) são armazenados de forma centralizada na nuvem. A comunicação entre o aplicativo e a nuvem ocorre por meio de conexão criptografada, seguindo protocolos seguros definidos pelo provedor de serviços.
+Uma característica importante dessa arquitetura é que o dispositivo móvel tem acesso direto aos serviços de nuvem, sem necessidade de passar por um servidor intermediário. Isso reduz a latência das operações e simplifica o fluxo de dados. No entanto, essa abordagem exige atenção especial à configuração de regras de segurança no lado do servidor, para garantir que cada usuário acesse apenas os dados autorizados, compensando a ausência de uma camada intermediária de controle. A Figura~\ref{fig:arq-sistema} ilustra essa distribuição, mostrando os serviços do Firebase que compõem a infraestrutura de nuvem e sua relação com o aplicativo cliente.
 
-Uma característica importante dessa arquitetura é que o dispositivo móvel tem acesso direto aos serviços de nuvem, sem necessidade de passar por um servidor intermediário. Isso reduz a latência das operações e simplifica o fluxo de dados. No entanto, essa abordagem exige atenção especial à configuração de regras de segurança no lado do servidor, para garantir que cada usuário acesse apenas os dados autorizados, compensando a ausência de uma camada intermediária de controle.
+\begin{figure}[H]
+    \centering
+    \caption{Arquitetura de Sistema}
+    \label{fig:arq-sistema}
+    \includegraphics[width=1\textwidth]{figuras/arquitetura-detalhada.drawio.png}
+\end{figure}
 
 \section{Implementação}
+\label{sec:implementacao}
 
-Esta seção apresenta as tecnologias selecionadas para implementar a arquitetura descrita anteriormente, justificando cada escolha com base nos requisitos do projeto e nas limitações de recursos da equipe.
+Esta seção apresenta as tecnologias selecionadas para implementar a arquitetura des\-cri\-ta anteriormente, justificando cada escolha com base nos requisitos do projeto e nas limitações de recursos da equipe.
 
 \subsection{Escolha da Plataforma BaaS: Firebase}
 
-Para implementar o componente servidor remoto da arquitetura, foi escolhido o \textbf{Firebase}\footnote{Firebase. Disponível em: \url{https://firebase.google.com/}. Acesso em: 18 fev. 2026.}, uma plataforma \textit{BaaS} mantida pelo Google. O Firebase oferece um conjunto integrado de serviços que atendem às necessidades do projeto, incluindo banco de dados, autenticação, armazenamento de arquivos e notificações \textit{push}.
+Para implementar as camadas de Persistência e parte da Lógica de Negócio na nuvem, foi escolhido o \textbf{Firebase}\footnote{Firebase. Disponível em: \url{https://firebase.google.com/}. Acesso em: 18 fev. 2026.}, uma plataforma \textit{BaaS} mantida pelo Google. O Firebase oferece um conjunto integrado de serviços que atendem às necessidades do projeto, incluindo banco de dados, autenticação, armazenamento de arquivos e notificações \textit{push}.
 
 A escolha do Firebase foi motivada por diversos fatores práticos. Primeiro, o tamanho reduzido da equipe (dois desenvolvedores) inviabilizava a implementação de uma arquitetura tradicional com \textit{backend} próprio. Desenvolver um servidor \textit{REST} completo demandaria escolher e aprender tecnologias específicas para o \textit{backend} (como Node.js, Java ou Python), configurar e gerenciar um banco de dados (como PostgreSQL ou MongoDB), implementar sistemas de autenticação seguros, configurar infraestrutura de hospedagem e monitoramento, além de lidar com questões de escalabilidade e disponibilidade. Esse esforço seria incompatível com o prazo e os recursos disponíveis para um \textit{MVP}.
 
-Segundo, o Firebase abstrai toda essa complexidade, oferecendo serviços prontos para produção que podem ser configurados rapidamente. A plataforma gerencia automaticamente aspectos como escalabilidade, backup, segurança física dos servidores e atualizações de segurança, permitindo que a equipe concentre-se exclusivamente no desenvolvimento das funcionalidades da aplicação.
+Segundo, o Firebase abstrai toda essa complexidade, oferecendo serviços prontos para produção que podem ser configurados rapidamente. A plataforma gerencia automaticamente aspectos como escalabilidade, \textit{backup}, segurança física dos servidores e atualizações de segurança, permitindo que a equipe concentre-se exclusivamente no desenvolvimento das funcionalidades da aplicação.
 
-Terceiro, o Firebase possui um plano gratuito (\textit{Spark Plan}) generoso, que atende perfeitamente às necessidades de um \textit{MVP}. O plano gratuito comporta até 50.000 leituras e 20.000 escritas diárias no banco de dados, 1 GB de armazenamento de arquivos e envio ilimitado de notificações para Android, recursos mais do que suficientes para os testes iniciais e validação da solução com usuários reais.
+Terceiro, o Firebase possui um plano gratuito (\textit{Spark Plan}) com limites suficientes para um \textit{MVP}, o que permitiu desenvolver e validar a solução sem incorrer em custos de infraestrutura durante essa fase inicial.
 
-Quarto, a integração do Firebase com aplicações móveis é extremamente simplificada. Os \textit{SDKs} oficiais para Android são bem documentados e amplamente utilizados pela comunidade, o que facilita a resolução de problemas e a busca por exemplos de implementação. Além disso, o Firebase oferece sincronização em tempo real de dados, funcionalidade que seria complexa de implementar em um \textit{backend} próprio, mas que é essencial para recursos como atualização automática de rankings e notificações de eventos em grupos.
+Quarto, a integração do Firebase com aplicações móveis é extremamente simplificada. Os \textit{SDKs} oficiais para Android são bem documentados e amplamente utilizados pela comunidade, o que facilita a resolução de problemas e a busca por exemplos de implementação. Além disso, o Firebase oferece sincronização em tempo real de dados, funcionalidade que seria complexa de implementar em um \textit{backend} próprio, mas que é essencial para recursos como atualização automática de \textit{rankings} e notificações de eventos em grupos.
 
 O Firebase é composto por diversos serviços integrados, sendo os principais utilizados no projeto: \textbf{Cloud Firestore}, \textbf{Firebase Authentication}, \textbf{Firebase Storage} e \textbf{Firebase Cloud Messaging}. Cada um desses serviços será detalhado nas subseções seguintes.
 
@@ -60,9 +67,9 @@ O Firebase é composto por diversos serviços integrados, sendo os principais ut
 
 O serviço de persistência de dados foi implementado utilizando o \textbf{Cloud Firestore}\footnote{Cloud Firestore. Disponível em: \url{https://firebase.google.com/products/firestore}. Acesso em: 18 fev. 2026.}, um banco de dados \textit{NoSQL} orientado a documentos que oferece capacidade de sincronização em tempo real e escalabilidade automática.
 
-O Firestore organiza os dados em coleções de documentos, em que cada documento é um objeto \textit{JSON} com pares chave-valor. Essa estrutura flexível permite armazenar dados sem necessidade de definir esquemas rígidos previamente, facilitando iterações rápidas durante o desenvolvimento do \textit{MVP}. Por exemplo, adicionar um novo campo ao perfil do usuário requer apenas começar a salvá-lo no documento, sem necessidade de migrations ou alterações de esquema no banco de dados.
+O Firestore organiza os dados em coleções de documentos, em que cada documento é um objeto \textit{JSON} com pares chave-valor. Essa estrutura flexível permite armazenar dados sem necessidade de definir esquemas rígidos previamente, facilitando iterações rápidas durante o desenvolvimento do \textit{MVP}. Por exemplo, adicionar um novo campo ao perfil do usuário requer apenas começar a salvá-lo no documento, sem necessidade de alterações de esquema no banco de dados.
 
-A escolha do Firestore foi motivada principalmente pela funcionalidade de sincronização em tempo real. Quando um dado é atualizado no banco, todos os clientes conectados que estejam observando esse dado recebem a atualização automaticamente, sem necessidade de implementar \textit{polling} ou \textit{websockets} manualmente. Esse recurso é fundamental para funcionalidades como a atualização automática de rankings de grupos e a exibição de novas postagens em tempo real.
+A escolha do Firestore foi motivada principalmente pela funcionalidade de sincronização em tempo real. Quando um dado é atualizado no banco, todos os clientes conectados que estejam observando esse dado recebem a atualização automaticamente, sem necessidade de implementar \textit{polling} ou \textit{websockets} manualmente. Esse recurso é fundamental para funcionalidades como a atualização automática de \textit{rankings} de grupos e a exibição de novas postagens em tempo real.
 
 Além disso, o Firestore permite realizar consultas complexas diretamente do cliente, incluindo filtros, ordenações e limitações de resultados. Embora essa abordagem exija cuidado especial com as regras de segurança, ela simplifica significativamente a implementação, eliminando a necessidade de criar \textit{endpoints} específicos para cada tipo de consulta.
 
@@ -70,9 +77,9 @@ Além disso, o Firestore permite realizar consultas complexas diretamente do cli
 
 O gerenciamento de identidade dos usuários foi implementado utilizando o \textbf{Firebase Authentication}\footnote{Firebase Authentication. Disponível em: \url{https://firebase.google.com/products/auth}. Acesso em: 18 fev. 2026.}, que oferece integração pronta com diversos provedores de identidade, incluindo Google, Facebook, e-mail/senha, entre outros.
 
-No Desconecta, optou-se por implementar apenas a autenticação via conta Google, decisão que traz diversos benefícios práticos. Primeiro, a maioria dos usuários de dispositivos Android já possui uma conta Google configurada no aparelho, eliminando a necessidade de criar uma nova conta específica para o aplicativo. Segundo, a autenticação via Google é percebida como mais segura pelos usuários, pois delega a responsabilidade de gerenciar credenciais para uma empresa de grande porte com expertise em segurança. Terceiro, a implementação é simplificada com o uso da biblioteca \textit{@react-native-google-signin/google-signin}\footnote{@react-native-google-signin/google-signin. Disponível em: \url{https://github.com/react-native-google-signin/google-signin}. Acesso em: 18 fev. 2026.}, que encapsula toda a comunicação com as \textit{APIs} do Google.
+No Desconecta, optou-se por implementar apenas a autenticação via conta Google, decisão que traz diversos benefícios práticos. A maioria dos usuários de dispositivos Android já possui uma conta Google configurada no aparelho, eliminando a necessidade de criar uma nova conta específica para o aplicativo. A autenticação via Google é percebida como mais segura pelos usuários, pois delega a responsabilidade de gerenciar credenciais para uma empresa de grande porte com expertise em segurança. A implementação é simplificada com o uso da biblioteca \textit{@react-native-google-signin/google-signin}\footnote{@react-native-google-signin/google-signin. Disponível em: \url{https://github.com/react-native-google-signin/google-signin}. Acesso em: 18 fev. 2026.}, que encapsula toda a comunicação com as \textit{APIs} do Google.
 
-O Firebase Authentication gerencia automaticamente tokens de sessão, renovação de tokens expirados e controle de acesso baseado em identificadores únicos de usuário (\textit{UIDs}). Esses \textit{UIDs} são utilizados nas regras de segurança do Firestore para garantir que cada usuário acesse apenas seus próprios dados e os dados dos grupos aos quais pertence.
+O Firebase Authentication gerencia automaticamente \textit{tokens} de sessão, renovação de \textit{tokens} expirados e controle de acesso baseado em identificadores únicos de usuário (\textit{UIDs}). Esses \textit{UIDs} são utilizados nas regras de segurança do Firestore para garantir que cada usuário acesse apenas seus próprios dados e os dados dos grupos aos quais pertence.
 
 \subsection{Armazenamento de Arquivos: Firebase Storage}
 
@@ -86,9 +93,9 @@ Para otimizar o uso de armazenamento e reduzir o consumo de dados dos usuários,
 
 O sistema de notificações \textit{push} foi implementado utilizando o \textbf{Firebase Cloud Messaging} (\textit{FCM})\footnote{Firebase Cloud Messaging. Disponível em: \url{https://firebase.google.com/products/cloud-messaging}. Acesso em: 18 fev. 2026.}, que permite enviar notificações para dispositivos Android e iOS de forma unificada.
 
-O funcionamento do sistema de notificações envolve três etapas principais. Primeiro, quando um usuário faz login no aplicativo, um token único é gerado pelo FCM e associado ao dispositivo. Esse token é armazenado no documento do usuário no Firestore. Segundo, quando ocorre um evento que deve gerar notificação (como uma nova postagem em um grupo), o aplicativo cria um documento na coleção \textit{notificacoes\_pendentes} contendo os tokens dos destinatários e o conteúdo da notificação. Terceiro, uma \textit{Cloud Function} monitora essa coleção e, ao detectar novas notificações pendentes, utiliza a \textit{API} administrativa do Firebase para enviá-las aos dispositivos correspondentes.
+O funcionamento do sistema de notificações envolve três etapas principais. Quando um usuário faz \textit{login} no aplicativo, um \textit{token} único é gerado pelo FCM e associado ao dispositivo. Esse \textit{token} é armazenado no documento do usuário no Firestore. Quando ocorre um evento que deve gerar notificação (como uma nova postagem em um grupo), o aplicativo cria um documento na coleção \textit{notificacoes\_pendentes} contendo os \textit{tokens} dos destinatários e o conteúdo da notificação. Uma \textit{Cloud Function} monitora essa coleção e, ao detectar novas notificações pendentes, utiliza a \textit{API} administrativa do Firebase para enviá-las aos dispositivos correspondentes.
 
-Essa arquitetura baseada em filas garante que o envio de notificações não bloqueie a execução do aplicativo e permite processamento em lote de múltiplas notificações. As \textit{Cloud Functions} são funções serverless que executam em resposta a eventos no Firebase, eliminando a necessidade de manter um servidor dedicado para processamento de tarefas assíncronas.
+Essa arquitetura baseada em filas garante que o envio de notificações não bloqueie a execução do aplicativo e permite processamento em lote de múltiplas notificações. As \textit{Cloud Functions} são funções \textit{serverless} que executam em resposta a eventos no Firebase, eliminando a necessidade de manter um servidor dedicado para processamento de tarefas assíncronas.
 
 \subsection{Desenvolvimento Mobile: React Native}
 
@@ -98,17 +105,16 @@ A principal vantagem do React Native é a possibilidade de manter uma única bas
 
 Além disso, ambos os membros da equipe já tinham conhecimento prévio em JavaScript e React, o que eliminou a necessidade de aprender novas linguagens de programação e acelerou significativamente o desenvolvimento. O ecossistema React Native também oferece uma vasta quantidade de bibliotecas de terceiros para funcionalidades comuns, como navegação (\textit{@react-navigation/native}\footnote{React Navigation. Disponível em: \url{https://reactnavigation.org/}. Acesso em: 18 fev. 2026.}), seleção de imagens e integração com serviços do Firebase.
 
-A estrutura do código foi organizada seguindo o padrão \textit{Ignite}\footnote{Ignite. Disponível em: \url{https://github.com/infinitered/ignite}. Acesso em: 18 fev. 2026.}, um boilerplate para React Native que oferece estrutura de pastas padronizada, componentes reutilizáveis e configurações otimizadas para produção. O uso de um boilerplate estabelecido reduziu o tempo gasto em decisões arquiteturais básicas e garantiu que o projeto seguisse boas práticas reconhecidas pela comunidade.
+A estrutura do código foi organizada seguindo o padrão \textit{Ignite}\footnote{Ignite. Disponível em: \url{https://github.com/infinitered/ignite}. Acesso em: 18 fev. 2026.}, um \textit{boilerplate} para React Native que oferece estrutura de pastas padronizada, componentes reutilizáveis e configurações otimizadas para produção. O uso de um \textit{boilerplate} estabelecido reduziu o tempo gasto em decisões arquiteturais básicas e garantiu que o projeto seguisse boas práticas reconhecidas pela comunidade.
 
 \subsection{Linguagem de Programação: JavaScript e TypeScript}
 
 Todo o código do aplicativo foi escrito em \textbf{JavaScript} e \textbf{TypeScript}\footnote{TypeScript. Disponível em: \url{https://www.typescriptlang.org/}. Acesso em: 18 fev. 2026.}, com preferência por TypeScript para novos componentes devido aos benefícios de tipagem estática.
 
-O TypeScript é um superconjunto do JavaScript que adiciona tipos estáticos opcionais, permitindo detectar erros em tempo de desenvolvimento antes da execução do código. Essa característica é especialmente útil em projetos maiores, em que a refatoração de código pode introduzir inconsistências. O compilador do TypeScript verifica automaticamente se os tipos estão corretos, reduzindo a ocorrência de bugs relacionados a tipos de dados incorretos.
+O TypeScript é um superconjunto do JavaScript que adiciona tipos estáticos opcionais, permitindo detectar erros em tempo de desenvolvimento antes da execução do código. Essa característica é especialmente útil em projetos maiores, em que a refatoração de código pode introduzir inconsistências. O compilador do TypeScript verifica automaticamente se os tipos estão corretos, reduzindo a ocorrência de \textit{bugs} relacionados a tipos de dados incorretos.
 
-Além disso, o TypeScript melhora significativamente a experiência de desenvolvimento, oferecendo autocomplete inteligente nos editores de código e permitindo navegação facilitada entre definições de funções e tipos. Embora a curva de aprendizado inicial seja ligeiramente maior em comparação ao JavaScript puro, os benefícios a longo prazo compensam esse investimento inicial, especialmente em um projeto que pode crescer e evoluir após a fase de \textit{MVP}.
+Além disso, o TypeScript melhora significativamente a experiência de desenvolvimento, oferecendo \textit{autocomplete} inteligente nos editores de código e permitindo navegação fa\-ci\-li\-ta\-da entre definições de funções e tipos. Embora a curva de aprendizado inicial seja ligeiramente maior em comparação ao JavaScript puro, os benefícios a longo prazo compensam esse investimento inicial, especialmente em um projeto que pode crescer e evoluir após a fase de \textit{MVP}.
 
-\subsection{Funcionalidades do Aplicativo}
 \subsection{Funcionalidades do Aplicativo}
 
 As funcionalidades do aplicativo Desconecta foram agrupadas em quatro categorias principais, cada uma atendendo a um conjunto específico de requisitos funcionais definidos no Capítulo 3:
@@ -119,51 +125,51 @@ As funcionalidades do aplicativo Desconecta foram agrupadas em quatro categorias
 
 \textbf{(iii) Alertas com Notificação e Metas Pessoais}: Esta categoria é responsável pelo gerenciamento de metas individuais e coletivas relacionadas ao tempo de uso. O usuário pode definir limites diários de tempo de tela, tanto para o dispositivo como um todo quanto para aplicativos ou categorias específicas (como redes sociais ou jogos). Quando o tempo de uso se aproxima do limite estabelecido ou o ultrapassa, o sistema envia notificações \textit{push} para alertar o usuário. Além das metas pessoais, o sistema também envia notificações relacionadas a grupos, como avisos de conclusão de desafios semanais e informações sobre atividades de outros membros.
 
-\textbf{(iv) Interação Social e Gamificação}: Esta é a categoria central do aplicativo, implementando as funcionalidades colaborativas e competitivas que diferenciam o Desconecta de aplicativos convencionais de monitoramento de uso. Os usuários podem criar grupos privados ou entrar em grupos públicos, estabelecer metas coletivas de redução de tempo de tela e acompanhar o desempenho dos membros através de rankings. O sistema também permite que usuários compartilhem hábitos saudáveis alternativos ao uso do celular, criando um feed de postagens dentro de cada grupo. Rankings globais permitem comparar o desempenho individual com a média de todos os usuários da plataforma. Todas essas funcionalidades utilizam sincronização em tempo real, garantindo que alterações feitas por um usuário sejam imediatamente visíveis para os demais membros.
+\textbf{(iv) Interação Social e Gamificação}: Esta é a categoria central do aplicativo, implementando as funcionalidades colaborativas e competitivas que diferenciam o Des\-co\-nec\-ta de aplicativos convencionais de monitoramento de uso. Os usuários podem criar grupos privados, estabelecer metas coletivas de redução de tempo de tela e acompanhar o desempenho dos membros através de \textit{rankings}. O sistema também permite que usuários compartilhem hábitos saudáveis alternativos ao uso do celular, criando um \textit{feed} de postagens dentro de cada grupo. Todas essas funcionalidades utilizam sincronização em tempo real, garantindo que alterações feitas por um usuário sejam imediatamente visíveis para os demais membros.
 
 \subsection{Estrutura de Telas}
 
-A estrutura de navegação do aplicativo foi planejada para permitir acesso rápido às funcionalidades principais mantendo uma organização lógica e intuitiva. O fluxo de uso inicia-se com as telas de \textit{onboarding} e autenticação, que apresentam o propósito do aplicativo e permitem o login via conta Google.
+A estrutura de navegação do aplicativo foi planejada para permitir acesso rápido às funcionalidades principais mantendo uma organização lógica e intuitiva. O fluxo de uso inicia-se com as telas de \textit{onboarding} e autenticação, que apresentam o propósito do aplicativo e permitem o \textit{login} via conta Google.
 
 Após a autenticação, o usuário tem acesso à estrutura principal do aplicativo, organizada em cinco eixos de funcionalidade representados por uma navegação em abas na parte inferior da tela: Grupos de Amigos, Desafios Públicos, Home Dinâmica, Estatísticas Pessoais e Configurações. Cada aba dá acesso a um conjunto relacionado de telas específicas.
 
-A Home Dinâmica serve como ponto central de visualização, apresentando um resumo das estatísticas de uso do dia, metas definidas e atalhos para funcionalidades frequentemente acessadas. As Estatísticas Pessoais oferecem visualização detalhada do histórico de uso, incluindo gráficos de evolução semanal e listagem de aplicativos mais utilizados. A área de Grupos de Amigos lista os grupos dos quais o usuário participa e permite acesso aos detalhes de cada grupo, incluindo feed de postagens, ranking e configurações. Os Desafios Públicos apresentam ranking global e desafios regionais ou temáticos disponíveis para todos os usuários. Por fim, as Configurações permitem gerenciar o perfil, ajustar preferências de notificações e definir metas pessoais.
+A Home Dinâmica serve como ponto central de visualização, apresentando um resumo das estatísticas de uso do dia e atalhos para funcionalidades frequentemente acessadas. As Estatísticas Pessoais oferecem visualização detalhada do histórico de uso, incluindo gráficos de evolução semanal e listagem de aplicativos mais utilizados. A área de Grupos de Amigos lista os grupos dos quais o usuário participa e permite acesso aos detalhes de cada grupo, incluindo feed de postagens, ranking e configurações. Por fim, as Configurações permitem gerenciar o perfil, ajustar preferências de notificações e definir metas pessoais.
 
 A Figura~\ref{fig:fluxo-telas} apresenta o mapa completo da estrutura de navegação, mostrando todas as telas implementadas e suas conexões. A listagem detalhada de cada tela, descrevendo suas funcionalidades específicas, encontra-se no Apêndice D.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \caption{Fluxo de Telas}
     \label{fig:fluxo-telas}
     \includegraphics[width=1\textwidth]{figuras/telas.jpeg}
 \end{figure}
 
-\subsection{Requisitos Funcionais Implementados}
+\subsection{Funcionalidades implementadas}
 
-Os requisitos funcionais do aplicativo Desconecta foram definidos com base no levantamento apresentado no Capítulo 3 e nas necessidades identificadas durante o estudo com o grupo de testes. Esta subseção apresenta os requisitos funcionais organizados pelas categorias de funcionalidade, descrevendo o que o sistema deve permitir ao usuário realizar. As tabelas a seguir detalham cada requisito, associando-o à sua respectiva categoria funcional.
+Esta subseção apresenta as funcionalidades implementadas no protótipo, organizadas pelas quatro categorias definidas, e as associa aos Requisitos Funcionais levantados no Capítulo~3. Mais de uma funcionalidade implementada pode corresponder a um mesmo RF, pois um requisito pode ser atendido por partes em diferentes telas ou fluxos do aplicativo.
+
 \begin{table}[H]
 \centering
-\caption{Quadro 1 - Requisitos Funcionais de (i) Perfil
-e Personalização}
-\begin{tabularx}{\textwidth}{|c|l|X|}
+\caption{Requisitos Funcionais de (i) Perfil e Personalização}
+\begin{tabularx}{\textwidth}{|c|l|X|c|}
 \hline
 \rowcolor{verdeclaro}
-\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} \\ \hline
+\textbf{RF} & \textbf{FUNCIONALIDADE} & \textbf{DESCRIÇÃO} & \textbf{RF Cap.~3} \\ \hline
 
 1 & Criar Conta &
-Deve ser possível criar uma conta de usuário do aplicativo utilizando o \textit{Firebase Authentication}. \\ \hline
+Deve ser possível criar uma conta de usuário do aplicativo utilizando o \textit{Firebase Authentication}. & 8 \\ \hline
 
 2 & Editar Dados Pessoais &
-Deve ser possível editar dados pessoais em sua conta de usuário, como nome e descrição, mas não o email. \\ \hline
+Deve ser possível editar dados pessoais em sua conta de usuário, como nome e descrição, mas não o email. & 8 \\ \hline
 
 3 & Enviar Foto de Perfil &
-Deve ser possível enviar uma foto de perfil nova, caso haja uma cadastrada, substituir a anterior. \\ \hline
+Deve ser possível enviar uma foto de perfil nova, caso haja uma cadastrada, substituir a anterior. & 8 \\ \hline
 
 4 & Autenticação &
-Deve ser possível se autenticar no aplicativo por meio de uma conta Google, provedor de autenticação atualmente implementado. \\ \hline
+Deve ser possível se autenticar no aplicativo por meio de uma conta Google, provedor de autenticação atualmente implementado. & 8 \\ \hline
 
 5 & Fazer Logout &
-Deve ser possível fazer \textit{logout} do aplicativo, voltando para tela de \textit{login}. \\ \hline
+Deve ser possível fazer \textit{logout} do aplicativo, voltando para tela de \textit{login}. & 8 \\ \hline
 
 \end{tabularx}
 \end{table}
@@ -171,17 +177,17 @@ Deve ser possível fazer \textit{logout} do aplicativo, voltando para tela de \t
 
 \begin{table}[H]
 \centering
-\caption{Quadro 1 - Requisitos Funcionais de (ii) Monitoramento de Uso de Tela}
-\begin{tabularx}{\textwidth}{|c|l|X|}
+\caption{Requisitos Funcionais de (ii) Monitoramento de Uso de Tela}
+\begin{tabularx}{\textwidth}{|c|l|X|c|}
 \hline
 \rowcolor{verdeclaro}
-\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} \\ \hline
+\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} & \textbf{RF Cap.~3} \\ \hline
 
 1 & Monitoramento de Uso de Tela &
-Deve ser possível monitorar o tempo de tela e dos aplicativos do usuário. \\ \hline
+Deve ser possível monitorar o tempo de tela diário, o tempo por aplicativo e comparar com o histórico semanal. & 2, 3, 4 \\ \hline
 
-2 & Cadastro de Monitoramento de Uso de Tela &
-Deve ser possível cadastrar uma imagem do monitoramento de uso de tela. \\ \hline
+2 & Registro Manual de Uso &
+Deve ser possível cadastrar uma imagem do monitoramento de uso de tela quando a coleta automática não estiver disponível. & 5 \\ \hline
 
 \end{tabularx}
 \end{table}
@@ -189,92 +195,89 @@ Deve ser possível cadastrar uma imagem do monitoramento de uso de tela. \\ \hli
 
 \begin{table}[H]
 \centering
-\caption{Quadro 1 - Requisitos Funcionais de (iii) alertas com Notificação e Metas Pessoais}
-\begin{tabularx}{\textwidth}{|c|l|X|}
+\caption{Requisitos Funcionais de (iii) Alertas com Notificação e Metas Pessoais}
+\begin{tabularx}{\textwidth}{|c|l|X|c|}
 \hline
 \rowcolor{verdeclaro}
-\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} \\ \hline
+\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} & \textbf{RF Cap.~3} \\ \hline
 
-1 & Meta pessoal 1 &
-Deve ser possível definir uma meta de tempo de tela. \\ \hline
+1 & Meta pessoal geral &
+Deve ser possível definir uma meta de tempo total de tela. & 9 \\ \hline
 
-2 & Meta pessoal 2 &
-Deve ser possível definir uma meta de tempo de tela para uma aplicativo específico. \\ \hline
+2 & Meta por aplicativo &
+Deve ser possível definir uma meta de tempo de tela para um aplicativo específico. & 9 \\ \hline
 
-3 & Meta pessoal 3 &
-Deve ser possível definir uma meta de tempo de tela para uma categoria de aplicativos específicos. \\ \hline
+3 & Meta por categoria &
+Deve ser possível definir uma meta de tempo de tela para uma categoria de aplicativos. & 9 \\ \hline
 
-4 & Notificação de meta 1 &
-Deve ser possível definir uma notificação caso o usuário esteja próximo de romper a meta pessoal, essa notificação já vem por padrão. \\ \hline
+4 & Notificação de meta: aproximação &
+Deve ser possível receber uma notificação quando o tempo de uso estiver próximo de atingir a meta definida. & 6 \\ \hline
 
-5 & Notificação de meta 2 &
-Deve ser possível definir uma notificação caso o usuário ultrapasse a meta pessoal. \\ \hline
+5 & Notificação de meta: ultrapassagem &
+Deve ser possível receber uma notificação quando o tempo de uso ultrapassar a meta definida. & 6 \\ \hline
 
-6 & Notificação de grupo 1 &
-Deve ser possível definir uma notificação no começo de cada semana, avisando quem ganhou naquela semana, essa notificação já vem por padrão. \\ \hline
+6 & Notificação de grupo semanal &
+Deve ser possível receber uma notificação no início de cada semana informando o resultado do grupo naquela semana. & 11 \\ \hline
 
-7 & Notificação de grupo 2 &
-Deve ser possível definir uma notificação assim que um usuário adicionar um hábito saudável no grupo. \\ \hline
+7 & Notificação de novo hábito &
+Deve ser possível receber uma notificação quando um membro do grupo registrar um hábito saudável. & 11 \\ \hline
 
 \end{tabularx}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Quadro 1 - Interação Social e Gamificação}
-\begin{tabularx}{\textwidth}{|c|l|X|}
+\caption{Requisitos Funcionais de (iv) Interação Social e Gamificação}
+\begin{tabularx}{\textwidth}{|c|l|X|c|}
 \hline
 \rowcolor{verdeclaro}
-\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} \\ \hline
+\textbf{RF} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} & \textbf{RF Cap.~3} \\ \hline
 
-1 & Listar Grupos  &
-Deve ser possível visualizar uma lista com grupos em que o usuário está inscrito. \\ \hline
+1 & Listar Grupos &
+Deve ser possível visualizar uma lista com os grupos em que o usuário está inscrito. & 10 \\ \hline
 
 2 & Ver Grupo &
-Deve ser possível ver o grupo em detalhes, isso inclui os usuários do grupo, postagens de hábitos saudáveis, \textit{ranking} do grupo, regras do grupo, opção de compartilhar ou sair do grupo. Caso o usuário seja moderador do grupo, ele poderá retirar usuários do grupo e transformar usuários em moderadores.  \\ \hline
+Deve ser possível ver o grupo em detalhes: membros, postagens de hábitos saudáveis, \textit{ranking} do grupo, regras e opção de compartilhar ou sair. Moderadores podem remover membros e promover outros moderadores. & 10, 12 \\ \hline
 
-3 & Definição de Meta &
-Deve ser possível definir uma meta de tempo de tela para o grupo. \\ \hline
+3 & Definição de Meta do Grupo &
+Deve ser possível definir uma meta de tempo de tela para o grupo. & 11 \\ \hline
 
-3 & Definição de Hábito Saudável &
-Deve ser possível definir se o grupo terá adição de hábitos saudáveis pelos usuários. \\ \hline
+4 & Definição de Hábito Saudável &
+Deve ser possível configurar se o grupo permite que membros registrem hábitos saudáveis. & 11 \\ \hline
 
-4 &  Entrar em grupo público &
-Deve ser possível entrar imediatamente em um grupo privado através de uma chave secreta compartilhada previamente pelos moderadores do grupo. \\ \hline
+5 & Entrar em Grupo &
+Deve ser possível entrar em um grupo privado por meio de uma chave secreta compartilhada pelos moderadores. & 10 \\ \hline
 
-5 & Sair do Grupo &
-Deve ser possível sair de um grupo ao qual o próprio usuário pertence. \\ \hline
+6 & Sair do Grupo &
+Deve ser possível sair de um grupo ao qual o próprio usuário pertence. & 10 \\ \hline
 
-6 & Compartilhar Grupo &
-Deve ser possível compartilhar o link privado do grupo, para que outras pessoas possam entrar por esse link \\ \hline
+7 & Compartilhar Grupo &
+Deve ser possível compartilhar o link privado do grupo para que outras pessoas possam entrar. & 10 \\ \hline
 
-7 & Editar Detalhes do Grupo &
-Deve ser possível editar os detalhes de um grupo, como nome,
-descrição, seu link de compartilhamento secreto. \\ \hline
+8 & Editar Detalhes do Grupo &
+Deve ser possível editar os detalhes de um grupo, como nome, descrição e link de compartilhamento. & 10, 11 \\ \hline
 
-7 & Remover Membro &
-Deve ser possível remover um membro do grupo. \\ \hline
+9 & Remover Membro &
+Deve ser possível remover um membro do grupo (apenas moderadores). & 10 \\ \hline
 
-7 & Adicionar Moderador &
- Deve ser possível promover um membro do grupo à função de
-moderador. \\ \hline
+10 & Promover Moderador &
+Deve ser possível promover um membro do grupo à função de moderador. & 10 \\ \hline
 
-8 & Adicionar Moderador &
- Deve ser possível rebaixar um membro do grupo da função de
-moderador. \\ \hline
+11 & Rebaixar Moderador &
+Deve ser possível rebaixar um moderador de volta à função de membro. & 10 \\ \hline
 
 \end{tabularx}
 \end{table}
 
 \subsection{Regras de Negócio}
 
-Além dos requisitos funcionais que definem o que o sistema deve fazer, foram estabelecidas regras de negócio que controlam como o sistema deve se comportar em situações específicas. Essas regras visam prevenir condutas maliciosas, proteger a infraestrutura contra uso abusivo e garantir uma experiência equilibrada para todos os usuários.
+Além dos requisitos funcionais que definem o que o sistema deve fazer, foram es\-ta\-be\-le\-ci\-das regras de negócio que controlam como o sistema deve se comportar em situações específicas. Essas regras visam prevenir condutas maliciosas, proteger a infraestrutura contra uso abusivo e garantir uma experiência equilibrada para todos os usuários.
 
-A principal preocupação ao definir essas regras foi proteger o sistema contra ataques ou uso indiscriminado que poderiam comprometer a disponibilidade do serviço ou gerar custos excessivos. Por exemplo, sem limitações adequadas, um usuário mal-intencionado poderia criar centenas de grupos inúteis, fazer \textit{upload} massivo de imagens de grande tamanho ou executar scripts automatizados para manipular dados. As regras de negócio implementadas estabelecem limites razoáveis que atendem às necessidades de uso legítimo sem permitir abusos.
+A principal preocupação ao definir essas regras foi proteger o sistema contra ataques ou uso indiscriminado que poderiam comprometer a disponibilidade do serviço ou gerar custos excessivos. Por exemplo, sem limitações adequadas, um usuário mal-intencionado poderia criar centenas de grupos inúteis ou fazer \textit{upload} massivo de imagens de grande tamanho, gerando custos excessivos de infraestrutura. As regras de negócio implementadas estabelecem limites razoáveis que atendem às necessidades de uso legítimo sem permitir abusos.
 
 Outro aspecto importante das regras de negócio é garantir a integridade das estruturas sociais do aplicativo. Por exemplo, a regra que define automatização de administrador garante que grupos não fiquem sem moderadores ativos, situação que poderia torná-los inutilizáveis. Da mesma forma, limites na exclusão de membros evitam que conflitos internos resultem na destruição abrupta de comunidades estabelecidas.
 
-A Tabela~\ref{tab:regras-negocio} apresenta as principais regras de negócio implementadas no sistema, descrevendo suas restrições e justificativas.
+A Tabela~\ref{tab:regras-negocio} apresenta as principais regras de negócio implementadas no sistema, des\-cre\-ven\-do suas restrições e justificativas.
 
 \begin{table}[H]
 \centering
@@ -286,86 +289,74 @@ A Tabela~\ref{tab:regras-negocio} apresenta as principais regras de negócio imp
 \textbf{RN} & \textbf{REQUISITO} & \textbf{DESCRIÇÃO} \\ \hline
 
 1 & Limite de grupos criados &
-Um usuário pode criar no máximo 10 grupos,
-para evitar spam e condutas mal intencionadas. \\ \hline
+Um usuário pode criar no máximo 10 grupos, mitigando vetores de abuso e uso indiscriminado da plataforma. \\ \hline
 
-2 & Limite de tamanho de upload de imagens &
-O usuário só pode fazer upload de imagens de até 3 MB. Todas as imagens são automaticamente comprimidas antes do envio, protegendo o sistema contra ataques de inundação de dados e reduzindo custos de armazenamento.\\ \hline
+2 & Limite de tamanho de imagens &
+Somente imagens de até 3~MB são aceitas. Todas são comprimidas automaticamente antes do envio, reduzindo o risco de ataques de inundação de armazenamento e o consumo de recursos da infraestrutura.\\ \hline
 
-3 & Limite de exclusão de usuários de grupos &
-O usuário só pode fazer a exclusão de um usuário do grupo por vez, prevenindo execução de scripts maliciosos que poderiam destruir grupos instantaneamente.\\ \hline
+3 & Exclusão individual de membros &
+A remoção de membros de um grupo é limitada a um por operação, prevenindo exclusões em massa por meio de scripts automatizados e garantindo a integridade das comunidades.\\ \hline
 
-4 & Automatização de administrador &
-Quando o grupo tiver apenas um usuário administrador e ele sair, outro usuário aleatório receberá automaticamente o cargo de administrador, garantindo que grupos não fiquem sem moderadores.\\ \hline
+4 & Promoção automática de moderador &
+Ao sair o último moderador de um grupo, outro membro é promovido automaticamente, garantindo que nenhum grupo fique sem gestão ativa.\\ \hline
 
 \end{tabularx}
 \end{table}
 
-\subsection{Implementação de Módulo Nativo para Coleta de Dados}
+\subsection{Módulo Nativo para Coleta de Dados de Uso}
 
-Uma das funcionalidades centrais do Desconecta é o monitoramento automático do tempo de uso do dispositivo e dos aplicativos instalados. No Android, essas informações são acessíveis através da \textit{API} nativa \textit{UsageStatsManager}, que permite consultar estatísticas detalhadas sobre o uso de aplicativos. No entanto, essa funcionalidade não está disponível diretamente no React Native, sendo necessária a implementação de um módulo nativo que faça a ponte entre o código JavaScript e o código nativo Android.
+Uma das funcionalidades centrais do Desconecta é o monitoramento automático do tempo de uso do dispositivo. No Android, essas informações são fornecidas pela \textit{API} nativa do sistema operacional, condicionadas à concessão de uma permissão especial pelo usuário. Como o React Native não expõe essa \textit{API} diretamente, foi desenvolvido um módulo nativo em Kotlin\footnote{Kotlin. Disponível em: \url{https://kotlinlang.org/}. Acesso em: 18 fev. 2026.} que cria uma ponte entre o código JavaScript da aplicação e as \textit{APIs} da plataforma Android.\footnote{Android Developers. UsageStatsManager. Disponível em: \url{https://developer.android.com/reference/android/app/usage/UsageStatsManager}. Acesso em: 18 fev. 2026.}
 
-Esta subseção descreve a arquitetura e implementação desse módulo nativo, apresentando os três componentes principais que compõem a solução: o módulo Kotlin que acessa as \textit{APIs} do Android, o pacote que registra o módulo no React Native e o serviço TypeScript que encapsula as chamadas nativas.
+O módulo é composto por três camadas: o componente nativo (\textit{ScreenTimeModule}), responsável por acessar as \textit{APIs} do Android e expor métodos assíncronos para a camada JavaScript; a classe de registro (\textit{ScreenTimePackage}), que integra o módulo ao sistema do React Native; e um serviço em TypeScript (\textit{ScreenTimeService}), que encapsula as chamadas nativas e fornece uma interface tipada para o restante da aplicação. Juntos, esses componentes permitem consultar o tempo total de uso diário, o histórico semanal e o tempo por aplicativo.
+
+A Figura~\ref{fig:arquitetura-react-native} ilustra como essas camadas se comunicam. O detalhamento técnico dos componentes está disponível no Apêndice G.
 
 \begin{figure}[htbp]
     \centering
-    \caption{Arquitetura da integração React Native com código nativo Android}
+    \caption{Integração do módulo nativo com o React Native}
     \label{fig:arquitetura-react-native}
     \includegraphics[width=0.5\textwidth]{figuras/Arquitetura-Modulo-Nativo.png}
 \end{figure}
-
-\subsubsection{ScreenTimeModule: Acesso às APIs Nativas}
-
-O \textit{ScreenTimeModule} é uma classe desenvolvida em \textbf{Kotlin}\footnote{Kotlin. Disponível em: \url{https://kotlinlang.org/}. Acesso em: 18 fev. 2026.}, a linguagem oficial para desenvolvimento Android. Esta classe herda de \textit{ReactContextBaseJavaModule}, que é a classe base fornecida pelo React Native para criação de módulos nativos customizados.
-
-A principal característica deste componente é o uso da anotação \textit{@ReactMethod}, que marca métodos da classe Kotlin como acessíveis a partir do código JavaScript. Cada método anotado realiza uma operação específica relacionada ao monitoramento de tempo de uso, processando dados obtidos das \textit{APIs} nativas do Android e retornando os resultados através de objetos \textit{Promise}, que garantem comunicação assíncrona entre as camadas nativa e JavaScript.
-
-O módulo implementa cinco métodos principais, cada um responsável por uma funcionalidade específica:
-
-\textbf{Verificação de Permissões}: Consulta o sistema através da classe \textit{AppOpsManager} para verificar se a aplicação possui a permissão \textit{PACKAGE\_USAGE\_STATS} concedida. Essa permissão é necessária para acessar estatísticas de uso de outros aplicativos e só pode ser concedida pelo usuário através das configurações do sistema. O método retorna um valor booleano indicando se a permissão está ativa.
-
-\textbf{Solicitação de Permissão}: Como a permissão \textit{PACKAGE\_USAGE\_STATS} é uma permissão especial do Android, não pode ser solicitada através de um diálogo comum. O método direciona o usuário para a tela específica de configurações do sistema através de uma \textit{Intent} com a ação \textit{ACTION\_USAGE\_ACCESS\_SETTINGS}, permitindo que o usuário ative manualmente a permissão para o aplicativo.
-
-\textbf{Cálculo de Tempo Diário}: Define um intervalo temporal da meia-noite até o momento atual, consulta o \textit{UsageStatsManager} para obter estatísticas de todos os aplicativos nesse período e soma o atributo \textit{totalTimeInForeground} de cada aplicativo. O resultado é convertido de milissegundos para minutos antes de ser retornado.
-
-\textbf{Histórico Semanal}: Itera pelos sete dias anteriores à data atual, definindo para cada dia um intervalo de 00:00:00 até 23:59:59. Para cada intervalo, consulta a \textit{API} e agrega os tempos totais de todos os aplicativos. O método retorna uma lista ordenada de objetos contendo a data e o tempo total de uso em minutos.
-
-\textbf{Tempo por Aplicativo}: Consulta a \textit{API} para um período configurável (padrão de 7 dias), agrega manualmente dados de múltiplas entradas do mesmo aplicativo, utiliza o \textit{PackageManager} para obter os nomes legíveis dos aplicativos (em vez de apenas identificadores de pacote), ordena os resultados por tempo de uso decrescente e retorna os vinte aplicativos mais utilizados.
-
-Todas essas operações utilizam classes e métodos oficiais da plataforma Android, incluindo \textit{UsageStatsManager}, \textit{AppOpsManager}, \textit{PackageManager} e o campo \textit{totalTimeInForeground}, que são documentados oficialmente pela equipe de desenvolvimento do Android.\footnote{Android Developers. UsageStatsManager. Disponível em: \url{https://developer.android.com/reference/android/app/usage/UsageStatsManager}. Acesso em: 18 fev. 2026.}
-
-O diagrama de código completo deste componente está disponível no Apêndice G.
-
-\subsubsection{ScreenTimePackage: Registro do Módulo}
-
-O \textit{ScreenTimePackage} é uma classe auxiliar responsável pelo registro do módulo nativo no sistema do React Native. Esta classe implementa a interface \textit{ReactPackage} e sobrescreve o método \textit{createNativeModules}, retornando uma lista contendo a instância do \textit{ScreenTimeModule}.
-
-O registro efetivo ocorre na classe \textit{MainApplication}, no método \textit{getPackages}, onde o \textit{ScreenTimePackage} é adicionado à lista de pacotes disponíveis para a aplicação. Após esse registro, todos os métodos anotados com \textit{@ReactMethod} no \textit{ScreenTimeModule} tornam-se automaticamente acessíveis através do objeto \textit{NativeModules} na camada JavaScript, permitindo que o código React Native invoque as funcionalidades nativas implementadas.
-
-O diagrama de código deste componente está disponível no Apêndice G.
-
-\subsubsection{ScreenTimeService: Encapsulamento em TypeScript}
-
-A camada de serviço \textit{ScreenTimeService} foi implementada em TypeScript para encapsular e abstrair as chamadas aos métodos nativos, fornecendo uma interface de alto nível e fortemente tipada para o restante da aplicação React Native.
-
-O serviço importa o objeto \textit{NativeModules} do React Native, extrai a referência ao \textit{ScreenTimeModule} registrado e define interfaces TypeScript que descrevem precisamente a estrutura dos dados retornados (como \textit{AppUsage} e \textit{DailyScreenTime}). Métodos assíncronos são exportados correspondendo a cada método nativo, retornando \textit{Promises} tipadas que facilitam o uso com \textit{async/await} no código da aplicação.
-
-Essa abordagem traz diversos benefícios práticos. Primeiro, o TypeScript oferece \textit{autocomplete} inteligente no editor de código, facilitando o desenvolvimento e reduzindo erros de digitação. Segundo, a validação de tipos em tempo de compilação detecta inconsistências antes da execução, reduzindo bugs. Terceiro, a centralização do acesso aos métodos nativos em um único serviço facilita futuras manutenções e modificações, evitando que mudanças no código nativo se propaguem por toda a aplicação.
-
-O serviço também implementa funções utilitárias, como \textit{formatTime}, que converte minutos em formato legível (ex: "2h 30min"), melhorando a experiência de desenvolvimento ao evitar repetição de lógica de formatação em múltiplas telas.
-
-O diagrama de código deste serviço está disponível no Apêndice G.
 
 \subsection{Segurança e Controle de Acesso}
 
 A segurança da aplicação é gerenciada principalmente através das \textbf{Firebase Security Rules}, que são regras declarativas executadas no servidor do Firebase antes de permitir qualquer operação de leitura ou escrita no banco de dados.
 
-A estratégia de segurança adotada segue o princípio do privilégio mínimo, em que cada usuário tem acesso apenas aos dados estritamente necessários para suas atividades. Na coleção de usuários, por exemplo, cada documento só pode ser lido e modificado pelo próprio usuário, identificado através da comparação entre o \textit{UID} de autenticação e o identificador do documento.
+A estratégia de segurança adotada segue o princípio do privilégio mínimo: cada usuário tem acesso apenas aos dados estritamente necessários para suas atividades. Na coleção de usuários, por exemplo, cada documento só pode ser lido ou modificado pelo próprio dono, verificando-se em tempo de execução se o identificador de autenticação corresponde ao identificador do documento — uma regra que pode ser expressa conceitualmente como: \textit{permitir escrita somente se o identificador do usuário autenticado for igual ao identificador do documento}.
 
-Para funcionalidades colaborativas, como grupos e feed de postagens, as regras são mais elaboradas. Qualquer usuário autenticado pode visualizar grupos públicos e criar postagens, mas operações de edição e exclusão são restritas ao autor original ou aos administradores do grupo. Para implementar esse controle, as regras do Firestore utilizam funções que consultam dinamicamente a lista de membros do grupo e seus respectivos papéis antes de autorizar a operação.
+Para funcionalidades colaborativas, como grupos e postagens, a lógica de permissão é mais elaborada: qualquer membro autenticado pode visualizar e publicar, mas edição e exclusão são restritas ao autor original ou aos administradores do grupo. Esse controle é implementado por funções que consultam dinamicamente o papel do usuário dentro do grupo antes de autorizar cada operação.
 
-Uma característica importante da estratégia de segurança é a regra de negação por padrão. Qualquer caminho no banco de dados que não possua uma regra explícita de permissão é automaticamente bloqueado. Esse comportamento garante que, mesmo que novas coleções sejam criadas no futuro durante a evolução do sistema, nenhum dado será exposto acidentalmente até que regras específicas sejam configuradas.
-
-Além das regras de acesso ao banco de dados, o Firebase Storage também possui regras de segurança similares que controlam o \textit{upload} e acesso a arquivos. Essas regras garantem que usuários só possam fazer \textit{upload} de imagens para seus próprios perfis ou para grupos dos quais são membros, e que o tamanho máximo de arquivos seja respeitado.
+Por padrão, qualquer caminho do banco de dados que não possua uma regra de permissão explícita é bloqueado automaticamente. Isso garante que novas coleções criadas no futuro não exponham dados acidentalmente. O Firebase Storage segue a mesma abordagem, controlando \textit{upload} e leitura de arquivos com regras análogas às do banco de dados.
 
 O código completo das regras de segurança do Firestore e do Storage encontra-se no Apêndice G.
+
+\subsection{Atendimento aos Requisitos Não Funcionais}
+
+Além dos requisitos funcionais, a arquitetura e as escolhas tecnológicas do Desconecta foram orientadas pelos requisitos não funcionais definidos no Capítulo~3. A Tabela~\ref{tab:rnf} resume como cada um deles foi atendido.
+
+\begin{table}[H]
+\centering
+\caption{Atendimento aos Requisitos Não Funcionais}
+\label{tab:rnf}
+\begin{tabularx}{\textwidth}{|c|l|X|}
+\hline
+\rowcolor{verdeclaro}
+\textbf{RNF} & \textbf{REQUISITO} & \textbf{COMO FOI ATENDIDO} \\ \hline
+
+1 & Desempenho &
+O processamento de dados de uso (cálculos de tempo, ordenações) é realizado localmente no dispositivo, reduzindo a latência percebida pelo usuário e evitando sobrecarga na infraestrutura de nuvem. \\ \hline
+
+2 & Privacidade &
+Dados sensíveis de uso do dispositivo são coletados e processados localmente; apenas agregações e resultados são sincronizados com a nuvem, limitando a exposição de informações pessoais. \\ \hline
+
+3 & Escalabilidade &
+O uso de uma plataforma \textit{BaaS} (Firebase) garante es\-ca\-la\-bi\-li\-da\-de automática da infraestrutura de persistência e notificações, sem intervenção manual da equipe. \\ \hline
+
+4 & Disponibilidade &
+A infraestrutura gerenciada pelo provedor de nuvem oferece alta disponibilidade por padrão, eliminando a necessidade de configurar redundância e monitoramento próprios. \\ \hline
+
+5 & Segurança &
+O controle de acesso é aplicado no lado do servidor por meio das Firebase Security Rules, seguindo o princípio do privilégio mínimo e com negação de acesso por padrão para caminhos não mapeados. \\ \hline
+
+\end{tabularx}
+\end{table}
