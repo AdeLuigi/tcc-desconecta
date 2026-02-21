@@ -142,6 +142,21 @@ Este dispositivo tem as seguintes especificações:
 
 [DADO: fazer uma análise comparativa entre os dispositivos testados, destacando diferenças relevantes no comportamento do aplicativo em diferentes faixas de hardware. Comentar se o aplicativo se comportou de forma satisfatória em todos os dispositivos ou se houve problemas específicos em algum deles].
 
+\subsubsection{Análise Comparativa}
+
+A partir da observação dos dados coletados nos quatro dispositivos, é possível realizar uma análise comparativa sobre a eficiência do aplicativo em diferentes cenários de \textit{hardware} e versões do sistema operacional Android.
+
+No que diz respeito ao \textbf{consumo de memória RAM}, observou-se uma consistência notável entre todos os modelos. O aplicativo manteve-se na faixa entre 200 MiB e 300 MiB, independentemente da capacidade total do dispositivo. É importante destacar o comportamento no \textit{Samsung Galaxy A15}, que, mesmo possuindo apenas 4 GB de RAM (metade da capacidade dos demais testados), apresentou um consumo estável e similar aos dispositivos de alto desempenho, como o \textit{S22}. Isso indica que o gerenciamento de memória do aplicativo é eficiente e não escala de forma descontrolada em aparelhos com menos recursos.
+
+Quanto ao \textbf{uso de CPU}, os resultados refletem diretamente a potência das diferentes arquiteturas de processadores:
+\begin{itemize}
+    \item O \textbf{Samsung Galaxy S22} (Snapdragon 8 Gen 1) e o \textbf{Moto G54} apresentaram as menores médias de oscilação, demonstrando que processadores mais modernos e com litografias menores (4nm e 6nm) lidam com as tarefas de segundo plano e sincronização de dados com menor esforço.
+    \item O \textbf{Pixel 5} e o \textbf{Samsung Galaxy A15} registraram os picos de processamento mais elevados (30\% e 28\%, respectivamente). No caso do Pixel 5, embora seja um dispositivo otimizado pelo Google, seu processador Snapdragon 765G é de uma geração anterior, o que justifica picos ligeiramente maiores durante processos intensivos de comunicação com o Firebase.
+    \item No \textbf{Samsung Galaxy A15}, as oscilações foram mais frequentes, o que é esperado para um dispositivo de entrada, mas os valores permaneceram majoritariamente abaixo de 20\%, o que não compromete a fluidez do sistema para o usuário.
+\end{itemize}
+
+Em conclusão, o aplicativo demonstrou um comportamento técnico satisfatório e equilibrado em todo o espectro de dispositivos testados. Não foram detectados vazamentos de memória (\textit{memory leaks}) ou picos de CPU que pudessem causar superaquecimento ou drenagem excessiva de bateria. A arquitetura de serviços em segundo plano mostrou-se leve o suficiente para rodar de forma transparente tanto em versões mais antigas (Android 14) quanto na versão mais recente (Android 16), validando a viabilidade técnica da solução em um ecossistema Android fragmentado.
+
 \subsection{Latência da API e Sincronização de Dados}
 
 As métricas de latência foram coletadas pelo Firebase Performance Monitoring ao longo do período de testes. A Tabela~\ref{tab:latencia} mostra os tempos médios de resposta para as operações mais usadas no dia a dia do aplicativo.
