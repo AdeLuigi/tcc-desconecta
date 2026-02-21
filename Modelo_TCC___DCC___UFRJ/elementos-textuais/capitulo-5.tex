@@ -26,12 +26,12 @@ Os testes foram realizados em 4 dispositivos físicos com versões e configuraç
 \textbf{Dispositivo} & \textbf{Processador} & \textbf{RAM} & \textbf{Android} \\ \hline
 Moto G54 (5G) & MediaTek Dimensity 7020 & 8 GB & 15 \\ \hline
 Pixel 5 & Snapdragon 765G & 8 GB & 14 \\ \hline
-Samsung Galaxy A15 (5G) & MediaTek Dimensity 6100+ & 8 GB & 14 \\ \hline
+Samsung Galaxy A15 (4G) & MediaTek Dimensity 6100+ & 4 GB & 14 \\ \hline
 Samsung Galaxy S22 & Snapdragon 8 Gen 1 & 8 GB & 16 \\ \hline
 \end{tabularx}
 \end{table}
 
-A principal ferramenta de medição utilizada foi o \textbf{Android Studio Profiler}, que permite acompanhar em tempo real o consumo de CPU, memória RAM e bateria por processo. Os testes de consumo foram feitos em dois cenários: com o aplicativo em segundo plano coletando dados de uso via \textit{UsageStatsManager}, e com o usuário navegando ativamente pelas telas principais (Ranking, Feed~do~Grupo e~Estatísticas).
+A principal ferramenta de medição utilizada foi o \textbf{Firebase Test Lab}, que permite executar testes automatizados em dispositivos físicos e virtuais hospedados na infraestrutura do Google, possibilitando a avaliação do comportamento do aplicativo em diferentes configurações de hardware e versões do sistema operacional Android. Essa abordagem contribui para a obtenção de resultados mais confiáveis e representativos.
 
 \subsection{Consumo de Recursos (CPU, Memória)}
 
@@ -39,7 +39,7 @@ A seguir, são apresentados os resultados de desempenho obtidos em cada um dos d
 
 \subsubsection{Moto G54 (5G)}
 
-De acordo com os gráficos das Figuras~\ref{fig:moto-g54-cpu} e \ref{fig:moto-g54-memoria}, [DADO: descrever variação da CPU durante os testes, ex: o uso da CPU no modelo Moto G54 variou de 0 até pouco menos que X\% durante todo o uso do aplicativo nos testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+De acordo com os gráficos das Figuras~\ref{fig:moto-g54-cpu} e \ref{fig:moto-g54-memoria}, o uso da CPU no modelo Moto G54 variou de $0\%$ até picos de aproximadamente $23\%$ durante todo o uso do aplicativo nos testes. Temos também o gráfico de memória, que mostra que o aplicativo manteve um consumo estável entre $200$ MiB e $300$ MiB ao longo dos testes, após o carregamento inicial do aplicativo. Este dispositivo tem as seguintes especificações:
 
 \begin{itemize}
     \item Modelo: Moto G54 (5G)
@@ -64,7 +64,7 @@ De acordo com os gráficos das Figuras~\ref{fig:moto-g54-cpu} e \ref{fig:moto-g5
 
 \subsubsection{Pixel 5}
 
-De acordo com os gráficos das Figuras~\ref{fig:pixel5-cpu} e \ref{fig:pixel5-memoria}, [DADO: descrever variação da CPU durante os testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+De acordo com os gráficos das Figuras 17 e 18, o consumo de CPU apresentou picos esporádicos que atingiram aproximadamente 30\%, mantendo uma média de utilização baixa, geralmente abaixo de 10\% na maior parte do tempo. Temos também o gráfico de memória, que mostra que o aplicativo utilizou uma faixa entre 200 MB e 290 MB de memória RAM ao longo dos testes. Este dispositivo tem as seguintes especificações:
 
 \begin{itemize}
     \item Modelo: Pixel 5
@@ -87,15 +87,15 @@ De acordo com os gráficos das Figuras~\ref{fig:pixel5-cpu} e \ref{fig:pixel5-me
     \label{fig:pixel5-memoria}
 \end{figure}
 
-\subsubsection{Samsung Galaxy A15 (5G)}
+\subsubsection{Samsung Galaxy A15 (4G)}
 
-De acordo com os gráficos das Figuras~\ref{fig:a15-cpu} e \ref{fig:a15-memoria}, [DADO: descrever variação da CPU durante os testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+De acordo com os gráficos das Figuras 19 e 20, o consumo de CPU apresentou oscilações constantes durante a execução, mantendo-se majoritariamente abaixo de 20\%, com picos pontuais que atingiram aproximadamente 28\%. Temos também o gráfico de memória, que mostra que o aplicativo apresentou um crescimento inicial seguido de estabilização, utilizando cerca de 220 MiB a 260 MiB de memória ao longo dos testes. Este dispositivo tem as seguintes especificações:
 
 \begin{itemize}
-    \item Modelo: Samsung Galaxy A15 (5G)
+    \item Modelo: Samsung Galaxy A15 (4G)
     \item Android 14
     \item Processador: MediaTek Dimensity 6100+ (6nm)
-    \item Memória: 8 GB RAM
+    \item Memória: 4 GB RAM
 \end{itemize}
 
 \begin{figure}[H]
@@ -114,7 +114,8 @@ De acordo com os gráficos das Figuras~\ref{fig:a15-cpu} e \ref{fig:a15-memoria}
 
 \subsubsection{Samsung Galaxy S22}
 
-De acordo com os gráficos das Figuras~\ref{fig:s22-cpu} e \ref{fig:s22-memoria}, [DADO: descrever variação da CPU durante os testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+De acordo com os gráficos das Figuras 21 e 22, a utilização da CPU apresentou oscilações constantes, mantendo-se majoritariamente em uma faixa entre 3\% e 10\%, com picos pontuais que atingiram aproximadamente 22\% no início do monitoramento. Temos também o gráfico de memória, que mostra que o aplicativo manteve um consumo estável, utilizando cerca de 250 MiB de memória RAM ao longo de todo o período de testes. 
+Este dispositivo tem as seguintes especificações:
 
 \begin{itemize}
     \item Modelo: Samsung Galaxy S22
