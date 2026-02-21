@@ -14,10 +14,7 @@ Esta seção descreve como o aplicativo se comportou em termos de desempenho dur
 
 \subsection{Ambiente de Teste e Ferramentas}
 
-Os testes foram realizados em [DADO: N] dispositivos físicos com versões e configurações de \textit{hardware} distintas, além do emulador oficial do Android Studio para cenários mais controlados. A Tabela~\ref{tab:dispositivos} lista os dispositivos utilizados.
-
-% [FIG] Captura do Android Studio Profiler com o app rodando (abas CPU/Memory/Energy visíveis).
-%        Salvar como figuras/profiler-overview.png
+Os testes foram realizados em 4 dispositivos físicos com versões e configurações de \textit{hardware} distintas, cobrindo diferentes faixas de desempenho e versões do Android. A Tabela~\ref{tab:dispositivos} lista os dispositivos utilizados.
 
 \begin{table}[htbp]
 \centering
@@ -26,45 +23,127 @@ Os testes foram realizados em [DADO: N] dispositivos físicos com versões e con
 \begin{tabularx}{\textwidth}{|l|c|c|c|}
 \hline
 \rowcolor{verdeclaro}
-\textbf{Dispositivo} & \textbf{Android} & \textbf{RAM} & \textbf{Tipo} \\ \hline
-[DADO: modelo 1] & [DADO] & [DADO] GB & Físico \\ \hline
-[DADO: modelo 2] & [DADO] & [DADO] GB & Físico \\ \hline
-Emulador Android Studio (API [DADO]) & [DADO] & [DADO] GB & Virtual \\ \hline
+\textbf{Dispositivo} & \textbf{Processador} & \textbf{RAM} & \textbf{Android} \\ \hline
+Moto G54 (5G) & MediaTek Dimensity 7020 & 8 GB & 15 \\ \hline
+Pixel 5 & Snapdragon 765G & 8 GB & 14 \\ \hline
+Samsung Galaxy A15 (5G) & MediaTek Dimensity 6100+ & 8 GB & 14 \\ \hline
+Samsung Galaxy S22 & Snapdragon 8 Gen 1 & 8 GB & 16 \\ \hline
 \end{tabularx}
 \end{table}
 
-A principal ferramenta de medição foi o \textbf{Android Studio Profiler}, que permite acompanhar em tempo real o consumo de CPU, memória RAM e bateria por processo. Além disso, o \textbf{Firebase Performance Monitoring}\footnote{Firebase Performance Monitoring. Disponível em: \url{https://firebase.google.com/products/performance}. Acesso em: [DADO: data].} foi utilizado para coletar dados de latência das operações no Firestore diretamente em produção.
+A principal ferramenta de medição utilizada foi o \textbf{Android Studio Profiler}, que permite acompanhar em tempo real o consumo de CPU, memória RAM e bateria por processo. Os testes de consumo foram feitos em dois cenários: com o aplicativo em segundo plano coletando dados de uso via \textit{UsageStatsManager}, e com o usuário navegando ativamente pelas telas principais (Ranking, Feed~do~Grupo e~Estatísticas).
 
-\subsection{Consumo de Recursos (CPU, Memória e Bateria)}
+\subsection{Consumo de Recursos (CPU, Memória)}
 
-Os testes de consumo foram feitos em dois cenários: com o aplicativo em segundo plano coletando dados de uso via \textit{UsageStatsManager}, e com o usuário navegando ativamente pelas telas principais (Ranking, Feed do Grupo e Estatísticas).
+A seguir, são apresentados os resultados de desempenho obtidos em cada um dos dispositivos testados.
 
-Em estado de repouso, o consumo médio de CPU ficou em [DADO]\% e a memória RAM utilizada foi de aproximadamente [DADO] MB. Durante o uso ativo, o consumo de CPU chegou a picos de [DADO]\%, com média de [DADO]\%, e a memória variou entre [DADO] MB e [DADO] MB. Esses valores são compatíveis com o esperado para um aplicativo que monitora uso em segundo plano, sem impacto perceptível na performance do dispositivo para o usuário. A Figura~\ref{fig:profiler-cpu} ilustra a comparação entre os dois estados.
+\subsubsection{Moto G54 (5G)}
 
-% [FIG] Screenshot do Profiler ou gráfico comparativo CPU/RAM (background vs. uso ativo).
-%        Salvar como figuras/profiler-comparativo.png
+De acordo com os gráficos das Figuras~\ref{fig:moto-g54-cpu} e \ref{fig:moto-g54-memoria}, [DADO: descrever variação da CPU durante os testes, ex: o uso da CPU no modelo Moto G54 variou de 0 até pouco menos que X\% durante todo o uso do aplicativo nos testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
 
-\begin{figure}[htbp]
+\begin{itemize}
+    \item Modelo: Moto G54 (5G)
+    \item Android 15
+    \item Processador: MediaTek Dimensity 7020 (6nm)
+    \item Memória: 8 GB RAM
+\end{itemize}
+
+\begin{figure}[H]
     \centering
-    % TODO: inserir figuras/profiler-comparativo.png
-    \vspace{3cm}
-    \caption{Consumo de CPU e RAM em estado de repouso e durante uso ativo}
-    \label{fig:profiler-cpu}
+    \includegraphics[width=0.85\textwidth]{figuras/moto-g-54-cpu.png}
+    \caption{Consumo de CPU no Moto G54 durante os testes}
+    \label{fig:moto-g54-cpu}
 \end{figure}
 
-Em relação ao consumo de bateria, a aba \textit{Energy} do Profiler classificou o impacto do serviço em segundo plano como [DADO: baixo/médio], o que indica que o monitoramento contínuo de tempo de tela não drena a bateria de forma significativa no uso diário. O consumo mais expressivo ocorreu durante [DADO: ex: a sincronização inicial ao abrir o app], o que é esperado dado o volume de dados trafegados nessa operação.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/moto-g-54-memoria.png}
+    \caption{Consumo de memória RAM no Moto G54 durante os testes}
+    \label{fig:moto-g54-memoria}
+\end{figure}
 
-% [FIG] Captura da aba Energy do Android Studio Profiler.
-%        Salvar como figuras/profiler-energy.png
+\subsubsection{Pixel 5}
 
-Quanto à estabilidade, [DADO: descrever o comportamento do serviço em segundo plano durante os 3 dias — se o Android encerrou o processo em algum dispositivo, se houve relatos de monitoramento interrompido por usuários do grupo, etc.].
+De acordo com os gráficos das Figuras~\ref{fig:pixel5-cpu} e \ref{fig:pixel5-memoria}, [DADO: descrever variação da CPU durante os testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+
+\begin{itemize}
+    \item Modelo: Pixel 5
+    \item Android 14
+    \item Processador: Qualcomm Snapdragon 765G (7nm)
+    \item Memória: 8 GB RAM
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/pixel-5-cpu.png}
+    \caption{Consumo de CPU no Pixel 5 durante os testes}
+    \label{fig:pixel5-cpu}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/pixel-5-memoria.png}
+    \caption{Consumo de memória RAM no Pixel 5 durante os testes}
+    \label{fig:pixel5-memoria}
+\end{figure}
+
+\subsubsection{Samsung Galaxy A15 (5G)}
+
+De acordo com os gráficos das Figuras~\ref{fig:a15-cpu} e \ref{fig:a15-memoria}, [DADO: descrever variação da CPU durante os testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+
+\begin{itemize}
+    \item Modelo: Samsung Galaxy A15 (5G)
+    \item Android 14
+    \item Processador: MediaTek Dimensity 6100+ (6nm)
+    \item Memória: 8 GB RAM
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/samsung-a15-cpu.png}
+    \caption{Consumo de CPU no Samsung Galaxy A15 durante os testes}
+    \label{fig:a15-cpu}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/samsung-a15-memoria.png}
+    \caption{Consumo de memória RAM no Samsung Galaxy A15 durante os testes}
+    \label{fig:a15-memoria}
+\end{figure}
+
+\subsubsection{Samsung Galaxy S22}
+
+De acordo com os gráficos das Figuras~\ref{fig:s22-cpu} e \ref{fig:s22-memoria}, [DADO: descrever variação da CPU durante os testes]. Temos também o gráfico de memória, que mostra que o aplicativo [DADO: ex: usou cerca de Y MB de memória ao longo dos testes]. Este dispositivo tem as seguintes especificações:
+
+\begin{itemize}
+    \item Modelo: Samsung Galaxy S22
+    \item Android 16
+    \item Processador: Qualcomm Snapdragon 8 Gen 1 (4nm)
+    \item Memória: 8 GB RAM
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/samsung-s22-cpu.png}
+    \caption{Consumo de CPU no Samsung Galaxy S22 durante os testes}
+    \label{fig:s22-cpu}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figuras/samsung-s22-memoria.png}
+    \caption{Consumo de memória RAM no Samsung Galaxy S22 durante os testes}
+    \label{fig:s22-memoria}
+\end{figure}
+
+\subsubsection{Análise Comparativa}
+
+[DADO: fazer uma análise comparativa entre os dispositivos testados, destacando diferenças relevantes no comportamento do aplicativo em diferentes faixas de hardware. Comentar se o aplicativo se comportou de forma satisfatória em todos os dispositivos ou se houve problemas específicos em algum deles].
 
 \subsection{Latência da API e Sincronização de Dados}
 
 As métricas de latência foram coletadas pelo Firebase Performance Monitoring ao longo do período de testes. A Tabela~\ref{tab:latencia} mostra os tempos médios de resposta para as operações mais usadas no dia a dia do aplicativo.
-
-% [FIG] Print do painel do Firebase Performance Monitoring mostrando os traces de latência.
-%        Salvar como figuras/firebase-performance.png
 
 \begin{table}[htbp]
 \centering
@@ -81,9 +160,9 @@ Atualização de estatísticas & Sincronização do tempo de uso com a nuvem & [
 \end{tabularx}
 \end{table}
 
-Os valores obtidos indicam que [DADO: ex: todas as operações ficaram abaixo de X ms, o que é satisfatório para o fluxo do usuário]. A sincronização do ranking, que usa um listener em tempo real do Firestore, atualizou os dados para os membros do grupo sem atrasos perceptíveis durante os testes.
+[DADO: analisar se as latências obtidas são satisfatórias para a experiência do usuário].
 
-Em relação ao funcionamento sem conexão, o Firestore mantém um cache local que permite a leitura de dados mesmo sem internet, conforme discutido no Capítulo~4. Durante os testes, [DADO: descrever o comportamento observado — ex: dados do ranking continuaram visíveis offline, novas postagens foram enfileiradas e enviadas assim que a conexão voltou, sem perda de dados].
+[DADO: descrever comportamento observado no modo offline — se dados continuaram visíveis, se postagens foram enfileiradas, etc.].
 
 \section{Avaliação com Usuários}
 
@@ -95,21 +174,7 @@ Essa etapa de avaliação seguiu uma lógica semelhante à da fase inicial descr
 
 O grupo de teste foi composto por [DADO: N] participantes, todos usuários de dispositivos Android. A média de idade foi de [DADO] anos. Antes de começar o teste, os participantes relataram um tempo médio de tela de aproximadamente [DADO] horas por dia, valor elevado e consistente com o perfil observado na fase inicial do trabalho.
 
-% [FIG] Gráfico com faixa etária dos participantes.
-%        Salvar como figuras/avaliacao-perfil-idade.png
-
-% [FIG] Gráfico com o tempo médio de tela autodeclarado antes do teste.
-%        Salvar como figuras/avaliacao-tempo-tela-antes.png
-
-Quanto à motivação para participar, as razões mais citadas foram [DADO: ex: curiosidade com o aplicativo, vontade de reduzir o próprio uso, convite de amigos], conforme ilustrado na Figura~\ref{fig:avaliacao-motivacao}.
-
-\begin{figure}[htbp]
-    \centering
-    % TODO: inserir figuras/avaliacao-motivacao.png
-    \vspace{3cm}
-    \caption{Principal motivação dos participantes para testar o aplicativo}
-    \label{fig:avaliacao-motivacao}
-\end{figure}
+[DADO: descrever motivação dos participantes para o teste].
 
 \subsection{Metodologia de Coleta de Dados}
 
@@ -121,12 +186,9 @@ Ao fim dos três dias, os participantes responderam a um questionário online co
     \item \textbf{Utilidade percebida}: se o aplicativo contribuiu para uma maior consciência sobre o próprio tempo de tela.
 \end{enumerate}
 
-Cada dimensão foi avaliada em escala Likert de 1 a 5, e o formulário também tinha um campo aberto para comentários livres. O questionário completo encontra-se no Apêndice [DADO: letra].
+Cada dimensão foi avaliada em escala Likert de 1 a 5, e o formulário também tinha um campo aberto para comentários livres.
 
 Além das respostas do formulário, os dados de tempo de tela registrados pelo aplicativo ao longo dos três dias foram coletados diretamente do Firebase para analisar a evolução do comportamento do grupo.
-
-% [FIG] Screenshot da tela de ranking do app durante os 3 dias de teste (nomes ocultados se necessário).
-%        Salvar como figuras/avaliacao-ranking-teste.png
 
 \subsection{Resultados de Usabilidade}
 
@@ -146,46 +208,17 @@ Utilidade percebida & Consciência sobre o próprio tempo de uso & [DADO] \\ \hl
 \end{tabularx}
 \end{table}
 
-% [FIG] Gráfico de barras com as médias das três dimensões.
-%        Salvar como figuras/avaliacao-usabilidade-medias.png
+[DADO: analisar qual dimensão teve melhor e pior avaliação e discutir os motivos].
 
-\begin{figure}[htbp]
-    \centering
-    % TODO: inserir figuras/avaliacao-usabilidade-medias.png
-    \vspace{3cm}
-    \caption{Médias das dimensões avaliadas pelos participantes}
-    \label{fig:avaliacao-usabilidade}
-\end{figure}
-
-A dimensão com melhor avaliação foi [DADO: ex: utilidade percebida], com média de [DADO], indicando que os participantes reconheceram o valor do aplicativo para aumentar a consciência sobre o próprio uso. Já a dimensão com menor nota foi [DADO: ex: facilidade de uso], com média de [DADO]. Esse resultado era esperado em partes: como o aplicativo foi distribuído como APK fora da loja oficial, o processo de instalação e configuração das permissões de acesso ao uso é mais trabalhoso do que o habitual, o que acabou impactando a percepção de facilidade.
-
-Em relação ao engajamento com a gamificação, a nota obtida de [DADO] mostra que [DADO: ex: o ranking motivou boa parte dos participantes a prestar mais atenção no próprio uso]. Esse resultado está alinhado com o que foi observado na fase inicial do trabalho, em que 66\% dos participantes afirmaram se sentir motivados ao ver o tempo de tela de outras pessoas, conforme apresentado no Capítulo~3.
-
-A Figura~\ref{fig:avaliacao-evolucao} mostra a evolução do tempo médio de tela do grupo ao longo dos três dias da dinâmica. A intenção é verificar se houve tendência de redução ao longo do período.
-
-% [FIG] Gráfico de linhas: tempo médio do grupo por dia (Dia 1, Dia 2, Dia 3).
-%        Dados extraídos do Firebase. Salvar como figuras/avaliacao-evolucao-tempo-tela.png
-
-\begin{figure}[htbp]
-    \centering
-    % TODO: inserir figuras/avaliacao-evolucao-tempo-tela.png
-    \vspace{3cm}
-    \caption{Evolução do tempo médio de tela do grupo ao longo dos três dias}
-    \label{fig:avaliacao-evolucao}
-\end{figure}
-
-O tempo médio do grupo no Dia 1 foi de [DADO] min, no Dia 2 de [DADO] min e no Dia 3 de [DADO] min, o que representa [DADO: ex: uma redução de X\% em relação ao tempo declarado antes do teste]. Ao todo, [DADO: X] dos [DADO: N] participantes conseguiram reduzir o tempo de tela em relação à própria linha de base, o que [DADO: ex: confirma / sugere] que a dinâmica competitiva teve algum efeito positivo no comportamento do grupo.
+[DADO: apresentar evolução do tempo de tela do grupo ao longo dos 3 dias e percentual de redução observado].
 
 \subsection{\textit{Feedbacks} Qualitativos e Pontos de Melhoria}
 
 Além das notas do questionário, os participantes também deixaram comentários livres sobre a experiência. Os relatos foram organizados em aspectos positivos e pontos de melhoria.
 
-% [FIG] Prints representativos do grupo de WhatsApp de suporte (nomes ocultados).
-%        Salvar como figuras/avaliacao-whatsapp-prints.png
+[DADO: descrever pontos positivos relatados pelos participantes nos comentários livres].
 
-Entre os pontos mais elogiados estiveram [DADO: ex: a ideia do ranking, a simplicidade do feed e a facilidade de acompanhar o próprio progresso]. Relatos como [DADO: inserir citação real do formulário ou do grupo] reforçam que a proposta de tornar o tempo de tela visível e comparável dentro de um grupo funcionou como fator motivador, o que vai ao encontro do que foi observado na fase inicial do trabalho.
-
-Por outro lado, as principais dificuldades reportadas foram [DADO: ex: o processo de instalação do APK, a configuração da permissão de acesso ao uso e alguma inconsistência na leitura do tempo de tela em determinados dispositivos]. A Tabela~\ref{tab:pontos-melhoria} resume os pontos levantados e as possíveis ações para endereçá-los em versões futuras do aplicativo.
+[DADO: descrever principais dificuldades e problemas reportados]. A Tabela~\ref{tab:pontos-melhoria} resume os pontos levantados e as possíveis ações para endereçá-los em versões futuras do aplicativo.
 
 \begin{table}[htbp]
 \centering
@@ -195,7 +228,7 @@ Por outro lado, as principais dificuldades reportadas foram [DADO: ex: o process
 \hline
 \rowcolor{verdeclaro}
 \textbf{Categoria} & \textbf{Problema Relatado} & \textbf{Ação Sugerida} \\ \hline
-Instalação & Dificuldade na configuração da permissão de acesso ao uso & Melhorar o fluxo de \textit{onboarding} com um passo a passo visual integrado ao app \\ \hline
+[DADO: categoria] & [DADO: problema] & [DADO: ação] \\ \hline
 [DADO: categoria] & [DADO: problema] & [DADO: ação] \\ \hline
 [DADO: categoria] & [DADO: problema] & [DADO: ação] \\ \hline
 \end{tabularx}
@@ -205,15 +238,15 @@ Instalação & Dificuldade na configuração da permissão de acesso ao uso & Me
 
 Os resultados obtidos nesta etapa de avaliação permitem retomar os objetivos definidos no Capítulo~1 e verificar em que medida o Desconecta correspondeu ao que foi proposto.
 
-O objetivo geral do trabalho era desenvolver um aplicativo que auxiliasse na redução do tempo de tela por meio de uma dinâmica gamificada em grupo. No nível de um \textit{MVP}, esse objetivo foi alcançado. O aplicativo foi desenvolvido, disponibilizado para um grupo de [DADO: N] usuários reais e operou durante os três dias de teste sem falhas críticas. Os dados coletados mostram que [DADO: ex: a maioria dos participantes reduziu o tempo de tela ao longo do período, com uma redução média de X\% em relação à linha de base], o que indica que a proposta tem potencial para gerar mudanças no comportamento dos usuários.
+O objetivo geral do trabalho era desenvolver um aplicativo que auxiliasse na redução do tempo de tela por meio de uma dinâmica gamificada em grupo. No nível de um \textit{MVP}, esse objetivo foi alcançado. O aplicativo foi desenvolvido, disponibilizado para um grupo de [DADO: N] usuários reais e operou durante os três dias de teste sem falhas críticas. [DADO: descrever se os dados coletados indicam redução do tempo de tela e em que proporção].
 
 Em relação ao primeiro objetivo específico, de analisar os impactos do uso excessivo, os participantes desta etapa final apresentaram um perfil de uso consistente com o descrito na literatura do Capítulo~2 e com o observado na fase inicial do Capítulo~3. Isso reforça a relevância do problema que o trabalho busca endereçar.
 
 Quanto ao segundo objetivo, de identificar as limitações das ferramentas nativas, os próprios participantes do teste final relataram que o aplicativo os fez pensar mais sobre o próprio uso, algo que as ferramentas nativas como o \textit{Digital Wellbeing} não costumam conseguir sozinhas. A diferença está no componente social: saber que outras pessoas estão acompanhando os resultados cria um senso de responsabilidade que as ferramentas individuais não oferecem.
 
-O terceiro e o quarto objetivos — definir funcionalidades gamificadas e avaliar o potencial da solução — são respondidos de forma direta pelos resultados desta etapa. As funcionalidades de ranking, grupos e feed de hábitos saudáveis foram bem recebidas, e a nota de [DADO] para engajamento com a gamificação sugere que a dinâmica competitiva funcionou como fator motivador para boa parte dos participantes.
+O terceiro e o quarto objetivos — definir funcionalidades gamificadas e avaliar o potencial da solução — são respondidos de forma direta pelos resultados desta etapa. [DADO: analisar se as funcionalidades gamificadas foram bem recebidas e se motivaram os participantes].
 
-Do ponto de vista técnico, o aplicativo apresentou desempenho satisfatório para um \textit{MVP}. O consumo de recursos em segundo plano foi [DADO: ex: baixo], sem impacto perceptível na bateria ou na memória dos dispositivos testados, e a latência das operações principais ficou dentro de limites razoáveis para a experiência do usuário.
+Do ponto de vista técnico, o aplicativo apresentou desempenho satisfatório para um \textit{MVP}. [DADO: resumir resultados técnicos de consumo de recursos e latência].
 
 As principais limitações identificadas estão relacionadas à distribuição do aplicativo fora da loja oficial, que dificulta a instalação e a configuração das permissões, e a alguns pontos de interface que precisam ser refinados em versões futuras. Ainda assim, considerando que este é um produto mínimo viável em fase de validação, os resultados obtidos são promissores e indicam que a proposta vale ser continuada e aprimorada.
 
