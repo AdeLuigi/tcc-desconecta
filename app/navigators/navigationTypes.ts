@@ -47,9 +47,10 @@ export type AppStackParamList = {
       descricao: string
       foto: string
       codigoGrupo: string
+      criado_em: string
       membros: Array<{
         userId: string
-        cargo: string
+        cargo: "administrador" | "membro"
         nome: string
       }>
       ranking_mensal: Array<{

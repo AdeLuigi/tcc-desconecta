@@ -383,3 +383,239 @@ export async function joinGroupByCode(
     }
   }
 }
+
+/**
+ * Sair de um grupo (usuário remove a si mesmo)
+ */
+export async function leaveGroup(
+  groupId: string,
+  userId: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const group = await getGroupById(groupId)
+    if (!group) {
+      return {
+        success: false,
+        message: "Grupo não encontrado.",
+      }
+    }
+
+    // Verificar se é o último membro
+    if (group.membros.length === 1) {
+      // Se for o último membro, deletar o grupo
+      const db = getFirestore()
+      const groupRef = doc(db, "grupos", groupId)
+      await deleteDoc(groupRef)
+      
+      return {
+        success: true,
+        message: "Você era o último membro. O grupo foi excluído.",
+      }
+    }
+
+    // Verificar se é administrador
+    const userMember = group.membros.find((m) => m.userId === userId)
+    const isAdmin = userMember?.cargo === "administrador"
+
+    // Se for admin, verificar se há outros admins
+    if (isAdmin) {
+      const adminCount = group.membros.filter((m) => m.cargo === "administrador").length
+      if (adminCount === 1) {
+        // É o único admin, não pode sair
+        return {
+          success: false,
+          message: "Você é o único administrador. Promova outro membro antes de sair.",
+        }
+      }
+    }
+
+    // Remover usuário do grupo
+    const success = await removeMemberFromGroup(groupId, userId)
+    
+    if (success) {
+      return {
+        success: true,
+        message: "Você saiu do grupo com sucesso.",
+      }
+    } else {
+      return {
+        success: false,
+        message: "Erro ao sair do grupo.",
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao sair do grupo:", error)
+    return {
+      success: false,
+      message: "Erro ao tentar sair do grupo.",
+    }
+  }
+}
+
+/**
+ * Conceder cargo de administrador a um membro
+ */
+export async function grantAdminRole(
+  groupId: string,
+  userId: string,
+  adminUserId: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const group = await getGroupById(groupId)
+    if (!group) {
+      return {
+        success: false,
+        message: "Grupo não encontrado.",
+      }
+    }
+
+    // Verificar se quem está concedendo é admin
+    const adminMember = group.membros.find((m) => m.userId === adminUserId)
+    if (!adminMember || adminMember.cargo !== "administrador") {
+      return {
+        success: false,
+        message: "Você não tem permissão para conceder administrador.",
+      }
+    }
+
+    // Verificar se o usuário alvo é membro
+    const targetMember = group.membros.find((m) => m.userId === userId)
+    if (!targetMember) {
+      return {
+        success: false,
+        message: "Usuário não é membro do grupo.",
+      }
+    }
+
+    // Verificar se já é admin
+    if (targetMember.cargo === "administrador") {
+      return {
+        success: false,
+        message: "Este usuário já é administrador.",
+      }
+    }
+
+    // Atualizar cargo para administrador
+    const updatedMembros = group.membros.map((m) => {
+      if (m.userId === userId) {
+        return { ...m, cargo: "administrador" as const }
+      }
+      return m
+    })
+
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    await updateDoc(groupRef, {
+      membros: updatedMembros,
+    })
+
+    return {
+      success: true,
+      message: `${targetMember.nome} agora é administrador.`,
+    }
+  } catch (error) {
+    console.error("Erro ao conceder administrador:", error)
+    return {
+      success: false,
+      message: "Erro ao conceder cargo de administrador.",
+    }
+  }
+}
+
+/**
+ * Atualizar descrição do grupo (apenas admin)
+ */
+export async function updateGroupDescription(
+  groupId: string,
+  newDescription: string,
+  userId: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const group = await getGroupById(groupId)
+    if (!group) {
+      return {
+        success: false,
+        message: "Grupo não encontrado.",
+      }
+    }
+
+    // Verificar se é admin
+    const userMember = group.membros.find((m) => m.userId === userId)
+    if (!userMember || userMember.cargo !== "administrador") {
+      return {
+        success: false,
+        message: "Apenas administradores podem editar a descrição.",
+      }
+    }
+
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    await updateDoc(groupRef, {
+      descricao: newDescription.trim(),
+    })
+
+    return {
+      success: true,
+      message: "Descrição atualizada com sucesso.",
+    }
+  } catch (error) {
+    console.error("Erro ao atualizar descrição:", error)
+    return {
+      success: false,
+      message: "Erro ao atualizar descrição do grupo.",
+    }
+  }
+}
+
+/**
+ * Atualizar foto do grupo (apenas admin)
+ */
+export async function updateGroupPhoto(
+  groupId: string,
+  newPhotoURL: string,
+  userId: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const group = await getGroupById(groupId)
+    if (!group) {
+      return {
+        success: false,
+        message: "Grupo não encontrado.",
+      }
+    }
+
+    // Verificar se é admin
+    const userMember = group.membros.find((m) => m.userId === userId)
+    if (!userMember || userMember.cargo !== "administrador") {
+      return {
+        success: false,
+        message: "Apenas administradores podem editar a foto.",
+      }
+    }
+
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    await updateDoc(groupRef, {
+      foto: newPhotoURL,
+    })
+
+    return {
+      success: true,
+      message: "Foto do grupo atualizada com sucesso.",
+    }
+  } catch (error) {
+    console.error("Erro ao atualizar foto:", error)
+    return {
+      success: false,
+      message: "Erro ao atualizar foto do grupo.",
+    }
+  }
+}
+
+/**
+ * Verifica se um usuário é administrador do grupo
+ */
+export function isUserAdmin(group: Group, userId: string): boolean {
+  const userMember = group.membros.find((m) => m.userId === userId)
+  return userMember?.cargo === "administrador"
+}
