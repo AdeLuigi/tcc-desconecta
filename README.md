@@ -1,77 +1,161 @@
-# Welcome to your new ignited app!
+# Desconecta
 
-> The latest and greatest boilerplate for Infinite Red opinions
+> Aplicativo mobile para bem-estar digital — TCC de Ciência da Computação (UFRJ)
 
-This is the boilerplate that [Infinite Red](https://infinite.red) uses as a way to test bleeding-edge changes to our React Native stack.
+O **Desconecta** é um aplicativo desenvolvido como Trabalho de Conclusão de Curso na UFRJ. A proposta central é ajudar as pessoas a reduzir o uso excessivo do celular de forma colaborativa e gamificada, promovendo uma relação mais saudável com a tecnologia.
 
-- [Quick start documentation](https://github.com/infinitered/ignite/blob/master/docs/boilerplate/Boilerplate.md)
-- [Full documentation](https://github.com/infinitered/ignite/blob/master/docs/README.md)
+## Ideia e Motivação
 
-## Getting Started
+O uso excessivo de dispositivos móveis é um problema crescente em diversas faixas etárias. O Desconecta surge como uma alternativa lúdica e social para enfrentar esse desafio: em vez de simplesmente bloquear o acesso a apps, o aplicativo cria um ambiente de apoio mútuo onde amigos e grupos se motivam a consumir menos tela juntos.
+
+A ideia central é transformar a redução do tempo de tela em um hábito positivo, reforçado por desafios, estatísticas pessoais, rankings e uma rede de apoio social.
+
+## Funcionalidades
+
+### Monitoramento de Tempo de Tela
+- Leitura do tempo de uso real do dispositivo via módulo nativo Android (`UsageStatsManager`)
+- Visualização do tempo total de tela do dia e histórico semanal
+- Detalhamento por aplicativo e por categoria (redes sociais, entretenimento, utilitários etc.)
+- Comparação com a semana anterior e acompanhamento de evolução pessoal
+
+### Grupos de Apoio
+- Criação e participação em grupos de amigos
+- Entrada em grupos via código de convite único
+- Feed social dentro de cada grupo para compartilhar atividades e progresso
+- Ranking mensal de pontos entre os membros do grupo
+- Bate-papo integrado por grupo
+- Gerenciamento de membros com papéis de administrador e membro
+
+### Desafios
+- Desafios públicos mensais disponíveis para todos os usuários
+- Desafios de grupo específicos para cada comunidade
+- Inscrição e acompanhamento de progresso nos desafios ativos
+- Premiação com colecionáveis digitais ao concluir desafios
+
+### Modo Foco
+- Ativação de um modo restrito que limita o acesso às funcionalidades do app
+- No modo foco, apenas o feed dos grupos e estatísticas resumidas ficam disponíveis
+
+### Controles de Uso
+- Definição de limite diário de tempo de tela
+- Limite de uso por aplicativo individual
+- Bloqueio de apps por horário
+
+### Estatísticas e Gamificação
+- Streak de dias com meta cumprida
+- Prêmios mensais colecionáveis
+- Perfil pessoal com histórico de conquistas
+
+## Stack Tecnológica
+
+| Camada | Tecnologia |
+|---|---|
+| Framework mobile | React Native + Expo |
+| Linguagem | TypeScript |
+| Navegação | React Navigation (stack + bottom tabs) |
+| Backend/DB | Firebase (Firestore, Auth, Storage) |
+| Autenticação | Google Sign-In + Firebase Auth |
+| Módulo nativo | Kotlin (Android `UsageStatsManager`) |
+| Armazenamento local | react-native-mmkv |
+| Animações | react-native-reanimated |
+| Build/Deploy | EAS (Expo Application Services) |
+
+## Estrutura do Projeto
+
+```
+tcc-desconecta/
+├── app/
+│   ├── components/       # Componentes reutilizáveis (Button, Card, Text…)
+│   ├── screens/          # Telas do aplicativo
+│   ├── navigators/       # Configuração de rotas e abas
+│   ├── services/         # Integrações (Firebase, tempo de tela, grupos…)
+│   ├── context/          # Contextos globais (autenticação)
+│   ├── theme/            # Cores, tipografia e estilos
+│   ├── i18n/             # Internacionalização
+│   └── config/           # Configurações de ambiente (dev/prod)
+├── android/              # Projeto Android nativo (módulo de tempo de tela)
+├── ios/                  # Projeto iOS nativo
+├── functions/            # Firebase Cloud Functions
+├── assets/               # Imagens e ícones
+└── test/                 # Testes automatizados
+```
+
+## Como Rodar o Projeto
+
+### Pré-requisitos
+
+- Node.js 18+
+- Yarn ou npm
+- Android Studio (para emulador Android) ou Xcode (para iOS)
+- Conta no Firebase com projeto configurado
+
+### 1. Instalar dependências
 
 ```bash
 yarn install
+```
+
+### 2. Configurar o Firebase
+
+Adicione os arquivos de configuração do Firebase nas pastas corretas:
+
+- `android/app/google-services.json` — obtido no console do Firebase (Android)
+- `ios/tccdesconecta/GoogleService-Info.plist` — obtido no console do Firebase (iOS)
+
+### 3. Iniciar o servidor de desenvolvimento
+
+```bash
 yarn start
 ```
 
-To make things work on your local simulator, or on your phone, you need first to [run `eas build`](https://github.com/infinitered/ignite/blob/master/docs/expo/EAS.md). We have many shortcuts on `package.json` to make it easier:
+### 4. Rodar no dispositivo ou emulador
+
+**Android:**
+```bash
+yarn android
+```
+
+**iOS:**
+```bash
+yarn ios
+```
+
+> **Atenção:** O módulo de tempo de tela funciona apenas no Android, pois utiliza a API nativa `UsageStatsManager`. No iOS, as estatísticas de uso retornam valores vazios.
+
+> **Nota:** Na primeira execução no Android, o sistema solicitará permissão de acesso ao uso dos aplicativos (`PACKAGE_USAGE_STATS`). Essa permissão é necessária para o monitoramento de tempo de tela funcionar.
+
+### 5. Build para distribuição
+
+Use o EAS para gerar builds para simulador ou dispositivo físico:
 
 ```bash
-yarn build:ios:sim # build for ios simulator
-yarn build:ios:device # build for ios device
-yarn build:ios:prod # build for ios device
+# Android
+yarn build:android:sim      # simulador
+yarn build:android:device   # dispositivo físico
+
+# iOS
+yarn build:ios:sim          # simulador
+yarn build:ios:device       # dispositivo físico
 ```
 
-### `./assets`
+Consulte o arquivo `eas.json` para ver os perfis de build disponíveis (development, preview, production).
 
-This directory is designed to organize and store various assets, making it easy for you to manage and use them in your application. The assets are further categorized into subdirectories, including `icons` and `images`:
+## Testes
 
-```tree
-assets
-├── icons
-└── images
+```bash
+yarn test
 ```
 
-**icons**
-This is where your icon assets will live. These icons can be used for buttons, navigation elements, or any other UI components. The recommended format for icons is PNG, but other formats can be used as well.
+## Documentação Complementar
 
-Ignite comes with a built-in `Icon` component. You can find detailed usage instructions in the [docs](https://github.com/infinitered/ignite/blob/master/docs/boilerplate/app/components/Icon.md).
+- `CONFIGURACAO_NOTIFICACOES.md` — setup de notificações push
+- `GOOGLE_SIGNIN_SETUP.md` — configuração do login com Google
+- `FIRESTORE_RULES.md` — regras de segurança do Firestore
+- `FIREBASE_STORAGE_RULES.md` — regras de segurança do Storage
+- `SCREEN_TIME_MODULE.md` — documentação do módulo nativo de tempo de tela
+- `RELATORIO_DESENVOLVIMENTO.md` — relatório completo do desenvolvimento
 
-**images**
-This is where your images will live, such as background images, logos, or any other graphics. You can use various formats such as PNG, JPEG, or GIF for your images.
+## Autores
 
-Another valuable built-in component within Ignite is the `AutoImage` component. You can find detailed usage instructions in the [docs](https://github.com/infinitered/ignite/blob/master/docs/Components-AutoImage.md).
-
-How to use your `icon` or `image` assets:
-
-```typescript
-import { Image } from 'react-native';
-
-const MyComponent = () => {
-  return (
-    <Image source={require('assets/images/my_image.png')} />
-  );
-};
-```
-
-## Running Maestro end-to-end tests
-
-Follow our [Maestro Setup](https://ignitecookbook.com/docs/recipes/MaestroSetup) recipe.
-
-## Next Steps
-
-### Ignite Cookbook
-
-[Ignite Cookbook](https://ignitecookbook.com/) is an easy way for developers to browse and share code snippets (or “recipes”) that actually work.
-
-### Upgrade Ignite boilerplate
-
-Read our [Upgrade Guide](https://ignitecookbook.com/docs/recipes/UpdatingIgnite) to learn how to upgrade your Ignite project.
-
-## Community
-
-⭐️ Help us out by [starring on GitHub](https://github.com/infinitered/ignite), filing bug reports in [issues](https://github.com/infinitered/ignite/issues) or [ask questions](https://github.com/infinitered/ignite/discussions).
-
-💬 Join us on [Slack](https://join.slack.com/t/infiniteredcommunity/shared_invite/zt-1f137np4h-zPTq_CbaRFUOR_glUFs2UA) to discuss.
-
-📰 Make our Editor-in-chief happy by [reading the React Native Newsletter](https://reactnativenewsletter.com/).
+Trabalho de Conclusão de Curso — DCC/UFRJ  
+Desenvolvido por Ademario Santana e Felipe
