@@ -11,7 +11,6 @@ import { HomeDinamicaScreen } from "@/screens/HomeDinamicaScreen"
 import { GruposDeAmigosScreen } from "@/screens/GruposDeAmigosScreen"
 import { DesafiosPublicosScreen } from "@/screens/DesafiosPublicosScreen"
 import { EstatisticaPessoalResumidaScreen } from "@/screens/EstatisticaPessoalResumidaScreen"
-import { ConfiguracoesScreen } from "@/screens/ConfiguracoesScreen"
 
 // Screens - Shared (accessible from any tab)
 import { SelecionarTipoGrupoScreen } from "@/screens/SelecionarTipoGrupoScreen"
@@ -121,7 +120,6 @@ const AjustesStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Perfil" component={PerfilScreen as any} />
-      <Stack.Screen name="Configuracoes" component={ConfiguracoesScreen as any} />
       <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
       <Stack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
       <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
