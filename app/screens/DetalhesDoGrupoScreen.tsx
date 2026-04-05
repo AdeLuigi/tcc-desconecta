@@ -821,55 +821,42 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                     onPress={() => navigation.navigate("DetalhesDoUsuario", { userId: item.userId })}
                     activeOpacity={0.7}
                   >
-                    <View style={styles.rankingPosition}>
-                      {medalha ? (
-                        <Text style={styles.medalEmoji}>{medalha}</Text>
-                      ) : (
-                        <Text style={styles.positionNumber}>{posicao}º</Text>
-                      )}
-                    </View>
-                    <View style={styles.rankingAvatar}>
-                      {item.photoURL ? (
-                        <Image
-                          source={{ uri: item.photoURL }}
-                          style={styles.rankingAvatarImage}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <Text style={styles.rankingAvatarText}>
-                          {item.nome.charAt(0).toUpperCase()}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={styles.rankingInfo}>
-                      <Text style={styles.rankingName}>{item.nome}</Text>
-                      {item.temHoje ? (
-                        <View style={styles.rankingPointsBar}>
-                          <View
-                            style={[
-                              styles.rankingPointsFill,
-                              {
-                                width: rankingTempoDeTela[0].tempoMinutos && item.tempoMinutos
-                                  ? `${Math.min((item.tempoMinutos / (rankingTempoDeTela[rankingTempoDeTela.length - 1].tempoMinutos || 1)) * 100, 100)}%`
-                                  : '0%',
-                                backgroundColor: posicao <= 3 ? '#10B981' : '#6881BA'
-                              }
-                            ]}
+                    {/* Avatar with medal overlay */}
+                    <View style={styles.rankingAvatarWrapper}>
+                      <View style={styles.rankingAvatar}>
+                        {item.photoURL ? (
+                          <Image
+                            source={{ uri: item.photoURL }}
+                            style={styles.rankingAvatarImage}
+                            resizeMode="cover"
                           />
-                        </View>
+                        ) : (
+                          <Text style={styles.rankingAvatarText}>
+                            {item.nome.charAt(0).toUpperCase()}
+                          </Text>
+                        )}
+                      </View>
+                      {medalha ? (
+                        <Text style={styles.rankingMedalBadge}>{medalha}</Text>
+                      ) : null}
+                    </View>
+
+                    {/* Name */}
+                    <Text style={styles.rankingName}>{item.nome}</Text>
+
+                    {/* Time */}
+                    <View style={styles.rankingTimeColumn}>
+                      <Text style={styles.rankingTimeLabel}>
+                        {rankingPeriodo === "diario" ? "Tempo de hoje" : "Média semanal"}
+                      </Text>
+                      {item.temHoje ? (
+                        <Text style={styles.rankingTimeValue}>
+                          {formatarTempo(item.tempoMinutos || 0)}
+                        </Text>
                       ) : (
-                        <Text style={styles.noDataText}>Sem dados hoje</Text>
+                        <Text style={styles.rankingTimeNoData}>-</Text>
                       )}
                     </View>
-                    {item.temHoje ? (
-                      <Text style={styles.rankingPoints}>
-                        {formatarTempo(item.tempoMinutos || 0)}
-                      </Text>
-                    ) : (
-                      <View style={styles.noDataBadge}>
-                        <Text style={styles.noDataBadgeText}>-</Text>
-                      </View>
-                    )}
                   </TouchableOpacity>
                 )
               })
@@ -1679,74 +1666,69 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
+    borderRadius: 8,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
     elevation: 2,
   },
-  rankingPosition: {
-    width: 40,
-    alignItems: "center",
-    marginRight: 8,
-  },
-  medalEmoji: {
-    fontSize: 24,
-  },
-  positionNumber: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#6881BA",
+  rankingAvatarWrapper: {
+    position: "relative",
+    marginRight: 16,
   },
   rankingAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#E0E7FF",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
     overflow: "hidden",
   },
   rankingAvatarImage: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
   },
   rankingAvatarText: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#322D70",
   },
-  rankingInfo: {
-    flex: 1,
-    marginRight: 12,
+  rankingMedalBadge: {
+    position: "absolute",
+    bottom: -6,
+    left: -6,
+    fontSize: 18,
   },
   rankingName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#322D70",
-    marginBottom: 6,
-  },
-  rankingPointsBar: {
-    height: 6,
-    backgroundColor: "#E0E7FF",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  rankingPointsFill: {
-    height: "100%",
-    backgroundColor: "#7C3AED",
-    borderRadius: 3,
-  },
-  rankingPoints: {
+    flex: 1,
     fontSize: 16,
     fontWeight: "bold",
     color: "#322D70",
-    minWidth: 60,
-    textAlign: "right",
+  },
+  rankingTimeColumn: {
+    alignItems: "flex-start",
+  },
+  rankingTimeLabel: {
+    fontSize: 12,
+    color: "#6881BA",
+    fontWeight: "800",
+    marginBottom: 2,
+  },
+  rankingTimeValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  rankingTimeNoData: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#94A3B8",
   },
   rankingSubtitle: {
     fontSize: 13,
