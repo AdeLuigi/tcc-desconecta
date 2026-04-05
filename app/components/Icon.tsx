@@ -157,6 +157,8 @@ export const iconRegistry = {
   notifications: NotificationsIcon,
   copy: require("@assets/icons/copy.png"),
   participantes: require("@assets/icons/participantes.svg").default,
+  shareSvg: require("@assets/icons/share.svg").default,
+  copySvg: require("@assets/icons/copy.svg").default,
   share: require("@assets/icons/share.png"),
   caretLeft: require("@assets/icons/caretLeft.png"),
   caretRight: require("@assets/icons/caretRight.png"),

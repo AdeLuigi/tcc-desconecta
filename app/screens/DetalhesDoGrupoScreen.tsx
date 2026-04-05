@@ -688,7 +688,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
 
         {/* Group Summary Card */}
         {activeTab === "ranking" && (
-          <View style={styles.groupSummaryCard}>
+          <View style={[styles.groupSummaryCard, { paddingHorizontal: 16 }]}>
             <View style={styles.groupSummaryTop}>
               {/* Group Photo */}
               <View style={styles.groupSummaryPhoto}>
@@ -880,33 +880,71 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         {/* Informações do Grupo */}
         {activeTab === "info" && (
           <View style={styles.section}>
-            {/* Descrição */}
-            <View style={styles.infoCard}>
-              <Text style={styles.infoCardTitle}>Descrição</Text>
-              <Text style={styles.infoCardText}>{currentGroup.descricao}</Text>
-            </View>
-
-            {/* Membros */}
-            <View style={styles.infoCard}>
-              <Text style={styles.infoCardTitle}>Membros ({currentGroup.membros.length})</Text>
-              {currentGroup.membros.map((m, i) => (
-                <View key={m.userId} style={styles.memberRow}>
-                  <Text style={styles.memberName}>
-                    {m.nome} {m.cargo === 'administrador' ? '👑' : ''}
-                  </Text>
+            {/* Group Summary Card */}
+            <View style={styles.groupSummaryCard}>
+              <View style={styles.groupSummaryTop}>
+                <View style={styles.groupSummaryPhoto}>
+                  {currentGroup.foto ? (
+                    <Image source={{ uri: currentGroup.foto }} style={styles.groupSummaryImage} resizeMode="cover" />
+                  ) : (
+                    <Text style={styles.groupSummaryInitial}>
+                      {currentGroup.nome.charAt(0).toUpperCase()}
+                    </Text>
+                  )}
                 </View>
-              ))}
+                <View style={styles.groupSummaryInfo}>
+                  {rankingTempoDeTela.length > 0 && rankingTempoDeTela[0].temHoje ? (
+                    <View style={styles.bestMemberRow}>
+                      <View style={styles.bestMemberAvatar}>
+                        {rankingTempoDeTela[0].photoURL ? (
+                          <Image source={{ uri: rankingTempoDeTela[0].photoURL }} style={styles.bestMemberAvatarImage} resizeMode="cover" />
+                        ) : (
+                          <Text style={styles.bestMemberAvatarText}>
+                            {rankingTempoDeTela[0].nome.charAt(0).toUpperCase()}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.bestMemberText}>
+                        <Text style={styles.bestMemberLabel}>Melhor média semanal</Text>
+                        <Text style={styles.bestMemberValue}>
+                          {formatarTempo(rankingTempoDeTela[0].tempoMinutos || 0)}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.bestMemberRow}>
+                      <Text style={styles.bestMemberLabel}>Sem dados disponíveis</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.participantsButton}
+                    onPress={() => {
+                      const membersList = currentGroup.membros.map((m, i) =>
+                        `${i + 1}. ${m.nome} ${m.cargo === 'administrador' ? '👑' : ''}`
+                      ).join('\n')
+                      Alert.alert(
+                        `Participantes (${currentGroup.membros.length})`,
+                        membersList,
+                        [{ text: "OK" }]
+                      )
+                    }}
+                  >
+                    <Icon icon="participantes" size={24} color="#322D70" />
+                    <Text style={styles.participantsText}>{currentGroup.membros.length} participantes</Text>
+                    <Text style={styles.participantsChevron}>›</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
             {/* Código do Grupo */}
             {currentGroup.codigoGrupo && (
               <View style={styles.infoCard}>
-                <Text style={styles.infoCardTitle}>Código do Grupo</Text>
+                <Text style={styles.infoCardTitle}>Código do grupo</Text>
                 <View style={styles.codeContainer}>
                   <View style={styles.codeBox}>
                     <Text style={styles.codeText}>{currentGroup.codigoGrupo}</Text>
-                  </View>
-                  <View style={styles.codeActions}>
+                    <View style={styles.codeActions}>
                     <TouchableOpacity
                       style={styles.codeActionButton}
                       onPress={() => {
@@ -914,7 +952,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                         Alert.alert("Copiado!", "Código copiado para a área de transferência")
                       }}
                     >
-                      <Text>📋</Text>
+                      <Icon icon="copySvg" size={20} color="#322D70" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.codeActionButton}
@@ -928,19 +966,40 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                         }
                       }}
                     >
-                      <Text>📤</Text>
+                      <Icon icon="shareSvg" size={20} color="#322D70" />
                     </TouchableOpacity>
                   </View>
+                  </View>
+
                 </View>
+                <Text style={styles.codeHelper}>Compartilhe esse código para convidar alguém para o grupo</Text>
               </View>
             )}
 
-            {/* Gerenciar Grupo */}
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => setManagementModalVisible(true)}
-            >
-              <Text style={styles.actionButtonText}>⚙️ Gerenciar Grupo</Text>
+            {/* Sobre o grupo */}
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Sobre o grupo</Text>
+              <Text style={[styles.infoCardText, { color: "#322D70" }]}>{currentGroup.descricao || "Sem descrição"}</Text>
+            </View>
+
+            {/* Critério de rankeamento */}
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Critério de rankeamento</Text>
+              <View style={styles.criterionPill}>
+                <Text style={styles.criterionPillText}>
+                  {currentGroup.groupType === "screenTimeForApps"
+                    ? "Menor tempo em apps selecionados"
+                    : currentGroup.groupType === "checkin"
+                    ? "Check-in diário"
+                    : "Menor tempo de tela total"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Outras opções */}
+            <Text style={styles.infoSectionTitle}>Outras opções</Text>
+            <TouchableOpacity style={styles.leaveGroupButton} onPress={handleLeaveGroup}>
+              <Text style={styles.leaveGroupButtonText}>Sair do grupo</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1329,7 +1388,7 @@ const styles = StyleSheet.create({
   infoCardText: {
     fontSize: 14,
     color: "#475569",
-    lineHeight: 22,
+    fontWeight: "600",
   },
   memberRow: {
     paddingVertical: 8,
@@ -1341,7 +1400,6 @@ const styles = StyleSheet.create({
     color: "#1E293B",
   },
   groupSummaryCard: {
-    marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
 
@@ -1432,6 +1490,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   participantsIcon: {
     fontSize: 20,
@@ -1585,10 +1648,12 @@ const styles = StyleSheet.create({
   codeBox: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+    flexDirection: "row",
+    justifyContent: "space-between",
     borderRadius: 12,
     padding: 16,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
+    borderWidth: 1,
+    borderColor: "#6881BA",
     alignItems: "center",
   },
   codeText: {
@@ -1598,20 +1663,13 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
   codeActions: {
-    gap: 8,
+    flexDirection: "row",
   },
   codeActionButton: {
-    width: 44,
-    height: 44,
     borderRadius: 12,
-    backgroundColor: "#E0E7FF",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    marginLeft: 8,
   },
   codeHelper: {
     fontSize: 12,
@@ -1787,6 +1845,44 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
     marginRight: 8,
+  },
+  codeActionIcon: {
+    fontSize: 20,
+  },
+  criterionPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#72C3E0",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  criterionPillText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  infoSectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#6881BA",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginTop: 16,
+    marginBottom: 8,
+    marginHorizontal: 4,
+  },
+  leaveGroupButton: {
+    backgroundColor: "#E53935",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  leaveGroupButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
   fabButton: {
     position: "absolute",
