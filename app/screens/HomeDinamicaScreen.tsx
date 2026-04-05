@@ -429,7 +429,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.addGroupButton}
-                  onPress={() => navigation.navigate("CriarNovoGrupo")}
+                  onPress={() => navigation.navigate("SelecionarTipoGrupo")}
                 >
                   <Text style={styles.addGroupButtonText}>+</Text>
                 </TouchableOpacity>
@@ -446,7 +446,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
               </Text>
               <TouchableOpacity 
                 style={styles.emptyActionButton}
-                onPress={() => navigation.navigate("CriarNovoGrupo")}
+                onPress={() => navigation.navigate("SelecionarTipoGrupo")}
               >
                 <Text style={styles.emptyActionButtonText}>Criar um grupo</Text>
                 <Text style={styles.emptyActionButtonIcon}>+</Text>

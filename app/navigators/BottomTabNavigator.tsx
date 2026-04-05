@@ -14,6 +14,7 @@ import { EstatisticaPessoalResumidaScreen } from "@/screens/EstatisticaPessoalRe
 import { ConfiguracoesScreen } from "@/screens/ConfiguracoesScreen"
 
 // Screens - Shared (accessible from any tab)
+import { SelecionarTipoGrupoScreen } from "@/screens/SelecionarTipoGrupoScreen"
 import { CriarNovoGrupoScreen } from "@/screens/CriarNovoGrupoScreen"
 import { PaginaDoGrupoScreen } from "@/screens/PaginaDoGrupoScreen"
 import { AtividadeScreen } from "@/screens/AtividadeScreen"
@@ -43,6 +44,7 @@ const HomeStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeDinamica" component={HomeDinamicaScreen as any} />
+      <Stack.Screen name="SelecionarTipoGrupo" component={SelecionarTipoGrupoScreen as any} />
       <Stack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
       <Stack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
       <Stack.Screen name="Atividade" component={AtividadeScreen as any} />
@@ -71,6 +73,7 @@ const GruposStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="GruposDeAmigos" component={GruposDeAmigosScreen as any} />
+      <Stack.Screen name="SelecionarTipoGrupo" component={SelecionarTipoGrupoScreen as any} />
       <Stack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
       <Stack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
       <Stack.Screen name="Atividade" component={AtividadeScreen as any} />

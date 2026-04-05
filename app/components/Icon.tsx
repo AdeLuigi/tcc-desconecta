@@ -1,3 +1,4 @@
+import React from "react"
 import {
   Image,
   ImageStyle,
@@ -8,10 +9,17 @@ import {
   ViewProps,
   ViewStyle,
 } from "react-native"
+import { SvgProps } from "react-native-svg"
 
 import { useAppTheme } from "@/theme/context"
 
 export type IconTypes = keyof typeof iconRegistry
+
+type SvgComponent = React.FC<SvgProps>
+
+function isSvgComponent(source: unknown): source is SvgComponent {
+  return typeof source === "function"
+}
 
 type BaseIconProps = {
   /**
@@ -61,6 +69,7 @@ export function PressableIcon(props: PressableIconProps) {
   } = props
 
   const { theme } = useAppTheme()
+  const source = iconRegistry[icon]
 
   const $imageStyle: StyleProp<ImageStyle> = [
     $imageStyleBase,
@@ -71,7 +80,15 @@ export function PressableIcon(props: PressableIconProps) {
 
   return (
     <TouchableOpacity {...pressableProps} style={$containerStyleOverride}>
-      <Image style={$imageStyle} source={iconRegistry[icon]} />
+      {isSvgComponent(source) ? (
+        React.createElement(source, {
+          width: size,
+          height: size,
+          color: color ?? theme.colors.text,
+        })
+      ) : (
+        <Image style={$imageStyle} source={source} />
+      )}
     </TouchableOpacity>
   )
 }
@@ -94,6 +111,7 @@ export function Icon(props: IconProps) {
   } = props
 
   const { theme } = useAppTheme()
+  const source = iconRegistry[icon]
 
   const $imageStyle: StyleProp<ImageStyle> = [
     $imageStyleBase,
@@ -104,10 +122,25 @@ export function Icon(props: IconProps) {
 
   return (
     <View {...viewProps} style={$containerStyleOverride}>
-      <Image style={$imageStyle} source={iconRegistry[icon]} />
+      {isSvgComponent(source) ? (
+        React.createElement(source, {
+          width: size,
+          height: size,
+          color: color ?? theme.colors.text,
+        })
+      ) : (
+        <Image style={$imageStyle} source={source} />
+      )}
     </View>
   )
 }
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const PeopleGroupIcon: SvgComponent = require("@assets/icons/poeple-group-icon.svg").default
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const NotificationsIcon: SvgComponent = require("@assets/icons/notifications.svg").default
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const SearchIcon: SvgComponent = require("@assets/icons/search.svg").default
 
 export const iconRegistry = {
   back: require("@assets/icons/back.png"),
@@ -115,11 +148,14 @@ export const iconRegistry = {
   bell: require("@assets/icons/bell.png"),
   vector: require("@assets/icons/vector.png"),
   chevron: require("@assets/icons/chevron.png"),
-  search: require("@assets/icons/search.png"),
+  search: SearchIcon,
   win: require("@assets/icons/win.png"),
+  desafioDeTempo: require("@assets/icons/desafio-de-tempo.svg").default,
+  comunidade: require("@assets/icons/comunidade.svg").default,
+  poepleGroupIcon: PeopleGroupIcon,
+  notifications: NotificationsIcon,
   copy: require("@assets/icons/copy.png"),
   share: require("@assets/icons/share.png"),
-  notifications: require("@assets/icons/notifications.png"),
   caretLeft: require("@assets/icons/caretLeft.png"),
   caretRight: require("@assets/icons/caretRight.png"),
   check: require("@assets/icons/check.png"),

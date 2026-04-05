@@ -182,7 +182,7 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.addGroupButton}
-                onPress={() => navigation.navigate("CriarNovoGrupo")}
+                onPress={() => navigation.navigate("SelecionarTipoGrupo")}
               >
                 <Text style={styles.addGroupButtonText}>+</Text>
               </TouchableOpacity>
@@ -198,7 +198,7 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
               </Text>
               <TouchableOpacity 
                 style={styles.createGroupButton}
-                onPress={() => navigation.navigate("CriarNovoGrupo")}
+                onPress={() => navigation.navigate("SelecionarTipoGrupo")}
               >
                 <Text style={styles.createGroupButtonText}>Criar grupo</Text>
               </TouchableOpacity>

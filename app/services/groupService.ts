@@ -70,6 +70,7 @@ export interface Group {
   descricao: string
   foto: string
   criado_em: string
+  dataLimite?: string
   membros: GroupMember[]
   ranking_mensal: RankingMember[]
   codigoGrupo: string
@@ -103,6 +104,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
           descricao: data.descricao || "",
           foto: data.foto || "",
           criado_em: data.criado_em || "",
+          dataLimite: data.dataLimite || undefined,
           membros: data.membros || [],
           ranking_mensal: data.ranking_mensal || [],
           codigoGrupo: data.codigoGrupo || "",
@@ -134,6 +136,7 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
         descricao: data?.descricao || "",
         foto: data?.foto || "",
         criado_em: data?.criado_em || "",
+        dataLimite: data?.dataLimite || undefined,
         membros: data?.membros || [],
         ranking_mensal: data?.ranking_mensal || [],
         codigoGrupo: data?.codigoGrupo || "",
@@ -155,6 +158,7 @@ export async function createGroup(
   descricao: string,
   foto: string,
   adminUserId: string,
+  dataLimite?: string,
 ): Promise<string | null> {
   try {
     // Buscar dados do usuário para obter o nome
@@ -169,6 +173,7 @@ export async function createGroup(
       descricao,
       foto,
       criado_em: new Date().toISOString(),
+      ...(dataLimite ? { dataLimite } : {}),
       codigoGrupo,
       membros: [
         {

@@ -36,7 +36,8 @@ export type AppStackParamList = {
   MainTabs: NavigatorScreenParams<BottomTabParamList>
   HomeDinamica: undefined
   GruposDeAmigos: undefined
-  CriarNovoGrupo: undefined
+  SelecionarTipoGrupo: undefined
+  CriarNovoGrupo: { tipoGrupo: "desafioTempo" | "comunidade" } | undefined
   PaginaDoGrupo: undefined
   Atividade: undefined
   Ranking: undefined

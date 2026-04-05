@@ -1,11 +1,9 @@
 import React, { useState } from "react"
 import { View, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, ScrollView } from "react-native"
-import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { useAppTheme } from "@/theme/context"
 import { useAuth } from "@/context/AuthContext"
 import { createGroup } from "@/services/groupService"
 import * as ImagePicker from 'expo-image-picker'
@@ -13,14 +11,20 @@ import storage from '@react-native-firebase/storage'
 
 interface CriarNovoGrupoScreenProps extends AppStackScreenProps<"CriarNovoGrupo"> {}
 
-export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navigation }) => {
-  const { theme } = useAppTheme()
+export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navigation, route }) => {
   const { userData } = useAuth()
   const [groupName, setGroupName] = useState("")
   const [groupDescription, setGroupDescription] = useState("")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const selectedGroupType = route.params?.tipoGrupo ?? "comunidade"
+
+  const getDefaultDeadline = () => {
+    const deadline = new Date()
+    deadline.setDate(deadline.getDate() + 30)
+    return deadline.toISOString()
+  }
 
   const pickImage = async () => {
     try {
@@ -102,7 +106,8 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
         groupName.trim(),
         groupDescription.trim(),
         photoURL,
-        userData.uid
+        userData.uid,
+        selectedGroupType === "desafioTempo" ? getDefaultDeadline() : undefined,
       )
 
       if (groupId) {
