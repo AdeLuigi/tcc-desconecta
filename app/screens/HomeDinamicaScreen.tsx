@@ -116,6 +116,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       setHasPermission(permission)
       
       if (permission) {
+        await ScreenTimeService.startBackgroundTracking()
         await loadScreenTimeData()
       }
     } catch (error) {

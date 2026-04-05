@@ -19,12 +19,20 @@ import android.os.Process
 import android.provider.Settings
 import android.util.Base64
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.*
 import java.io.ByteArrayOutputStream
 import java.util.Calendar
 
 // Classe principal do módulo que expõe funcionalidades de tempo de tela para o React Native
 class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+
+    private val prefs by lazy {
+        reactApplicationContext.getSharedPreferences(
+            ScreenTimeBackgroundConfig.PREFS_NAME,
+            Context.MODE_PRIVATE
+        )
+    }
 
     // Retorna o nome do módulo que será usado no JavaScript
     override fun getName(): String {
@@ -223,6 +231,72 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             reactApplicationContext.startActivity(intent)
         } catch (e: Exception) {
             // Ignora erros silenciosamente
+        }
+    }
+
+    @ReactMethod
+    fun startBackgroundTracking(promise: Promise) {
+        try {
+            val appOps = reactApplicationContext.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val mode = appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                reactApplicationContext.packageName
+            )
+
+            if (mode != AppOpsManager.MODE_ALLOWED) {
+                promise.reject("NO_PERMISSION", "Permissão de estatísticas de uso não concedida")
+                return
+            }
+
+            prefs.edit()
+                .putBoolean(ScreenTimeBackgroundConfig.PREF_ENABLED, true)
+                .apply()
+
+            val serviceIntent = Intent(reactApplicationContext, ScreenTimeForegroundService::class.java).apply {
+                action = ScreenTimeBackgroundConfig.ACTION_START
+            }
+            ContextCompat.startForegroundService(reactApplicationContext, serviceIntent)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
+    fun stopBackgroundTracking(promise: Promise) {
+        try {
+            prefs.edit()
+                .putBoolean(ScreenTimeBackgroundConfig.PREF_ENABLED, false)
+                .apply()
+
+            val serviceIntent = Intent(reactApplicationContext, ScreenTimeForegroundService::class.java)
+            reactApplicationContext.stopService(serviceIntent)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
+    fun getBackgroundTrackingStatus(promise: Promise) {
+        try {
+            val status = WritableNativeMap()
+            status.putBoolean(
+                "enabled",
+                prefs.getBoolean(ScreenTimeBackgroundConfig.PREF_ENABLED, false)
+            )
+            status.putDouble(
+                "lastSyncAt",
+                prefs.getLong(ScreenTimeBackgroundConfig.PREF_LAST_SYNC_AT, 0L).toDouble()
+            )
+            status.putInt(
+                "lastMinutesToday",
+                prefs.getInt(ScreenTimeBackgroundConfig.PREF_LAST_MINUTES_TODAY, 0)
+            )
+            promise.resolve(status)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
         }
     }
 

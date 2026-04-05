@@ -5,6 +5,9 @@
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
   <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
   <!-- Permissão para notificações push (Android 13+) -->
@@ -33,5 +36,20 @@
         <data android:scheme="exp+tcc-desconecta"/>
       </intent-filter>
     </activity>
+
+    <service
+      android:name=".screentime.ScreenTimeForegroundService"
+      android:enabled="true"
+      android:exported="false"
+      android:foregroundServiceType="dataSync" />
+
+    <receiver
+      android:name=".screentime.ScreenTimeBootReceiver"
+      android:enabled="true"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+      </intent-filter>
+    </receiver>
   </application>
 </manifest>

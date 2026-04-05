@@ -38,6 +38,12 @@ export interface ScreenTimeData {
   timestamp: Date;
 }
 
+export interface BackgroundTrackingStatus {
+  enabled: boolean;
+  lastSyncAt: number;
+  lastMinutesToday: number;
+}
+
 /**
  * Serviço para capturar dados de tempo de tela no Android
  */
@@ -68,6 +74,55 @@ class ScreenTimeService {
       ScreenTimeModule.requestUsageStatsPermission();
     } catch (error) {
       console.error('Erro ao solicitar permissão:', error);
+    }
+  }
+
+  /**
+   * Ativa monitoramento contínuo em background (Android foreground service)
+   */
+  async startBackgroundTracking(): Promise<boolean> {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+    try {
+      const hasPermission = await this.hasPermission();
+      if (!hasPermission) {
+        throw new Error('Permissão de estatísticas de uso não concedida');
+      }
+      return await ScreenTimeModule.startBackgroundTracking();
+    } catch (error) {
+      console.error('Erro ao iniciar monitoramento em background:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Desativa monitoramento contínuo em background
+   */
+  async stopBackgroundTracking(): Promise<boolean> {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+    try {
+      return await ScreenTimeModule.stopBackgroundTracking();
+    } catch (error) {
+      console.error('Erro ao parar monitoramento em background:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Retorna status do monitoramento contínuo no Android
+   */
+  async getBackgroundTrackingStatus(): Promise<BackgroundTrackingStatus> {
+    if (Platform.OS !== 'android') {
+      return { enabled: false, lastSyncAt: 0, lastMinutesToday: 0 };
+    }
+    try {
+      return await ScreenTimeModule.getBackgroundTrackingStatus();
+    } catch (error) {
+      console.error('Erro ao obter status de background tracking:', error);
+      return { enabled: false, lastSyncAt: 0, lastMinutesToday: 0 };
     }
   }
 
