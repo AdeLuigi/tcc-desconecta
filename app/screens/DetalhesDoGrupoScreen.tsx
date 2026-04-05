@@ -12,11 +12,11 @@ import { createFeedPost, type TipoAtividade } from "@/services/feedService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
 import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "@react-native-firebase/firestore"
-import { 
-  leaveGroup, 
-  grantAdminRole, 
-  removeMemberFromGroup, 
-  updateGroupDescription, 
+import {
+  leaveGroup,
+  grantAdminRole,
+  removeMemberFromGroup,
+  updateGroupDescription,
   updateGroupPhoto,
   isUserAdmin,
   getGroupById
@@ -24,7 +24,7 @@ import {
 const Logo = require("@assets/images/logo2.png")
 
 
-interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> {}
+interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> { }
 
 export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ navigation, route }) => {
   const { theme } = useAppTheme()
@@ -92,7 +92,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         Array.isArray((currentGroup as any).selectedApps) &&
         (currentGroup as any).selectedApps.length > 0
       const selectedApps: string[] = isFilteredByApps ? (currentGroup as any).selectedApps : []
-      
+
       const rankingData = await Promise.all(
         grupo.membros.map(async (membro) => {
           try {
@@ -103,14 +103,14 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               where("userId", "==", membro.userId),
               where("data", "==", hoje)
             )
-            
+
             const snapshot = await getDocs(q)
-            
+
             // Buscar photoURL do usuário
             const userRef = doc(db, "usuarios", membro.userId)
             const userDoc = await getDoc(userRef)
             const photoURL = userDoc.exists() ? userDoc.data()?.photoURL || "" : ""
-            
+
             if (!snapshot.empty) {
               const dados = snapshot.docs[0].data()
               let tempoMinutos: number
@@ -154,7 +154,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           }
         })
       )
-      
+
       // Ordenar: primeiro por quem tem dados de hoje, depois pelo menor tempo
       const rankingOrdenado = rankingData.sort((a, b) => {
         if (a.temHoje && !b.temHoje) return -1
@@ -162,7 +162,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         if (!a.temHoje && !b.temHoje) return 0
         return (a.tempoMinutos || 0) - (b.tempoMinutos || 0)
       })
-      
+
       setRankingTempoDeTela(rankingOrdenado)
     } catch (error) {
       console.error('Erro ao carregar ranking de tempo de tela:', error)
@@ -180,7 +180,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         Array.isArray((currentGroup as any).selectedApps) &&
         (currentGroup as any).selectedApps.length > 0
       const selectedApps: string[] = isFilteredByApps ? (currentGroup as any).selectedApps : []
-      
+
       // Calcular datas dos últimos 7 dias
       const ultimos7Dias: string[] = []
       for (let i = 0; i < 7; i++) {
@@ -188,7 +188,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         data.setDate(data.getDate() - i)
         ultimos7Dias.push(data.toISOString().split('T')[0])
       }
-      
+
       const rankingData = await Promise.all(
         grupo.membros.map(async (membro) => {
           try {
@@ -199,14 +199,14 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               where("userId", "==", membro.userId),
               where("data", "in", ultimos7Dias)
             )
-            
+
             const snapshot = await getDocs(q)
-            
+
             // Buscar photoURL do usuário
             const userRef = doc(db, "usuarios", membro.userId)
             const userDoc = await getDoc(userRef)
             const photoURL = userDoc.exists() ? userDoc.data()?.photoURL || "" : ""
-            
+
             // Somar tempo de todos os dias (filtrado se necessário)
             let tempoTotal = 0
             snapshot.forEach((docSnap: any) => {
@@ -221,7 +221,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                 tempoTotal += dados.tempo_total_minutos || 0
               }
             })
-            
+
             return {
               userId: membro.userId,
               nome: membro.nome,
@@ -241,7 +241,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           }
         })
       )
-      
+
       // Ordenar: primeiro por quem tem dados, depois pelo menor tempo
       const rankingOrdenado = rankingData.sort((a, b) => {
         if (a.temHoje && !b.temHoje) return -1
@@ -249,7 +249,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         if (!a.temHoje && !b.temHoje) return 0
         return (a.tempoMinutos || 0) - (b.tempoMinutos || 0)
       })
-      
+
       setRankingTempoDeTela(rankingOrdenado)
     } catch (error) {
       console.error('Erro ao carregar ranking semanal:', error)
@@ -261,7 +261,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const formatarTempo = (minutos: number): string => {
     const horas = Math.floor(minutos / 60)
     const mins = minutos % 60
-    
+
     if (horas === 0) return `${mins}min`
     if (mins === 0) return `${horas}h`
     return `${horas}h ${mins}min`
@@ -270,7 +270,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const pickImage = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      
+
       if (!permissionResult.granted) {
         Alert.alert("Permissão negada", "Você precisa permitir o acesso à galeria")
         return
@@ -297,10 +297,10 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       setIsUploadingImage(true)
       const filename = `feed/${grupo.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`
       const reference = storage().ref(filename)
-      
+
       await reference.putFile(uri)
       const downloadURL = await reference.getDownloadURL()
-      
+
       return downloadURL
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error)
@@ -325,7 +325,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
     setIsCreatingPost(true)
     try {
       let photoURL: string | undefined = undefined
-      
+
       // Se tiver imagem selecionada, faz upload primeiro
       if (selectedImage) {
         photoURL = await uploadImage(selectedImage) || undefined
@@ -336,8 +336,8 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             "Não foi possível fazer upload da imagem. Deseja publicar sem a foto?",
             [
               { text: "Cancelar", style: "cancel", onPress: () => setIsCreatingPost(false) },
-              { 
-                text: "Publicar sem foto", 
+              {
+                text: "Publicar sem foto",
                 onPress: async () => {
                   await createPostWithoutImage()
                 }
@@ -433,16 +433,16 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       "Tem certeza que deseja sair deste grupo?",
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Sair", 
+        {
+          text: "Sair",
           style: "destructive",
           onPress: async () => {
             if (!userData) return
-            
+
             setIsUpdating(true)
             const result = await leaveGroup(grupo.id, userData.uid)
             setIsUpdating(false)
-            
+
             if (result.success) {
               Alert.alert("Sucesso", result.message, [
                 { text: "OK", onPress: () => navigation.goBack() }
@@ -486,7 +486,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                 setIsUpdating(true)
                 const result = await grantAdminRole(grupo.id, member.userId, userData.uid)
                 setIsUpdating(false)
-                
+
                 if (result.success) {
                   Alert.alert("Sucesso", result.message)
                   await refreshGroupData()
@@ -500,7 +500,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       }
     }));
 
-    (buttons as any).push({ text: "Cancelar", onPress: async () => {}, style: "cancel" })
+    (buttons as any).push({ text: "Cancelar", onPress: async () => { }, style: "cancel" })
 
     Alert.alert("Conceder Administrador", "Selecione um membro:", buttons)
   }
@@ -534,7 +534,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                 setIsUpdating(true)
                 const success = await removeMemberFromGroup(grupo.id, member.userId)
                 setIsUpdating(false)
-                
+
                 if (success) {
                   Alert.alert("Sucesso", `${member.nome} foi removido do grupo`)
                   await refreshGroupData()
@@ -548,7 +548,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       }
     }));
 
-    (buttons as any).push({ text: "Cancelar", onPress: async () => {}, style: "cancel" })
+    (buttons as any).push({ text: "Cancelar", onPress: async () => { }, style: "cancel" })
 
     Alert.alert("Remover Membro", "Selecione um membro:", buttons)
   }
@@ -591,7 +591,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
 
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      
+
       if (!permissionResult.granted) {
         Alert.alert("Permissão negada", "Você precisa permitir o acesso à galeria")
         return
@@ -606,7 +606,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
 
       if (!result.canceled && result.assets[0]) {
         setIsUpdating(true)
-        
+
         // Upload da imagem
         const filename = `grupos/${grupo.id}/foto_${Date.now()}.jpg`
         const reference = storage().ref(filename)
@@ -641,8 +641,8 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.scrollContent} 
+      <ScrollView
+        style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -686,214 +686,277 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           </TouchableOpacity>
         </View>
 
-        {/* Tab Content */}
+        {/* Group Summary Card */}
         {activeTab === "ranking" && (
-        <View style={styles.highlightSection}>
-          {/* Period Toggle */}
-          <View style={styles.periodToggleContainer}>
-            <View style={styles.periodToggle}>
-              <TouchableOpacity
-                style={[
-                  styles.periodToggleButton,
-                  rankingPeriodo === "diario" && styles.periodToggleButtonActive,
-                ]}
-                onPress={() => {
-                  setRankingPeriodo("diario")
-                  loadRankingTempoDeTela()
-                }}
-              >
-                <Text
-                  style={[
-                    styles.periodToggleText,
-                    rankingPeriodo === "diario" && styles.periodToggleTextActive,
-                  ]}
-                >
-                  Hoje
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.periodToggleButton,
-                  rankingPeriodo === "semanal" && styles.periodToggleButtonActive,
-                ]}
-                onPress={() => {
-                  setRankingPeriodo("semanal")
-                  loadRankingSemanal()
-                }}
-              >
-                <Text
-                  style={[
-                    styles.periodToggleText,
-                    rankingPeriodo === "semanal" && styles.periodToggleTextActive,
-                  ]}
-                >
-                  Semanal
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.periodDateLabel}>
-              <Text style={{color:"#322D70", fontSize: 14, fontWeight: "bold", padding:4}} >
-              {rankingPeriodo === "diario"
-                ? new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "numeric" }).replace(/^./, (c) => c.toUpperCase())
-                : `${new Date(Date.now() - 6 * 86400000).toLocaleDateString("pt-BR", { day: "numeric", month: "numeric" })} - ${new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "numeric" })}`
-              }
-            </Text>
+          <View style={styles.groupSummaryCard}>
+            <View style={styles.groupSummaryTop}>
+              {/* Group Photo */}
+              <View style={styles.groupSummaryPhoto}>
+                {currentGroup.foto ? (
+                  <Image source={{ uri: currentGroup.foto }} style={styles.groupSummaryImage} resizeMode="cover" />
+                ) : (
+                  <Text style={styles.groupSummaryInitial}>
+                    {currentGroup.nome.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+
+              {/* Best Weekly Average */}
+              <View style={styles.groupSummaryInfo}>
+                {rankingTempoDeTela.length > 0 && rankingTempoDeTela[0].temHoje ? (
+                  <View style={styles.bestMemberRow}>
+                    <View style={styles.bestMemberAvatar}>
+                      {rankingTempoDeTela[0].photoURL ? (
+                        <Image source={{ uri: rankingTempoDeTela[0].photoURL }} style={styles.bestMemberAvatarImage} resizeMode="cover" />
+                      ) : (
+                        <Text style={styles.bestMemberAvatarText}>
+                          {rankingTempoDeTela[0].nome.charAt(0).toUpperCase()}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.bestMemberText}>
+                      <Text style={styles.bestMemberLabel}>Melhor média semanal</Text>
+                      <Text style={styles.bestMemberValue}>
+                        {formatarTempo(rankingTempoDeTela[0].tempoMinutos || 0)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.bestMemberRow}>
+                    <Text style={styles.bestMemberLabel}>Sem dados disponíveis</Text>
+                  </View>
+                )}
+                                      {/* Participants Button */}
+                      <TouchableOpacity
+                        style={styles.participantsButton}
+                        onPress={() => {
+                          const membersList = currentGroup.membros.map((m, i) =>
+                            `${i + 1}. ${m.nome} ${m.cargo === 'administrador' ? '👑' : ''}`
+                          ).join('\n')
+                          Alert.alert(
+                            `Participantes (${currentGroup.membros.length})`,
+                            membersList,
+                            [{ text: "OK" }]
+                          )
+                        }}
+                      >
+                        <Icon icon="participantes" size={24} color="#322D70" />
+                        <Text style={styles.participantsText}>{currentGroup.membros.length} participantes</Text>
+                        <Text style={styles.participantsChevron}>›</Text>
+                      </TouchableOpacity>
+              </View>
             </View>
           </View>
-          
-          {loadingRanking ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#322D70" />
-              <Text style={styles.loadingText}>Carregando ranking...</Text>
-            </View>
-          ) : rankingTempoDeTela.length > 0 ? (
-            rankingTempoDeTela.map((item, index) => {
-              const posicao = index + 1
-              const medalha = posicao === 1 ? "🥇" : posicao === 2 ? "🥈" : posicao === 3 ? "🥉" : ""
-              
-              return (
-                <TouchableOpacity 
-                  key={item.userId} 
-                  style={styles.rankingCard}
-                  onPress={() => navigation.navigate("DetalhesDoUsuario", { userId: item.userId })}
-                  activeOpacity={0.7}
+        )}
+
+        {/* Tab Content */}
+        {activeTab === "ranking" && (
+          <View style={styles.highlightSection}>
+            {/* Period Toggle */}
+            <View style={styles.periodToggleContainer}>
+              <View style={styles.periodToggle}>
+                <TouchableOpacity
+                  style={[
+                    styles.periodToggleButton,
+                    rankingPeriodo === "diario" && styles.periodToggleButtonActive,
+                  ]}
+                  onPress={() => {
+                    setRankingPeriodo("diario")
+                    loadRankingTempoDeTela()
+                  }}
                 >
-                  <View style={styles.rankingPosition}>
-                    {medalha ? (
-                      <Text style={styles.medalEmoji}>{medalha}</Text>
-                    ) : (
-                      <Text style={styles.positionNumber}>{posicao}º</Text>
-                    )}
-                  </View>
-                  <View style={styles.rankingAvatar}>
-                    {item.photoURL ? (
-                      <Image
-                        source={{ uri: item.photoURL }}
-                        style={styles.rankingAvatarImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <Text style={styles.rankingAvatarText}>
-                        {item.nome.charAt(0).toUpperCase()}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.rankingInfo}>
-                    <Text style={styles.rankingName}>{item.nome}</Text>
-                    {item.temHoje ? (
-                      <View style={styles.rankingPointsBar}>
-                        <View 
-                          style={[
-                            styles.rankingPointsFill,
-                            { 
-                              width: rankingTempoDeTela[0].tempoMinutos && item.tempoMinutos 
-                                ? `${Math.min((item.tempoMinutos / (rankingTempoDeTela[rankingTempoDeTela.length - 1].tempoMinutos || 1)) * 100, 100)}%`
-                                : '0%',
-                              backgroundColor: posicao <= 3 ? '#10B981' : '#6881BA'
-                            }
-                          ]} 
-                        />
-                      </View>
-                    ) : (
-                      <Text style={styles.noDataText}>Sem dados hoje</Text>
-                    )}
-                  </View>
-                  {item.temHoje ? (
-                    <Text style={styles.rankingPoints}>
-                      {formatarTempo(item.tempoMinutos || 0)}
-                    </Text>
-                  ) : (
-                    <View style={styles.noDataBadge}>
-                      <Text style={styles.noDataBadgeText}>-</Text>
-                    </View>
-                  )}
+                  <Text
+                    style={[
+                      styles.periodToggleText,
+                      rankingPeriodo === "diario" && styles.periodToggleTextActive,
+                    ]}
+                  >
+                    Hoje
+                  </Text>
                 </TouchableOpacity>
-              )
-            })
-          ) : (
-            <View style={styles.emptyRankingContainer}>
-              <Text style={styles.emptyRankingText}>Nenhum dado disponível</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.periodToggleButton,
+                    rankingPeriodo === "semanal" && styles.periodToggleButtonActive,
+                  ]}
+                  onPress={() => {
+                    setRankingPeriodo("semanal")
+                    loadRankingSemanal()
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.periodToggleText,
+                      rankingPeriodo === "semanal" && styles.periodToggleTextActive,
+                    ]}
+                  >
+                    Semanal
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.periodDateLabel}>
+                <Text style={{ color: "#322D70", fontSize: 14, fontWeight: "bold", padding: 4 }} >
+                  {rankingPeriodo === "diario"
+                    ? new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "numeric" }).replace(/^./, (c) => c.toUpperCase())
+                    : `${new Date(Date.now() - 6 * 86400000).toLocaleDateString("pt-BR", { day: "numeric", month: "numeric" })} - ${new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "numeric" })}`
+                  }
+                </Text>
+              </View>
             </View>
-          )}
-        </View>
+
+            {loadingRanking ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#322D70" />
+                <Text style={styles.loadingText}>Carregando ranking...</Text>
+              </View>
+            ) : rankingTempoDeTela.length > 0 ? (
+              rankingTempoDeTela.map((item, index) => {
+                const posicao = index + 1
+                const medalha = posicao === 1 ? "🥇" : posicao === 2 ? "🥈" : posicao === 3 ? "🥉" : ""
+
+                return (
+                  <TouchableOpacity
+                    key={item.userId}
+                    style={styles.rankingCard}
+                    onPress={() => navigation.navigate("DetalhesDoUsuario", { userId: item.userId })}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.rankingPosition}>
+                      {medalha ? (
+                        <Text style={styles.medalEmoji}>{medalha}</Text>
+                      ) : (
+                        <Text style={styles.positionNumber}>{posicao}º</Text>
+                      )}
+                    </View>
+                    <View style={styles.rankingAvatar}>
+                      {item.photoURL ? (
+                        <Image
+                          source={{ uri: item.photoURL }}
+                          style={styles.rankingAvatarImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Text style={styles.rankingAvatarText}>
+                          {item.nome.charAt(0).toUpperCase()}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.rankingInfo}>
+                      <Text style={styles.rankingName}>{item.nome}</Text>
+                      {item.temHoje ? (
+                        <View style={styles.rankingPointsBar}>
+                          <View
+                            style={[
+                              styles.rankingPointsFill,
+                              {
+                                width: rankingTempoDeTela[0].tempoMinutos && item.tempoMinutos
+                                  ? `${Math.min((item.tempoMinutos / (rankingTempoDeTela[rankingTempoDeTela.length - 1].tempoMinutos || 1)) * 100, 100)}%`
+                                  : '0%',
+                                backgroundColor: posicao <= 3 ? '#10B981' : '#6881BA'
+                              }
+                            ]}
+                          />
+                        </View>
+                      ) : (
+                        <Text style={styles.noDataText}>Sem dados hoje</Text>
+                      )}
+                    </View>
+                    {item.temHoje ? (
+                      <Text style={styles.rankingPoints}>
+                        {formatarTempo(item.tempoMinutos || 0)}
+                      </Text>
+                    ) : (
+                      <View style={styles.noDataBadge}>
+                        <Text style={styles.noDataBadgeText}>-</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )
+              })
+            ) : (
+              <View style={styles.emptyRankingContainer}>
+                <Text style={styles.emptyRankingText}>Nenhum dado disponível</Text>
+              </View>
+            )}
+          </View>
         )}
 
         {/* Feed do Grupo */}
         {activeTab === "feed" && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Feed do Grupo 💬</Text>
-          <View style={styles.feedContainer}>
-            <FeedPosts key={feedKey} groupId={grupo.id} />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Feed do Grupo 💬</Text>
+            <View style={styles.feedContainer}>
+              <FeedPosts key={feedKey} groupId={grupo.id} />
+            </View>
           </View>
-        </View>
         )}
 
         {/* Informações do Grupo */}
         {activeTab === "info" && (
-        <View style={styles.section}>
-          {/* Descrição */}
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Descrição</Text>
-            <Text style={styles.infoCardText}>{currentGroup.descricao}</Text>
-          </View>
-
-          {/* Membros */}
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Membros ({currentGroup.membros.length})</Text>
-            {currentGroup.membros.map((m, i) => (
-              <View key={m.userId} style={styles.memberRow}>
-                <Text style={styles.memberName}>
-                  {m.nome} {m.cargo === 'administrador' ? '👑' : ''}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Código do Grupo */}
-          {currentGroup.codigoGrupo && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Código do Grupo</Text>
-            <View style={styles.codeContainer}>
-              <View style={styles.codeBox}>
-                <Text style={styles.codeText}>{currentGroup.codigoGrupo}</Text>
-              </View>
-              <View style={styles.codeActions}>
-                <TouchableOpacity
-                  style={styles.codeActionButton}
-                  onPress={() => {
-                    Clipboard.setString(currentGroup.codigoGrupo)
-                    Alert.alert("Copiado!", "Código copiado para a área de transferência")
-                  }}
-                >
-                  <Text>📋</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.codeActionButton}
-                  onPress={async () => {
-                    try {
-                      await Share.share({
-                        message: `Junte-se ao grupo "${currentGroup.nome}" no Desconecta!\n\nCódigo: ${currentGroup.codigoGrupo}\n\nAbra o app e use este código para entrar no grupo.`,
-                      })
-                    } catch (error) {
-                      console.error("Erro ao compartilhar:", error)
-                    }
-                  }}
-                >
-                  <Text>📤</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.section}>
+            {/* Descrição */}
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Descrição</Text>
+              <Text style={styles.infoCardText}>{currentGroup.descricao}</Text>
             </View>
-          </View>
-          )}
 
-          {/* Gerenciar Grupo */}
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => setManagementModalVisible(true)}
-          >
-            <Text style={styles.actionButtonText}>⚙️ Gerenciar Grupo</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Membros */}
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>Membros ({currentGroup.membros.length})</Text>
+              {currentGroup.membros.map((m, i) => (
+                <View key={m.userId} style={styles.memberRow}>
+                  <Text style={styles.memberName}>
+                    {m.nome} {m.cargo === 'administrador' ? '👑' : ''}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Código do Grupo */}
+            {currentGroup.codigoGrupo && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>Código do Grupo</Text>
+                <View style={styles.codeContainer}>
+                  <View style={styles.codeBox}>
+                    <Text style={styles.codeText}>{currentGroup.codigoGrupo}</Text>
+                  </View>
+                  <View style={styles.codeActions}>
+                    <TouchableOpacity
+                      style={styles.codeActionButton}
+                      onPress={() => {
+                        Clipboard.setString(currentGroup.codigoGrupo)
+                        Alert.alert("Copiado!", "Código copiado para a área de transferência")
+                      }}
+                    >
+                      <Text>📋</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.codeActionButton}
+                      onPress={async () => {
+                        try {
+                          await Share.share({
+                            message: `Junte-se ao grupo "${currentGroup.nome}" no Desconecta!\n\nCódigo: ${currentGroup.codigoGrupo}\n\nAbra o app e use este código para entrar no grupo.`,
+                          })
+                        } catch (error) {
+                          console.error("Erro ao compartilhar:", error)
+                        }
+                      }}
+                    >
+                      <Text>📤</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Gerenciar Grupo */}
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setManagementModalVisible(true)}
+            >
+              <Text style={styles.actionButtonText}>⚙️ Gerenciar Grupo</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <View style={{ height: 80 }} />
@@ -1255,7 +1318,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#9CA3AF",
-    
+
   },
   tabItemTextActive: {
     color: "#322D70",
@@ -1291,12 +1354,119 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#1E293B",
   },
+  groupSummaryCard: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+
+  },
+  groupSummaryTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  groupSummaryPhoto: {
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    marginRight: 16,
+  },
+  groupSummaryImage: {
+    width: "100%",
+    height: "100%",
+  },
+  groupSummaryInitial: {
+    fontSize: 40,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  groupSummaryInfo: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  bestMemberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 8,
+        shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 8,
+  },
+  bestMemberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    marginRight: 12,
+    marginLeft: 12,
+  },
+  bestMemberAvatarImage: {
+    width: 36,
+    height: 36,
+  },
+  bestMemberAvatarText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  bestMemberText: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: "#D9D9D9",
+    paddingLeft: 12,
+  },  
+  bestMemberLabel: {
+    fontSize: 13,
+    color: "#6881BA",
+    fontWeight: "bold",
+  },
+  bestMemberValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  participantsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  participantsIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  participantsText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#6881BA",
+    marginLeft: 12,
+  },
+  participantsChevron: {
+    fontSize: 22,
+    color: "#6881BA",
+    fontWeight: "bold",
+  },
   highlightSection: {
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 16,
-
-
   },
   highlightTitle: {
     fontSize: 20,
@@ -1353,8 +1523,8 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    borderBottomEndRadius:8,
-    borderBottomLeftRadius:8,
+    borderBottomEndRadius: 8,
+    borderBottomLeftRadius: 8,
   },
   sectionHeaderRow: {
     marginBottom: 12,

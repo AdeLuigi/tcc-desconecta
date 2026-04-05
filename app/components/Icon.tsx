@@ -156,6 +156,7 @@ export const iconRegistry = {
   poepleGroupIcon: PeopleGroupIcon,
   notifications: NotificationsIcon,
   copy: require("@assets/icons/copy.png"),
+  participantes: require("@assets/icons/participantes.svg").default,
   share: require("@assets/icons/share.png"),
   caretLeft: require("@assets/icons/caretLeft.png"),
   caretRight: require("@assets/icons/caretRight.png"),
