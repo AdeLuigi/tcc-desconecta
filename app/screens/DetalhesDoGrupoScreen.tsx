@@ -689,20 +689,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         {/* Tab Content */}
         {activeTab === "ranking" && (
         <View style={styles.highlightSection}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.highlightTitle}>
-                {rankingPeriodo === "diario" ? "Ranking de Hoje 📱" : "Ranking Semanal 📅"}
-              </Text>
-              <Text style={styles.highlightSubtitle}>
-                Menos tempo de tela = melhor posição
-              </Text>
-            </View>
-            <View style={styles.rankingToggle}>
+          {/* Period Toggle */}
+          <View style={styles.periodToggleContainer}>
+            <View style={styles.periodToggle}>
               <TouchableOpacity
                 style={[
-                  styles.toggleButton,
-                  rankingPeriodo === "diario" && styles.toggleButtonActive,
+                  styles.periodToggleButton,
+                  rankingPeriodo === "diario" && styles.periodToggleButtonActive,
                 ]}
                 onPress={() => {
                   setRankingPeriodo("diario")
@@ -711,8 +704,8 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               >
                 <Text
                   style={[
-                    styles.toggleButtonText,
-                    rankingPeriodo === "diario" && styles.toggleButtonTextActive,
+                    styles.periodToggleText,
+                    rankingPeriodo === "diario" && styles.periodToggleTextActive,
                   ]}
                 >
                   Hoje
@@ -720,8 +713,8 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.toggleButton,
-                  rankingPeriodo === "semanal" && styles.toggleButtonActive,
+                  styles.periodToggleButton,
+                  rankingPeriodo === "semanal" && styles.periodToggleButtonActive,
                 ]}
                 onPress={() => {
                   setRankingPeriodo("semanal")
@@ -730,13 +723,21 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               >
                 <Text
                   style={[
-                    styles.toggleButtonText,
-                    rankingPeriodo === "semanal" && styles.toggleButtonTextActive,
+                    styles.periodToggleText,
+                    rankingPeriodo === "semanal" && styles.periodToggleTextActive,
                   ]}
                 >
-                  7 dias
+                  Semanal
                 </Text>
               </TouchableOpacity>
+            </View>
+            <View style={styles.periodDateLabel}>
+              <Text style={{color:"#322D70", fontSize: 14, fontWeight: "bold", padding:4}} >
+              {rankingPeriodo === "diario"
+                ? new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "numeric" }).replace(/^./, (c) => c.toUpperCase())
+                : `${new Date(Date.now() - 6 * 86400000).toLocaleDateString("pt-BR", { day: "numeric", month: "numeric" })} - ${new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "numeric" })}`
+              }
+            </Text>
             </View>
           </View>
           
@@ -1252,8 +1253,9 @@ const styles = StyleSheet.create({
   },
   tabItemText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#9CA3AF",
+    
   },
   tabItemTextActive: {
     color: "#322D70",
@@ -1290,16 +1292,11 @@ const styles = StyleSheet.create({
     color: "#1E293B",
   },
   highlightSection: {
-    backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+
+
   },
   highlightTitle: {
     fontSize: 20,
@@ -1312,30 +1309,52 @@ const styles = StyleSheet.create({
     color: "#6881BA",
     marginBottom: 16,
   },
-  rankingToggle: {
-    flexDirection: "row",
-    backgroundColor: "#F1F5F9",
-    borderRadius: 8,
-    padding: 3,
-    gap: 4,
+  periodToggleContainer: {
+    marginBottom: 16,
+    alignItems: "center",
+    backgroundColor: "#C3CDE3",
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  toggleButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    minWidth: 60,
+  periodToggle: {
+    flexDirection: "row",
+    borderRadius: 10,
+    padding: 4,
+    width: "100%",
+  },
+  periodToggleButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
     alignItems: "center",
   },
-  toggleButtonActive: {
-    backgroundColor: "#322D70",
+  periodToggleButtonActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  toggleButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6881BA",
+  periodToggleText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#322D70",
   },
-  toggleButtonTextActive: {
-    color: "#FFFFFF",
+  periodToggleTextActive: {
+    color: "#322D70",
+  },
+  periodDateLabel: {
+    backgroundColor: "white",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomEndRadius:8,
+    borderBottomLeftRadius:8,
   },
   sectionHeaderRow: {
     marginBottom: 12,
