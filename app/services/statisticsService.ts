@@ -252,6 +252,153 @@ class StatisticsService {
       return -1
     }
   }
+
+  /**
+   * Calcula a média de tempo de uso de todos os membros de um grupo por dia
+   * @param groupId ID do grupo
+   * @param days Array de datas no formato YYYY-MM-DD
+   * @returns Promise com objeto contendo média, usuários com dados e total de usuários por dia
+   */
+  async getGroupAverageByDays(
+    groupId: string, 
+    days: string[]
+  ): Promise<Record<string, { average: number, usersWithData: number, totalUsers: number }>> {
+    try {
+      console.log('\n🔍 Iniciando busca de média do grupo...')
+      console.log(`   GroupId: ${groupId}`)
+      console.log(`   Dias solicitados: ${days.join(', ')}`)
+      
+      // Buscar membros do grupo
+      const groupDoc = await firestore()
+        .collection('grupos')
+        .doc(groupId)
+        .get()
+      
+      if (!groupDoc.exists) {
+        console.log('❌ Grupo não encontrado!')
+        throw new Error('Grupo não encontrado')
+      }
+
+      const groupData = groupDoc.data()
+      console.log(`\n✅ Grupo encontrado:`, groupData?.nome || 'Sem nome')
+      
+      const membros = groupData?.membros || []
+      const userIds = membros.map((m: any) => m.userId)
+      
+      console.log(`👥 Total de membros no grupo: ${userIds.length}`)
+      console.log(`   UserIds:`, userIds)
+      
+      // DEBUG: Buscar alguns exemplos de estatísticas do primeiro usuário para ver formato
+      if (userIds.length > 0) {
+        console.log(`\n🔍 Verificando estatísticas disponíveis do primeiro usuário...`)
+        const sampleStats = await firestore()
+          .collection('estatisticas')
+          .where('userId', '==', userIds[0])
+          .orderBy('data', 'desc')
+          .limit(5)
+          .get()
+        
+        if (!sampleStats.empty) {
+          console.log(`   ✅ Encontradas ${sampleStats.size} estatísticas. Exemplos de datas:`)
+          sampleStats.forEach((doc) => {
+            const data = doc.data()
+            console.log(`      - data: "${data.data}" | tempo: ${data.tempo_total_minutos} min`)
+          })
+        } else {
+          console.log(`   ⚠️ Nenhuma estatística encontrada para o usuário ${userIds[0].substring(0, 8)}...`)
+        }
+      }
+      
+      const result: Record<string, { average: number, usersWithData: number, totalUsers: number }> = {}
+
+      // Para cada dia, calcular a média
+
+      for (const day of days) {
+        console.log(`\n📅 Processando dia: ${day}`)
+        let totalTime = 0
+        let usersWithData = 0
+        const userTimes: Record<string, number> = {}
+
+        // Para cada membro, buscar estatísticas do dia
+        for (const userId of userIds) {
+          let querySnapshot = await firestore()
+            .collection('estatisticas')
+            .where('userId', '==', userId)
+            .where('data', '==', day)
+            .get()
+
+          let tempoMinutos = 0
+          let dataFound = false
+
+          if (!querySnapshot.empty) {
+            const data = querySnapshot.docs[0].data()
+            tempoMinutos = data.tempo_total_minutos || 0
+            dataFound = true
+          }
+
+          // Se o tempo for menor que 15 minutos, buscar o dia anterior
+          if (dataFound && tempoMinutos < 15) {
+            // Calcular o dia anterior
+            const [ano, mes, diaNum] = day.split('-').map(Number)
+            const dataObj = new Date(ano, mes - 1, diaNum)
+            dataObj.setDate(dataObj.getDate() - 1)
+            const prevDay = dataObj.toISOString().split('T')[0]
+
+            const prevQuery = await firestore()
+              .collection('estatisticas')
+              .where('userId', '==', userId)
+              .where('data', '==', prevDay)
+              .get()
+            if (!prevQuery.empty) {
+              const prevData = prevQuery.docs[0].data()
+              const prevTempo = prevData.tempo_total_minutos || 0
+              if (prevTempo >= 15) {
+                tempoMinutos = prevTempo
+                console.log(`   ↩️  User ${userId.substring(0, 8)}...: substituído por dia anterior (${prevDay}): ${prevTempo} min`)
+              } else {
+                console.log(`   ↩️  User ${userId.substring(0, 8)}...: dia anterior (${prevDay}) também < 15 min (${prevTempo} min)`)
+              }
+            } else {
+              console.log(`   ↩️  User ${userId.substring(0, 8)}...: sem dados no dia anterior (${prevDay})`)
+            }
+          }
+
+          if (dataFound) {
+            totalTime += tempoMinutos
+            usersWithData++
+            userTimes[userId.substring(0, 8)] = tempoMinutos
+            console.log(`   ✓ User ${userId.substring(0, 8)}...: ${tempoMinutos} min`)
+          } else {
+            console.log(`   ✗ User ${userId.substring(0, 8)}...: sem dados`)
+          }
+        }
+
+        const average = usersWithData > 0 ? Math.round(totalTime / usersWithData) : 0
+
+        result[day] = {
+          average,
+          usersWithData,
+          totalUsers: userIds.length,
+        }
+
+        console.log(`   📊 Resumo do dia ${day}:`)
+        console.log(`      Total acumulado: ${totalTime} min`)
+        console.log(`      Usuários com dados: ${usersWithData}/${userIds.length}`)
+        console.log(`      Média: ${average} min`)
+      }
+
+      console.log('\n📊 ===== RESULTADO FINAL =====')
+      Object.entries(result).forEach(([day, stats]) => {
+        console.log(`  ${day}: ${stats.average} min (${stats.usersWithData}/${stats.totalUsers} usuários)`)
+      })
+      console.log('==============================\n')
+
+      return result
+    } catch (error) {
+      console.error("❌ Erro ao calcular média do grupo:", error)
+      throw error
+    }
+  }
 }
 
 export default new StatisticsService()

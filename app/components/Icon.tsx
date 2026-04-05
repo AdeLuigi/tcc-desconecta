@@ -116,6 +116,7 @@ export const iconRegistry = {
   vector: require("@assets/icons/vector.png"),
   chevron: require("@assets/icons/chevron.png"),
   search: require("@assets/icons/search.png"),
+  win: require("@assets/icons/win.png"),
   copy: require("@assets/icons/copy.png"),
   share: require("@assets/icons/share.png"),
   notifications: require("@assets/icons/notifications.png"),

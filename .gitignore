@@ -90,3 +90,7 @@ web-build/
 # Dependency Graph Visualizations
 app-dependency-graph.svg
 app-dependency-graph.png
+android/app/google-services.json
+ios/GoogleService-Info.plist
+/android/app/google-services.json
+android/app/google-services.json

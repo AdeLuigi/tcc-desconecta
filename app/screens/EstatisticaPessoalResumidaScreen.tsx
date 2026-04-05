@@ -12,6 +12,7 @@ import StatisticsService, { type StatisticsSummary } from "@/services/statistics
 
 const Logo = require("@assets/images/logo2.png")
 const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
+const Rectangle = require("@assets/images/Rectangle 12.png")
 
 interface EstatisticaPessoalResumidaScreenProps extends AppStackScreenProps<"EstatisticaPessoalResumida"> {}
 
@@ -130,7 +131,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
         </ImageBackground>
         <View style={styles.mainContent}>
           <View style={styles.titleCard}>
-            <Icon icon="view" size={24} color="#322D70" />
+            <Icon icon="win" size={24} color="#322D70" />
             <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
           </View>
 
@@ -220,13 +221,13 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
           </View>
 
-          {/* Seletor de período */}
+          {/* Aqui*/}
           <View style={styles.periodSelector}>
             <TouchableOpacity 
               style={[styles.periodButton, period === 1 && styles.periodButtonActive]}
               onPress={() => setPeriod(1)}
             >
-              <Text style={[styles.periodButtonText, period === 1 && styles.periodButtonTextActive]}>Hoje</Text>
+              <Text style={[styles.periodButtonText, period === 1 && styles.periodButtonTextActive ]}>Hoje</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.periodButton, period === 7 && styles.periodButtonActive]}
@@ -237,22 +238,46 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           </View>
 
         {/* Cards de resumo */}
+        <Text style={{   fontSize: 16, fontWeight: "bold", color: "#322D70",}}>Tempo de tela do dia</Text>
         <View style={styles.summaryCards}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Tempo Total</Text>
+            
             <Text preset="heading" style={styles.summaryValue}>
               {StatisticsService.formatTime(statistics.totalTimeInMinutes)}
             </Text>
+            <Text style={styles.summaryLabel}>de tempo de tela</Text>
           </View>
 
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Média Diária</Text>
+
             <Text preset="heading" style={styles.summaryValue}>
               {StatisticsService.formatTime(statistics.averageTimePerDay)}
             </Text>
+            <Text style={styles.summaryLabel}>Média Diária</Text>
           </View>
         </View>
+        <Text style={{fontSize: 16, fontWeight: "bold", color: "#322D70",}}>Categorias mais usadas hoje</Text>
 
+        <View style={{padding: 12, backgroundColor: "#FFFFFF", borderRadius: 12,}}>
+          {statistics.categoryTotals && Object.entries(statistics.categoryTotals).map(([category, minutes]) => (
+            <View key={category} style={{flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12, backgroundColor:"#D2EAFF", padding: 8, borderRadius: 12}}>
+          <Image
+          source={Rectangle}
+
+        ></Image>
+              
+            <View>
+
+            <Text style={styles.infoLabel}>{StatisticsService.translateCategory(category)}</Text>
+              <Text preset="subheading" style={styles.infoValue}>
+                {StatisticsService.formatTime(minutes)}
+              </Text>
+
+            </View>
+            </View>
+          ))}
+
+        </View>
         {statistics.mostUsedApp && (
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>App Mais Usado</Text>
@@ -469,33 +494,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     marginBottom: 24,
+    backgroundColor: "#C3CDE3",
+    padding: 5,
+    borderRadius: 8,
   },
   periodButton: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 24,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#E0E0E0",
   },
   periodButtonActive: {
-    backgroundColor: "#72C3E0",
+    backgroundColor: "#FFFFFF",
     borderColor: "#72C3E0",
   },
   periodButtonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "800",
     color: "#666",
   },
   periodButtonTextActive: {
-    color: "#FFFFFF",
+    
   },
   summaryCards: {
     flexDirection: "row",
     gap: 12,
     marginBottom: 16,
+    marginTop: 12,
   },
   summaryCard: {
     flex: 1,
@@ -511,8 +537,8 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    opacity: 0.7,
     marginBottom: 8,
+    fontWeight: "700",
     color: "#322D70",
   },
   summaryValue: {
@@ -523,6 +549,7 @@ const styles = StyleSheet.create({
   infoCard: {
     padding: 16,
     marginBottom: 16,
+    marginTop: 12,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     shadowColor: "#000",

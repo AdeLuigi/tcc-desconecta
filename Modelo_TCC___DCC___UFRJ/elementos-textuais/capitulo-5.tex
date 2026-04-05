@@ -157,38 +157,15 @@ Quanto ao \textbf{uso de CPU}, os resultados refletem diretamente a potência da
 
 Em conclusão, o aplicativo demonstrou um comportamento técnico satisfatório e equilibrado em todo o espectro de dispositivos testados. Não foram detectados vazamentos de memória (\textit{memory leaks}) ou picos de CPU que pudessem causar superaquecimento ou drenagem excessiva de bateria. A arquitetura de serviços em segundo plano mostrou-se leve o suficiente para rodar de forma transparente tanto em versões mais antigas (Android 14) quanto na versão mais recente (Android 16), validando a viabilidade técnica da solução em um ecossistema Android fragmentado.
 
-\subsection{Latência da API e Sincronização de Dados}
-
-As métricas de latência foram coletadas pelo Firebase Performance Monitoring ao longo do período de testes. A Tabela~\ref{tab:latencia} mostra os tempos médios de resposta para as operações mais usadas no dia a dia do aplicativo.
-
-\begin{table}[htbp]
-\centering
-\caption{Latência média das operações principais}
-\label{tab:latencia}
-\begin{tabularx}{\textwidth}{|l|X|c|}
-\hline
-\rowcolor{verdeclaro}
-\textbf{Operação} & \textbf{Descrição} & \textbf{Latência Média (ms)} \\ \hline
-Login com Google & Autenticação e carregamento do perfil & [DADO] \\ \hline
-Carregamento do Ranking & Leitura dos dados do grupo e ordenação & [DADO] \\ \hline
-Publicação de postagem & Escrita no Firestore + envio de notificação & [DADO] \\ \hline
-Atualização de estatísticas & Sincronização do tempo de uso com a nuvem & [DADO] \\ \hline
-\end{tabularx}
-\end{table}
-
-[DADO: analisar se as latências obtidas são satisfatórias para a experiência do usuário].
-
-[DADO: descrever comportamento observado no modo offline — se dados continuaram visíveis, se postagens foram enfileiradas, etc.].
-
 \section{Avaliação com Usuários}
 
-Para avaliar a usabilidade e a proposta de valor do Desconecta na prática, foi conduzido um teste com um grupo de [DADO: N] voluntários durante três dias consecutivos, de [DADO: ex: 20 a 22 de fevereiro de 2026]. Os participantes foram convidados a reduzir seu tempo de tela ao longo do período, acompanhando o próprio desempenho e o dos demais pelo ranking interno do aplicativo. Um grupo de suporte no \textit{WhatsApp} foi mantido em paralelo para dúvidas técnicas e incentivo, mas sem interferir na dinâmica do app.
+Para avaliar a usabilidade e a proposta de valor do Desconecta na prática, foi conduzido um teste com um grupo de 6 voluntários durante três dias consecutivos, de 20 a 22 de fevereiro de 2026. Os participantes foram convidados a reduzir seu tempo de tela ao longo do período, acompanhando o próprio desempenho e o dos demais pelo ranking interno do aplicativo. Um grupo de suporte no \textit{WhatsApp} foi mantido em paralelo para dúvidas técnicas e incentivo, mas sem interferir na dinâmica do app.
 
 Essa etapa de avaliação seguiu uma lógica semelhante à da fase inicial descrita no Capítulo~3, em que um grupo no \textit{WhatsApp} foi usado para simular a proposta antes do desenvolvimento. A diferença principal é que, agora, toda a dinâmica ocorreu dentro do próprio aplicativo.
 
 \subsection{Perfil dos Participantes}
 
-O grupo de teste foi composto por [DADO: N] participantes, todos usuários de dispositivos Android. A média de idade foi de [DADO] anos. Antes de começar o teste, os participantes relataram um tempo médio de tela de aproximadamente [DADO] horas por dia, valor elevado e consistente com o perfil observado na fase inicial do trabalho.
+O grupo de teste foi composto por 6 participantes, todos usuários de dispositivos Android. Antes de começar o teste, os participantes relataram um tempo médio de tela de aproximadamente [DADO] horas por dia, valor elevado e consistente com o perfil observado na fase inicial do trabalho.
 
 [DADO: descrever motivação dos participantes para o teste].
 
