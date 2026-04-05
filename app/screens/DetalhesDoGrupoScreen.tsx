@@ -871,7 +871,6 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         {/* Feed do Grupo */}
         {activeTab === "feed" && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Feed do Grupo 💬</Text>
             <View style={styles.feedContainer}>
               <FeedPosts key={feedKey} groupId={grupo.id} />
             </View>
