@@ -21,6 +21,8 @@ import {
   isUserAdmin,
   getGroupById
 } from "@/services/groupService"
+const Logo = require("@assets/images/logo2.png")
+
 
 interface DetalhesDoGrupoScreenProps extends AppStackScreenProps<"DetalhesDoGrupo"> {}
 
@@ -28,7 +30,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const { theme } = useAppTheme()
   const { grupo } = route.params
   const { userData } = useAuth()
-  const [activeTab, setActiveTab] = useState<"info" | "feed">("info")
+  const [activeTab, setActiveTab] = useState<"ranking" | "feed" | "info">("ranking")
   const [modalVisible, setModalVisible] = useState(false)
   const [postDescription, setPostDescription] = useState("")
   const [selectedActivityType, setSelectedActivityType] = useState<TipoAtividade>("progresso")
@@ -633,15 +635,9 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon icon="back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalhes do Grupo</Text>
-        <TouchableOpacity 
-          onPress={() => setManagementModalVisible(true)} 
-          style={styles.backButton}
-        >
-          <Icon icon="settings" size={24} color="#FFFFFF" />
+        <Image source={Logo} resizeMode="contain" />
+        <TouchableOpacity onPress={() => navigation.navigate("Notificacoes")}>
+          <Icon icon="notifications" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -659,109 +655,39 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       >
         {/* Group Header Card */}
         <View style={styles.groupHeaderCard}>
-          <View style={styles.groupAvatarLarge}>
-            {typeof currentGroup.foto === 'string' ? (
-              <Image source={{ uri: currentGroup.foto }} style={styles.groupImage} />
-            ) : (
-              <Image source={currentGroup.foto} style={styles.groupImage} />
-            )}
-          </View>
           <Text style={styles.groupName}>{currentGroup.nome}</Text>
-          <Text style={styles.groupMembers}>👥 {currentGroup.membros.length} membros</Text>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => {
-              Alert.alert(
-                currentGroup.nome,
-                currentGroup.descricao,
-                [{ text: "OK" }]
-              )
-            }}
+        {/* Tab Bar */}
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === "ranking" && styles.tabItemActive]}
+            onPress={() => setActiveTab("ranking")}
           >
-            <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionEmoji}>ℹ️</Text>
-            </View>
-            <Text style={styles.quickActionLabel}>Informações</Text>
+            <Text style={[styles.tabItemText, activeTab === "ranking" && styles.tabItemTextActive]}>
+              RANKING
+            </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => {
-              const membersList = currentGroup.membros.map((m, i) => 
-                `${i + 1}. ${m.nome} ${m.cargo === 'administrador' ? '👑' : ''}`
-              ).join('\n')
-              Alert.alert(
-                `Membros (${currentGroup.membros.length})`,
-                membersList,
-                [{ text: "OK" }]
-              )
-            }}
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === "feed" && styles.tabItemActive]}
+            onPress={() => setActiveTab("feed")}
           >
-            <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionEmoji}>👥</Text>
-            </View>
-            <Text style={styles.quickActionLabel}>Membros</Text>
+            <Text style={[styles.tabItemText, activeTab === "feed" && styles.tabItemTextActive]}>
+              FEED
+            </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => {
-              const rankingList = rankingOrdenado.map((r, i) => {
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}º`
-                return `${medal} ${r.nome} - ${r.pontos} pts`
-              }).join('\n')
-              Alert.alert(
-                'Ranking Mensal 🏆',
-                rankingList,
-                [{ text: "OK" }]
-              )
-            }}
+          <TouchableOpacity
+            style={[styles.tabItem, activeTab === "info" && styles.tabItemActive]}
+            onPress={() => setActiveTab("info")}
           >
-            <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionEmoji}>🏆</Text>
-            </View>
-            <Text style={styles.quickActionLabel}>Ranking</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => {
-              if (currentGroup.codigoGrupo) {
-                Alert.alert(
-                  'Código do Grupo',
-                  `${currentGroup.codigoGrupo}\n\nCompartilhe este código para que outros possam entrar no grupo.`,
-                  [
-                    { text: "Copiar", onPress: () => {
-                      Clipboard.setString(currentGroup.codigoGrupo)
-                      Alert.alert("Copiado!", "Código copiado para a área de transferência")
-                    }},
-                    { text: "Compartilhar", onPress: async () => {
-                      try {
-                        await Share.share({
-                          message: `Junte-se ao grupo "${currentGroup.nome}" no Desconecta!\n\nCódigo: ${currentGroup.codigoGrupo}\n\nAbra o app e use este código para entrar no grupo.`,
-                        })
-                      } catch (error) {
-                        console.error("Erro ao compartilhar:", error)
-                      }
-                    }},
-                    { text: "Fechar", style: "cancel" }
-                  ]
-                )
-              }
-            }}
-          >
-            <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionEmoji}>🔑</Text>
-            </View>
-            <Text style={styles.quickActionLabel}>Código</Text>
+            <Text style={[styles.tabItemText, activeTab === "info" && styles.tabItemTextActive]}>
+              INFORMAÇÕES
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Ranking de Hoje - Destaque Principal */}
+        {/* Tab Content */}
+        {activeTab === "ranking" && (
         <View style={styles.highlightSection}>
           <View style={styles.sectionHeaderRow}>
             <View style={{ flex: 1 }}>
@@ -889,14 +815,85 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             </View>
           )}
         </View>
+        )}
 
         {/* Feed do Grupo */}
+        {activeTab === "feed" && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Feed do Grupo 💬</Text>
           <View style={styles.feedContainer}>
             <FeedPosts key={feedKey} groupId={grupo.id} />
           </View>
         </View>
+        )}
+
+        {/* Informações do Grupo */}
+        {activeTab === "info" && (
+        <View style={styles.section}>
+          {/* Descrição */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Descrição</Text>
+            <Text style={styles.infoCardText}>{currentGroup.descricao}</Text>
+          </View>
+
+          {/* Membros */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Membros ({currentGroup.membros.length})</Text>
+            {currentGroup.membros.map((m, i) => (
+              <View key={m.userId} style={styles.memberRow}>
+                <Text style={styles.memberName}>
+                  {m.nome} {m.cargo === 'administrador' ? '👑' : ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Código do Grupo */}
+          {currentGroup.codigoGrupo && (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Código do Grupo</Text>
+            <View style={styles.codeContainer}>
+              <View style={styles.codeBox}>
+                <Text style={styles.codeText}>{currentGroup.codigoGrupo}</Text>
+              </View>
+              <View style={styles.codeActions}>
+                <TouchableOpacity
+                  style={styles.codeActionButton}
+                  onPress={() => {
+                    Clipboard.setString(currentGroup.codigoGrupo)
+                    Alert.alert("Copiado!", "Código copiado para a área de transferência")
+                  }}
+                >
+                  <Text>📋</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.codeActionButton}
+                  onPress={async () => {
+                    try {
+                      await Share.share({
+                        message: `Junte-se ao grupo "${currentGroup.nome}" no Desconecta!\n\nCódigo: ${currentGroup.codigoGrupo}\n\nAbra o app e use este código para entrar no grupo.`,
+                      })
+                    } catch (error) {
+                      console.error("Erro ao compartilhar:", error)
+                    }
+                  }}
+                >
+                  <Text>📤</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+          )}
+
+          {/* Gerenciar Grupo */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => setManagementModalVisible(true)}
+          >
+            <Text style={styles.actionButtonText}>⚙️ Gerenciar Grupo</Text>
+          </TouchableOpacity>
+        </View>
+        )}
 
         <View style={{ height: 80 }} />
       </ScrollView>
@@ -1228,7 +1225,7 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 12,
     borderRadius: 16,
-    padding: 24,
+    padding: 12,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1236,41 +1233,61 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  quickActionsContainer: {
+  tabBar: {
     flexDirection: "row",
-    paddingHorizontal: 16,
+    marginHorizontal: 16,
     marginBottom: 16,
-    gap: 12,
+    borderRadius: 12,
+    overflow: "hidden",
   },
-  quickActionCard: {
+  tabItem: {
     flex: 1,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderBottomWidth: 3,
+    borderBottomColor: "transparent",
+  },
+  tabItemActive: {
+    borderBottomColor: "#322D70",
+  },
+  tabItemText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#9CA3AF",
+  },
+  tabItemTextActive: {
+    color: "#322D70",
+  },
+  infoCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    alignItems: "center",
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
-  quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#E0E7FF",
-    justifyContent: "center",
-    alignItems: "center",
+  infoCardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#322D70",
     marginBottom: 8,
   },
-  quickActionEmoji: {
-    fontSize: 24,
+  infoCardText: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 22,
   },
-  quickActionLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#322D70",
-    textAlign: "center",
+  memberRow: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  memberName: {
+    fontSize: 14,
+    color: "#1E293B",
   },
   highlightSection: {
     backgroundColor: "#FFFFFF",
