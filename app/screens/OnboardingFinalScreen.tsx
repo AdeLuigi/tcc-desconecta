@@ -2,19 +2,20 @@ import React from "react"
 import { View, StyleSheet } from "react-native"
 import { Asset } from "expo-asset"
 import { SvgUri } from "react-native-svg"
+
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
-interface OnboardingScreenProps extends AppStackScreenProps<"Onboarding"> {}
+interface OnboardingFinalScreenProps extends AppStackScreenProps<"OnboardingFinal"> {}
 
-export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
+export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ navigation }) => {
   const backgroundUri = Asset.fromModule(require("../../assets/images/background-2.svg")).uri
-  const illustrationUri = Asset.fromModule(require("../../assets/images/dispute-com-amigos.svg")).uri
+  const illustrationUri = Asset.fromModule(require("../../assets/images/meta-diaria.svg")).uri
 
   return (
-    <Screen preset="fixed" contentContainerStyle={styles.container}>
+    <Screen preset="fixed"  contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
         <SvgUri uri={backgroundUri} width="100%" height="100%" />
       </View>
@@ -23,31 +24,30 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
         <View style={styles.illustrationWrap}>
           <SvgUri uri={illustrationUri} width="100%" height="100%" />
         </View>
+                <Text preset="subheading" style={styles.title}>
+                  Defina suas metas!
+                </Text>
 
-        <Text preset="subheading" style={styles.title}>
-          Dispute com amigos!
-        </Text>
-
-        <Text size="xs" style={styles.subtitle}>
-          Compare seu tempo com os amigos, acompanhe o ranking e se motive a usar cada vez menos o celular.
+        <Text preset="subheading" style={styles.text}>
+          Estabeleça limites de uso, crie metas personalizadas e acompanhe seu progresso para uma rotina melhor.
         </Text>
 
         <View style={styles.pagination}>
           <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
           <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive]} />
         </View>
 
         <View style={styles.buttonContainer}>
           <Button
-            text="Pular"
-            onPress={() => navigation.navigate("OnboardingFinal")}
+            text="Cadastrar conta"
+            onPress={() => navigation.navigate("Cadastro")}
             style={[styles.button, styles.skipButton]}
             textStyle={styles.skipButtonText}
           />
           <Button
-            text="Próximo"
-            onPress={() => navigation.navigate("OnboardingFinal")}
+            text="Login"
+            onPress={() => navigation.navigate("Login")}
             style={[styles.button, styles.nextButton]}
             textStyle={styles.nextButtonText}
           />
@@ -73,21 +73,23 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   illustrationWrap: {
-    width: 230,
-    height: 230,
-    marginBottom: 22,
+    width: 250,
+    height: 220,
+    marginBottom: 20,
   },
-  title: {
+    title: {
     color: "#FFFFFF",
     textAlign: "center",
     fontWeight: "700",
     marginBottom: 8,
   },
-  subtitle: {
+  text: {
     color: "#FFFFFF",
     textAlign: "center",
-    opacity: 0.92,
-    maxWidth: 290,
+    fontWeight: "700",
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: 300,
     marginBottom: 20,
   },
   pagination: {

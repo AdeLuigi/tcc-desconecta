@@ -14,6 +14,7 @@ import { LoginScreen } from "@/screens/LoginScreen"
 import { WelcomeScreen } from "@/screens/WelcomeScreen"
 import { BemVindoScreen } from "@/screens/BemVindoScreen"
 import { OnboardingScreen } from "@/screens/OnboardingScreen"
+import { OnboardingFinalScreen } from "@/screens/OnboardingFinalScreen"
 import { CadastroScreen } from "@/screens/CadastroScreen"
 import { ConfiguracaoPrimeiroAcessoScreen } from "@/screens/ConfiguracaoPrimeiroAcessoScreen"
 import { useAppTheme } from "@/theme/context"
@@ -60,6 +61,7 @@ const AppStack = () => {
         <>
           <Stack.Screen name="BemVindo" component={BemVindoScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen name="OnboardingFinal" component={OnboardingFinalScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Cadastro" component={CadastroScreen} />
           <Stack.Screen name="ConfiguracaoPrimeiroAcesso" component={ConfiguracaoPrimeiroAcessoScreen} />

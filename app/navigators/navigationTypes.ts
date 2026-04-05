@@ -28,6 +28,7 @@ export type DemoTabParamList = {
 export type AppStackParamList = {
   BemVindo: undefined
   Onboarding: undefined
+  OnboardingFinal: undefined
   Welcome: undefined
   Login: undefined
   Cadastro: undefined
