@@ -7,6 +7,7 @@ import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
+import { markOnboardingCompleted } from "@/utils/onboarding"
 
 interface OnboardingFinalScreenProps extends AppStackScreenProps<"OnboardingFinal"> {}
 
@@ -14,8 +15,16 @@ export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ na
   const backgroundUri = Asset.fromModule(require("../../assets/images/background-2.svg")).uri
   const illustrationUri = Asset.fromModule(require("../../assets/images/meta-diaria.svg")).uri
 
+  const handleLoginPress = () => {
+    markOnboardingCompleted()
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Login" }],
+    })
+  }
+
   return (
-    <Screen preset="fixed"  contentContainerStyle={styles.container}>
+    <Screen preset="fixed" safeAreaEdges={["top", "bottom"]} contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
         <SvgUri uri={backgroundUri} width="100%" height="100%" />
       </View>
@@ -47,7 +56,7 @@ export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ na
           />
           <Button
             text="Login"
-            onPress={() => navigation.navigate("Login")}
+            onPress={handleLoginPress}
             style={[styles.button, styles.nextButton]}
             textStyle={styles.nextButtonText}
           />

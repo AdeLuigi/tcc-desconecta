@@ -18,6 +18,7 @@ import { OnboardingFinalScreen } from "@/screens/OnboardingFinalScreen"
 import { CadastroScreen } from "@/screens/CadastroScreen"
 import { ConfiguracaoPrimeiroAcessoScreen } from "@/screens/ConfiguracaoPrimeiroAcessoScreen"
 import { useAppTheme } from "@/theme/context"
+import { isOnboardingCompleted } from "@/utils/onboarding"
 
 import { BottomTabNavigator } from "./BottomTabNavigator"
 import { DemoNavigator } from "./DemoNavigator"
@@ -35,6 +36,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>()
 
 const AppStack = () => {
   const { isAuthenticated } = useAuth()
+  const onboardingCompleted = isOnboardingCompleted()
 
   const {
     theme: { colors },
@@ -49,7 +51,7 @@ const AppStack = () => {
           backgroundColor: colors.background,
         },
       }}
-      initialRouteName={isAuthenticated ? "MainTabs" : "BemVindo"}
+      initialRouteName={isAuthenticated ? "MainTabs" : onboardingCompleted ? "Login" : "BemVindo"}
     >
       {isAuthenticated ? (
         <>
