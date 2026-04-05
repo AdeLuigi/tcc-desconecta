@@ -152,6 +152,7 @@ export const iconRegistry = {
   win: require("@assets/icons/win.png"),
   desafioDeTempo: require("@assets/icons/desafio-de-tempo.svg").default,
   comunidade: require("@assets/icons/comunidade.svg").default,
+  uploadIcone: require("@assets/icons/uploadIcone.svg").default,
   poepleGroupIcon: PeopleGroupIcon,
   notifications: NotificationsIcon,
   copy: require("@assets/icons/copy.png"),

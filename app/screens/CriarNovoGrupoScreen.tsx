@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext"
 import { createGroup } from "@/services/groupService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
+const Logo = require("@assets/images/logo2.png")
 
 interface CriarNovoGrupoScreenProps extends AppStackScreenProps<"CriarNovoGrupo"> {}
 
@@ -135,19 +136,22 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon icon="back" size={24} color="#FFFFFF" />
+    <View style={styles.header}>
+        <Image source={Logo} resizeMode="contain" />
+        <TouchableOpacity onPress={() => navigation.navigate("Notificacoes")}>
+        <Icon icon="notifications" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Criar Novo Grupo</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    </View>
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.titleCard}>
+            <Icon icon="poepleGroupIcon" size={24} color="#322D70" />
+            <Text style={styles.pageTitle}>Criar desafio de grupo</Text>
+        </View>
         <View style={styles.content}>
-          {/* Foto do Grupo */}
+          <Text style={styles.label}>Preencha os dados básicos do grupo</Text>
           <View style={styles.imageSection}>
-            <Text style={styles.label}>Foto do Grupo</Text>
+            
             {selectedImage ? (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
@@ -165,18 +169,19 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
                 onPress={pickImage}
                 disabled={isCreating || isUploadingImage}
               >
-                <Text style={styles.addImageIcon}>📷</Text>
-                <Text style={styles.addImageText}>Adicionar foto</Text>
+                <Icon icon="uploadIcone" size={16} color="#FFFFFF" />
+                <View style={{backgroundColor:"#72C3E0", alignItems:"center", justifyContent:"center", padding:4, borderRadius:8, marginTop:8  }}>
+                  <Text style={[styles.addImageText, {color: "#FFFFFF"}]}>Selecione uma imagem</Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
 
           {/* Nome do Grupo */}
           <View style={styles.inputSection}>
-            <Text style={styles.label}>Nome do Grupo *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ex: Amigos da Faculdade"
+              placeholder="Nome do Grupo"
               placeholderTextColor="#94A3B8"
               value={groupName}
               onChangeText={setGroupName}
@@ -187,10 +192,9 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
 
           {/* Descrição */}
           <View style={styles.inputSection}>
-            <Text style={styles.label}>Descrição *</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Descreva o objetivo do grupo..."
+              placeholder="Descrição (opcional)"
               placeholderTextColor="#94A3B8"
               multiline
               numberOfLines={4}
@@ -258,13 +262,15 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    alignItems: "center",
   },
   imageSection: {
     marginBottom: 24,
+    width: "100%",
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "900",
     color: "#322D70",
     marginBottom: 12,
   },
@@ -277,6 +283,25 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     backgroundColor: "#E0E7FF",
+  },
+    titleCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D7D7D7",
+    height: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft:16,
+    marginRight:16,
+    marginTop: 16,
+  },
+    pageTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#322D70",
+    marginLeft: 8,
   },
   removeImageButton: {
     position: "absolute",
@@ -307,10 +332,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6881BA",
     fontWeight: "600",
-    marginTop: 8,
   },
   inputSection: {
-    marginBottom: 24,
+    marginBottom: 16,
+    width: "100%",
   },
   input: {
     backgroundColor: "#FFFFFF",
