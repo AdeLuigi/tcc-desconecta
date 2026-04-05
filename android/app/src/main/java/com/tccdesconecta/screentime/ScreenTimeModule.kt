@@ -264,6 +264,21 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     }
 
     @ReactMethod
+    fun setBackgroundSyncUser(userId: String?, promise: Promise) {
+        try {
+            val normalized = userId?.trim()
+            if (normalized.isNullOrEmpty()) {
+                prefs.edit().remove(ScreenTimeBackgroundConfig.PREF_USER_ID).apply()
+            } else {
+                prefs.edit().putString(ScreenTimeBackgroundConfig.PREF_USER_ID, normalized).apply()
+            }
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
     fun stopBackgroundTracking(promise: Promise) {
         try {
             prefs.edit()

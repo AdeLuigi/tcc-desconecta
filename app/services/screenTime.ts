@@ -78,6 +78,21 @@ class ScreenTimeService {
   }
 
   /**
+   * Define o usuário utilizado pelo sync nativo em background para envio ao Firestore
+   */
+  async configureBackgroundSyncUser(userId?: string): Promise<boolean> {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+    try {
+      return await ScreenTimeModule.setBackgroundSyncUser(userId || null);
+    } catch (error) {
+      console.error('Erro ao configurar usuário do sync em background:', error);
+      return false;
+    }
+  }
+
+  /**
    * Ativa monitoramento contínuo em background (Android foreground service)
    */
   async startBackgroundTracking(): Promise<boolean> {

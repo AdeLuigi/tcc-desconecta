@@ -3,6 +3,7 @@ package com.tccdesconecta.screentime
 object ScreenTimeBackgroundConfig {
     const val PREFS_NAME = "screentime_background_prefs"
     const val PREF_ENABLED = "background_tracking_enabled"
+    const val PREF_USER_ID = "background_tracking_user_id"
     const val PREF_LAST_SYNC_AT = "last_sync_at"
     const val PREF_LAST_MINUTES_TODAY = "last_minutes_today"
 
