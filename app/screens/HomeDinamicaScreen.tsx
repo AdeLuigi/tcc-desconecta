@@ -102,7 +102,13 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
       setLoadingGroups(true)
       const userGroups = await getUserGroups(userData.uid)
-      setGroups(userGroups)
+      // Filter out groups whose challenge deadline has passed
+      const now = new Date()
+      const activeGroups = userGroups.filter(group => {
+        if (!group.dataLimite) return true
+        return new Date(group.dataLimite) > now
+      })
+      setGroups(activeGroups)
     } catch (error) {
       console.error("Erro ao carregar grupos:", error)
     } finally {

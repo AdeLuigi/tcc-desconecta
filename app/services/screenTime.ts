@@ -35,6 +35,12 @@ export interface ScreenTimeData {
     timeInMinutes: number;
     category: string;
   }[];
+  all_apps?: {
+    packageName: string;
+    appName: string;
+    timeInMinutes: number;
+    category: string;
+  }[];
   timestamp: Date;
 }
 
@@ -281,6 +287,14 @@ class ScreenTimeService {
         timeInMinutes: app.timeInMinutes,
         category: app.category || 'outros',
       }));
+
+      // Preparar todos os apps (para filtragem por grupo com screenTimeForApps)
+      const allApps = apps.map(app => ({
+        packageName: app.packageName,
+        appName: app.appName,
+        timeInMinutes: app.timeInMinutes,
+        category: app.category || 'outros',
+      }));
       
       // Criar dados de tempo de tela
       const screenTimeData: Omit<ScreenTimeData, 'timestamp'> & { timestamp: Date } = {
@@ -289,6 +303,7 @@ class ScreenTimeService {
         tempo_total_minutos: tempoTotal,
         categorias,
         top_apps: topApps,
+        all_apps: allApps,
         timestamp: new Date(),
       };
       

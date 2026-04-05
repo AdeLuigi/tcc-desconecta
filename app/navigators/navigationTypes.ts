@@ -64,6 +64,10 @@ export type AppStackParamList = {
       foto: string
       codigoGrupo: string
       criado_em: string
+      dataLimite?: string
+      groupType?: "screenTime" | "screenTimeForApps" | "checkin"
+      selectedApps?: string[]
+      selectedSites?: string[]
       membros: Array<{
         userId: string
         cargo: "administrador" | "membro"

@@ -85,6 +85,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       setLoadingRanking(true)
       const db = getFirestore()
       const hoje = new Date().toISOString().split('T')[0]
+      const isFilteredByApps =
+        currentGroup.groupType === "screenTimeForApps" &&
+        Array.isArray((currentGroup as any).selectedApps) &&
+        (currentGroup as any).selectedApps.length > 0
+      const selectedApps: string[] = isFilteredByApps ? (currentGroup as any).selectedApps : []
       
       const rankingData = await Promise.all(
         grupo.membros.map(async (membro) => {
@@ -106,10 +111,23 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             
             if (!snapshot.empty) {
               const dados = snapshot.docs[0].data()
+              let tempoMinutos: number
+
+              if (isFilteredByApps) {
+                // Somar apenas apps que estão em selectedApps
+                const appList: { packageName: string; timeInMinutes: number }[] =
+                  dados.all_apps ?? dados.top_apps ?? []
+                tempoMinutos = appList
+                  .filter((a) => selectedApps.includes(a.packageName))
+                  .reduce((sum, a) => sum + (a.timeInMinutes || 0), 0)
+              } else {
+                tempoMinutos = dados.tempo_total_minutos
+              }
+
               return {
                 userId: membro.userId,
                 nome: membro.nome,
-                tempoMinutos: dados.tempo_total_minutos,
+                tempoMinutos,
                 temHoje: true,
                 photoURL,
               }
@@ -155,6 +173,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
     try {
       setLoadingRanking(true)
       const db = getFirestore()
+      const isFilteredByApps =
+        currentGroup.groupType === "screenTimeForApps" &&
+        Array.isArray((currentGroup as any).selectedApps) &&
+        (currentGroup as any).selectedApps.length > 0
+      const selectedApps: string[] = isFilteredByApps ? (currentGroup as any).selectedApps : []
       
       // Calcular datas dos últimos 7 dias
       const ultimos7Dias: string[] = []
@@ -182,11 +205,19 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             const userDoc = await getDoc(userRef)
             const photoURL = userDoc.exists() ? userDoc.data()?.photoURL || "" : ""
             
-            // Somar tempo de todos os dias
+            // Somar tempo de todos os dias (filtrado se necessário)
             let tempoTotal = 0
             snapshot.forEach((docSnap: any) => {
               const dados = docSnap.data()
-              tempoTotal += dados.tempo_total_minutos || 0
+              if (isFilteredByApps) {
+                const appList: { packageName: string; timeInMinutes: number }[] =
+                  dados.all_apps ?? dados.top_apps ?? []
+                tempoTotal += appList
+                  .filter((a) => selectedApps.includes(a.packageName))
+                  .reduce((sum, a) => sum + (a.timeInMinutes || 0), 0)
+              } else {
+                tempoTotal += dados.tempo_total_minutos || 0
+              }
             })
             
             return {
