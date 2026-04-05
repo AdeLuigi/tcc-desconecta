@@ -640,6 +640,36 @@ export async function updateGroupPhoto(
 }
 
 /**
+ * Atualizar nome do grupo (apenas admin)
+ */
+export async function updateGroupName(
+  groupId: string,
+  newName: string,
+  userId: string,
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const group = await getGroupById(groupId)
+    if (!group) {
+      return { success: false, message: "Grupo não encontrado." }
+    }
+
+    const userMember = group.membros.find((m) => m.userId === userId)
+    if (!userMember || userMember.cargo !== "administrador") {
+      return { success: false, message: "Apenas administradores podem editar o nome." }
+    }
+
+    const db = getFirestore()
+    const groupRef = doc(db, "grupos", groupId)
+    await updateDoc(groupRef, { nome: newName.trim() })
+
+    return { success: true, message: "Nome atualizado com sucesso." }
+  } catch (error) {
+    console.error("Erro ao atualizar nome:", error)
+    return { success: false, message: "Erro ao atualizar nome do grupo." }
+  }
+}
+
+/**
  * Verifica se um usuário é administrador do grupo
  */
 export function isUserAdmin(group: Group, userId: string): boolean {

@@ -18,6 +18,7 @@ import {
   removeMemberFromGroup,
   updateGroupDescription,
   updateGroupPhoto,
+  updateGroupName,
   isUserAdmin,
   getGroupById
 } from "@/services/groupService"
@@ -53,6 +54,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const [newDescription, setNewDescription] = useState(grupo.descricao)
   const [isUpdating, setIsUpdating] = useState(false)
   const [currentGroup, setCurrentGroup] = useState(grupo)
+  const [editGroupModalVisible, setEditGroupModalVisible] = useState(false)
+  const [newGroupName, setNewGroupName] = useState(grupo.nome)
+  const [participantsModalVisible, setParticipantsModalVisible] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<string | null>(null)
+  const [membrosPhotoURLs, setMembrosPhotoURLs] = useState<Record<string, string>>({})
 
   // Verificar se o usuário atual é administrador
   const isAdmin = userData ? isUserAdmin(currentGroup, userData.uid) : false
@@ -420,6 +426,22 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
     setRefreshing(false)
   }
 
+  const loadMembrosPhotoURLs = async () => {
+    try {
+      const db = getFirestore()
+      const entries = await Promise.all(
+        currentGroup.membros.map(async (membro) => {
+          const userDoc = await getDoc(doc(db, "usuarios", membro.userId))
+          const photoURL = userDoc.exists() ? userDoc.data()?.photoURL || "" : ""
+          return [membro.userId, photoURL] as [string, string]
+        })
+      )
+      setMembrosPhotoURLs(Object.fromEntries(entries))
+    } catch (error) {
+      console.error("Erro ao buscar fotos dos membros:", error)
+    }
+  }
+
   const refreshGroupData = async () => {
     const updatedGroup = await getGroupById(grupo.id)
     if (updatedGroup) {
@@ -559,27 +581,44 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       return
     }
     setNewDescription(currentGroup.descricao)
-    setEditDescriptionModalVisible(true)
+    setNewGroupName(currentGroup.nome)
+    setEditGroupModalVisible(true)
   }
 
-  const handleSaveDescription = async () => {
+  const handleSaveGroupEdits = async () => {
     if (!userData) return
 
-    if (!newDescription.trim()) {
-      Alert.alert("Atenção", "A descrição não pode estar vazia")
+    if (!newGroupName.trim()) {
+      Alert.alert("Atenção", "O nome do grupo não pode estar vazio")
       return
     }
 
     setIsUpdating(true)
-    const result = await updateGroupDescription(grupo.id, newDescription, userData.uid)
-    setIsUpdating(false)
+    try {
+      const promises: Promise<any>[] = []
 
-    if (result.success) {
-      Alert.alert("Sucesso", result.message)
-      setEditDescriptionModalVisible(false)
+      if (newGroupName.trim() !== currentGroup.nome) {
+        promises.push(updateGroupName(grupo.id, newGroupName, userData.uid))
+      }
+      if (newDescription.trim() !== currentGroup.descricao) {
+        promises.push(updateGroupDescription(grupo.id, newDescription, userData.uid))
+      }
+
+      if (promises.length > 0) {
+        const results = await Promise.all(promises)
+        const failed = results.find((r) => !r.success)
+        if (failed) {
+          Alert.alert("Erro", failed.message)
+          return
+        }
+      }
+
+      setEditGroupModalVisible(false)
       await refreshGroupData()
-    } else {
-      Alert.alert("Erro", result.message)
+    } catch (e) {
+      Alert.alert("Erro", "Não foi possível salvar as alterações")
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -655,7 +694,12 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       >
         {/* Group Header Card */}
         <View style={styles.groupHeaderCard}>
-          <Text style={styles.groupName}>{currentGroup.nome}</Text>
+          <TouchableOpacity
+            onPress={isAdmin ? () => { setNewGroupName(currentGroup.nome); setNewDescription(currentGroup.descricao); setEditGroupModalVisible(true) } : undefined}
+            activeOpacity={isAdmin ? 0.7 : 1}
+          >
+            <Text style={styles.groupName}>{currentGroup.nome}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Tab Bar */}
@@ -691,7 +735,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
           <View style={[styles.groupSummaryCard, { paddingHorizontal: 16 }]}>
             <View style={styles.groupSummaryTop}>
               {/* Group Photo */}
-              <View style={styles.groupSummaryPhoto}>
+              <TouchableOpacity
+                onPress={isAdmin ? handleChangeGroupPhoto : undefined}
+                activeOpacity={isAdmin ? 0.7 : 1}
+                style={styles.groupSummaryPhoto}
+              >
                 {currentGroup.foto ? (
                   <Image source={{ uri: currentGroup.foto }} style={styles.groupSummaryImage} resizeMode="cover" />
                 ) : (
@@ -699,7 +747,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                     {currentGroup.nome.charAt(0).toUpperCase()}
                   </Text>
                 )}
-              </View>
+              </TouchableOpacity>
 
               {/* Best Weekly Average */}
               <View style={styles.groupSummaryInfo}>
@@ -729,16 +777,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                                       {/* Participants Button */}
                       <TouchableOpacity
                         style={styles.participantsButton}
-                        onPress={() => {
-                          const membersList = currentGroup.membros.map((m, i) =>
-                            `${i + 1}. ${m.nome} ${m.cargo === 'administrador' ? '👑' : ''}`
-                          ).join('\n')
-                          Alert.alert(
-                            `Participantes (${currentGroup.membros.length})`,
-                            membersList,
-                            [{ text: "OK" }]
-                          )
-                        }}
+                        onPress={() => { loadMembrosPhotoURLs(); setParticipantsModalVisible(true) }}
                       >
                         <Icon icon="participantes" size={24} color="#322D70" />
                         <Text style={styles.participantsText}>{currentGroup.membros.length} participantes</Text>
@@ -883,7 +922,11 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             {/* Group Summary Card */}
             <View style={styles.groupSummaryCard}>
               <View style={styles.groupSummaryTop}>
-                <View style={styles.groupSummaryPhoto}>
+                <TouchableOpacity
+                  onPress={isAdmin ? handleChangeGroupPhoto : undefined}
+                  activeOpacity={isAdmin ? 0.7 : 1}
+                  style={styles.groupSummaryPhoto}
+                >
                   {currentGroup.foto ? (
                     <Image source={{ uri: currentGroup.foto }} style={styles.groupSummaryImage} resizeMode="cover" />
                   ) : (
@@ -891,7 +934,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                       {currentGroup.nome.charAt(0).toUpperCase()}
                     </Text>
                   )}
-                </View>
+                </TouchableOpacity>
                 <View style={styles.groupSummaryInfo}>
                   {rankingTempoDeTela.length > 0 && rankingTempoDeTela[0].temHoje ? (
                     <View style={styles.bestMemberRow}>
@@ -918,16 +961,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                   )}
                   <TouchableOpacity
                     style={styles.participantsButton}
-                    onPress={() => {
-                      const membersList = currentGroup.membros.map((m, i) =>
-                        `${i + 1}. ${m.nome} ${m.cargo === 'administrador' ? '👑' : ''}`
-                      ).join('\n')
-                      Alert.alert(
-                        `Participantes (${currentGroup.membros.length})`,
-                        membersList,
-                        [{ text: "OK" }]
-                      )
-                    }}
+                    onPress={() => { loadMembrosPhotoURLs(); setParticipantsModalVisible(true) }}
                   >
                     <Icon icon="participantes" size={24} color="#322D70" />
                     <Text style={styles.participantsText}>{currentGroup.membros.length} participantes</Text>
@@ -1014,6 +1048,111 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       >
         <Text style={styles.fabButtonText}>+</Text>
       </TouchableOpacity>
+
+      {/* Modal de Participantes */}
+      <Modal
+        visible={participantsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setParticipantsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.participantsModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Participantes ({currentGroup.membros.length})</Text>
+              <TouchableOpacity onPress={() => setParticipantsModalVisible(false)}>
+                <Icon icon="x" size={24} color="#322D70" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.participantsList} showsVerticalScrollIndicator={false}>
+              {currentGroup.membros.map((membro) => {
+                const isCurrentUser = userData?.uid === membro.userId
+                const isAdminMember = membro.cargo === 'administrador'
+                return (
+                  <View key={membro.userId} style={styles.participantRow}>
+                    <View style={styles.participantAvatar}>
+                      {membrosPhotoURLs[membro.userId] ? (
+                        <Image source={{ uri: membrosPhotoURLs[membro.userId] }} style={styles.participantAvatarImage} resizeMode="cover" />
+                      ) : (
+                        <Text style={styles.participantAvatarText}>
+                          {membro.nome.charAt(0).toUpperCase()}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.participantInfo}>
+                      <Text style={styles.participantName}>
+                        {membro.nome}{isCurrentUser ? " (você)" : ""}
+                      </Text>
+                      {isAdminMember && (
+                        <View style={styles.participantAdminBadge}>
+                          <Text style={styles.participantAdminBadgeText}>👑 Admin</Text>
+                        </View>
+                      )}
+                    </View>
+                    {isAdmin && !isCurrentUser && (
+                      <TouchableOpacity
+                        style={styles.participantMenuButton}
+                        onPress={() => {
+                          const options: Array<{ text: string; onPress?: () => void; style?: "cancel" | "destructive" | "default" }> = []
+                          if (!isAdminMember) {
+                            options.push({
+                              text: "👑 Promover a admin",
+                              onPress: async () => {
+                                if (!userData) return
+                                const result = await grantAdminRole(grupo.id, membro.userId, userData.uid)
+                                if (result.success) {
+                                  Alert.alert("Sucesso", `${membro.nome} agora é administrador`)
+                                  const updated = await getGroupById(grupo.id)
+                                  if (updated) setCurrentGroup(updated)
+                                } else {
+                                  Alert.alert("Erro", result.message || "Não foi possível promover o membro")
+                                }
+                              }
+                            })
+                          }
+                          options.push({
+                            text: "🚫 Retirar do grupo",
+                            style: "destructive",
+                            onPress: async () => {
+                              Alert.alert(
+                                "Retirar membro",
+                                `Tem certeza que deseja remover ${membro.nome} do grupo?`,
+                                [
+                                  { text: "Cancelar", style: "cancel" },
+                                  {
+                                    text: "Remover",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                      if (!userData) return
+                                      const success = await removeMemberFromGroup(grupo.id, membro.userId)
+                                      if (success) {
+                                        Alert.alert("Sucesso", `${membro.nome} foi removido do grupo`)
+                                        const updated = await getGroupById(grupo.id)
+                                        if (updated) setCurrentGroup(updated)
+                                      } else {
+                                        Alert.alert("Erro", "Não foi possível remover o membro")
+                                      }
+                                    }
+                                  }
+                                ]
+                              )
+                            }
+                          })
+                          options.push({ text: "Cancelar", style: "cancel" })
+                          Alert.alert(membro.nome, undefined, options)
+                        }}
+                      >
+                        <Text style={styles.participantMenuDots}>⋯</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )
+              })}
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Gerenciamento do Grupo */}
       <Modal
@@ -1147,6 +1286,82 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         </View>
       </Modal>
 
+      {/* Modal de Editar Grupo (nome + descrição) */}
+      <Modal
+        visible={editGroupModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => !isUpdating && setEditGroupModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Editar Grupo</Text>
+                <TouchableOpacity
+                  onPress={() => setEditGroupModalVisible(false)}
+                  disabled={isUpdating}
+                >
+                  <Icon icon="x" size={24} color="#322D70" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                <Text style={styles.inputLabel}>Nome do grupo</Text>
+                <TextInput
+                  style={[styles.textInput, { minHeight: 48 }]}
+                  placeholder="Nome do grupo..."
+                  placeholderTextColor="#94A3B8"
+                  value={newGroupName}
+                  onChangeText={setNewGroupName}
+                  editable={!isUpdating}
+                />
+
+                <Text style={[styles.inputLabel, { marginTop: 12 }]}>Descrição</Text>
+                <TextInput
+                  style={[styles.textInput, { minHeight: 100 }]}
+                  placeholder="Descrição do grupo..."
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  numberOfLines={4}
+                  value={newDescription}
+                  onChangeText={setNewDescription}
+                  textAlignVertical="top"
+                  editable={!isUpdating}
+                />
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setEditGroupModalVisible(false)}
+                  disabled={isUpdating}
+                >
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.postButton,
+                    (isUpdating || !newGroupName.trim()) && styles.postButtonDisabled,
+                  ]}
+                  onPress={handleSaveGroupEdits}
+                  disabled={isUpdating || !newGroupName.trim()}
+                >
+                  {isUpdating ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.postButtonText}>Salvar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Modal de Editar Descrição */}
       <Modal
         visible={editDescriptionModalVisible}
@@ -1198,7 +1413,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                     styles.postButton,
                     (isUpdating || !newDescription.trim()) && styles.postButtonDisabled,
                   ]}
-                  onPress={handleSaveDescription}
+                  onPress={handleSaveGroupEdits}
                   disabled={isUpdating || !newDescription.trim()}
                 >
                   {isUpdating ? (
@@ -1334,13 +1549,51 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 12,
     borderRadius: 16,
-    padding: 12,
+    padding: 16,
     alignItems: "center",
+    gap: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  groupHeaderPhotoWrapper: {
+    position: "relative",
+  },
+  groupHeaderPhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  groupHeaderPhotoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  groupHeaderPhotoInitial: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  groupHeaderPhotoEditBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#322D70",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  groupHeaderPhotoEditIcon: {
+    fontSize: 11,
   },
   tabBar: {
     flexDirection: "row",
@@ -1883,6 +2136,70 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+  participantsModalContent: {
+    maxHeight: "80%",
+  },
+  participantsList: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  participantRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  participantAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    marginRight: 12,
+  },
+  participantAvatarImage: {
+    width: 44,
+    height: 44,
+  },
+  participantAvatarText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  participantInfo: {
+    flex: 1,
+  },
+  participantName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 2,
+  },
+  participantAdminBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FFF7ED",
+    borderRadius: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  participantAdminBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#C2410C",
+  },
+  participantMenuButton: {
+    padding: 8,
+    marginLeft: 4,
+  },
+  participantMenuDots: {
+    fontSize: 22,
+    color: "#6881BA",
+    fontWeight: "bold",
+    letterSpacing: 1,
   },
   fabButton: {
     position: "absolute",
