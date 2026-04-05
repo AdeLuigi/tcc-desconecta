@@ -16,6 +16,8 @@ import { ConfiguracoesScreen } from "@/screens/ConfiguracoesScreen"
 // Screens - Shared (accessible from any tab)
 import { SelecionarTipoGrupoScreen } from "@/screens/SelecionarTipoGrupoScreen"
 import { CriarNovoGrupoScreen } from "@/screens/CriarNovoGrupoScreen"
+import { SelecionarCriterioGrupoScreen } from "@/screens/SelecionarCriterioGrupoScreen"
+import { SelecionarAppsDesafioScreen } from "@/screens/SelecionarAppsDesafioScreen"
 import { PaginaDoGrupoScreen } from "@/screens/PaginaDoGrupoScreen"
 import { AtividadeScreen } from "@/screens/AtividadeScreen"
 import { RankingScreen } from "@/screens/RankingScreen"
@@ -46,6 +48,8 @@ const HomeStack = () => {
       <Stack.Screen name="HomeDinamica" component={HomeDinamicaScreen as any} />
       <Stack.Screen name="SelecionarTipoGrupo" component={SelecionarTipoGrupoScreen as any} />
       <Stack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
+      <Stack.Screen name="SelecionarCriterioGrupo" component={SelecionarCriterioGrupoScreen as any} />
+      <Stack.Screen name="SelecionarAppsDesafio" component={SelecionarAppsDesafioScreen as any} />
       <Stack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
       <Stack.Screen name="Atividade" component={AtividadeScreen as any} />
       <Stack.Screen name="Ranking" component={RankingScreen as any} />
@@ -75,6 +79,8 @@ const GruposStack = () => {
       <Stack.Screen name="GruposDeAmigos" component={GruposDeAmigosScreen as any} />
       <Stack.Screen name="SelecionarTipoGrupo" component={SelecionarTipoGrupoScreen as any} />
       <Stack.Screen name="CriarNovoGrupo" component={CriarNovoGrupoScreen as any} />
+      <Stack.Screen name="SelecionarCriterioGrupo" component={SelecionarCriterioGrupoScreen as any} />
+      <Stack.Screen name="SelecionarAppsDesafio" component={SelecionarAppsDesafioScreen as any} />
       <Stack.Screen name="PaginaDoGrupo" component={PaginaDoGrupoScreen as any} />
       <Stack.Screen name="Atividade" component={AtividadeScreen as any} />
       <Stack.Screen name="Ranking" component={RankingScreen as any} />

@@ -64,6 +64,8 @@ export interface RankingMember {
   nome: string
 }
 
+export type GroupType = "screenTime" | "screenTimeForApps" | "checkin"
+
 export interface Group {
   id: string
   nome: string
@@ -71,6 +73,10 @@ export interface Group {
   foto: string
   criado_em: string
   dataLimite?: string
+  criterioRanking?: string
+  groupType?: GroupType
+  selectedApps?: string[]
+  selectedSites?: string[]
   membros: GroupMember[]
   ranking_mensal: RankingMember[]
   codigoGrupo: string
@@ -105,6 +111,10 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
           foto: data.foto || "",
           criado_em: data.criado_em || "",
           dataLimite: data.dataLimite || undefined,
+          criterioRanking: data.criterioRanking || undefined,
+          groupType: data.groupType || undefined,
+          selectedApps: data.selectedApps || undefined,
+          selectedSites: data.selectedSites || undefined,
           membros: data.membros || [],
           ranking_mensal: data.ranking_mensal || [],
           codigoGrupo: data.codigoGrupo || "",
@@ -137,6 +147,10 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
         foto: data?.foto || "",
         criado_em: data?.criado_em || "",
         dataLimite: data?.dataLimite || undefined,
+        criterioRanking: data?.criterioRanking || undefined,
+        groupType: data?.groupType || undefined,
+        selectedApps: data?.selectedApps || undefined,
+        selectedSites: data?.selectedSites || undefined,
         membros: data?.membros || [],
         ranking_mensal: data?.ranking_mensal || [],
         codigoGrupo: data?.codigoGrupo || "",
@@ -159,6 +173,10 @@ export async function createGroup(
   foto: string,
   adminUserId: string,
   dataLimite?: string,
+  criterioRanking?: string,
+  groupType?: GroupType,
+  selectedApps?: string[],
+  selectedSites?: string[],
 ): Promise<string | null> {
   try {
     // Buscar dados do usuário para obter o nome
@@ -174,6 +192,10 @@ export async function createGroup(
       foto,
       criado_em: new Date().toISOString(),
       ...(dataLimite ? { dataLimite } : {}),
+      ...(criterioRanking ? { criterioRanking } : {}),
+      ...(groupType ? { groupType } : {}),
+      ...(selectedApps && selectedApps.length > 0 ? { selectedApps } : {}),
+      ...(selectedSites && selectedSites.length > 0 ? { selectedSites } : {}),
       codigoGrupo,
       membros: [
         {

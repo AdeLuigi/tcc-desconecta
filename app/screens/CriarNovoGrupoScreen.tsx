@@ -1,13 +1,13 @@
 import React, { useState } from "react"
-import { View, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, ScrollView } from "react-native"
+import { View, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, ScrollView, Platform } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAuth } from "@/context/AuthContext"
-import { createGroup } from "@/services/groupService"
 import * as ImagePicker from 'expo-image-picker'
-import storage from '@react-native-firebase/storage'
+import DateTimePicker from '@react-native-community/datetimepicker'
 const Logo = require("@assets/images/logo2.png")
 
 interface CriarNovoGrupoScreenProps extends AppStackScreenProps<"CriarNovoGrupo"> {}
@@ -17,14 +17,35 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
   const [groupName, setGroupName] = useState("")
   const [groupDescription, setGroupDescription] = useState("")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const selectedGroupType = route.params?.tipoGrupo ?? "comunidade"
+  const isDesafio = selectedGroupType === "desafioTempo"
+  
+  // Data limite: 30 dias a partir de hoje (padrão)
+  const defaultDeadline = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 30)
+    return d
+  })()
+  const [dataLimite, setDataLimite] = useState<Date>(defaultDeadline)
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
-  const getDefaultDeadline = () => {
-    const deadline = new Date()
-    deadline.setDate(deadline.getDate() + 30)
-    return deadline.toISOString()
+  const daysFromNow = Math.round(
+    (dataLimite.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+  )
+
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false)
+    if (selectedDate) {
+      setDataLimite(selectedDate)
+    }
+  }
+
+  const openDatePicker = () => {
+    setShowDatePicker(true)
   }
 
   const pickImage = async () => {
@@ -56,11 +77,9 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
     try {
       setIsUploadingImage(true)
       const filename = `groups/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`
-      const reference = storage().ref(filename)
-      
+      const reference = (await import('@react-native-firebase/storage')).default().ref(filename)
       await reference.putFile(uri)
       const downloadURL = await reference.getDownloadURL()
-      
       return downloadURL
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error)
@@ -70,67 +89,22 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
     }
   }
 
-  const handleCreateGroup = async () => {
+  const handleNext = () => {
     if (!userData) {
       Alert.alert("Erro", "Você precisa estar logado para criar um grupo")
       return
     }
-
     if (!groupName.trim()) {
       Alert.alert("Atenção", "Digite um nome para o grupo")
       return
     }
-
-    if (!groupDescription.trim()) {
-      Alert.alert("Atenção", "Digite uma descrição para o grupo")
-      return
-    }
-
-    setIsCreating(true)
-    try {
-      let photoURL = ""
-      
-      // Se tiver imagem selecionada, faz upload primeiro
-      if (selectedImage) {
-        const uploadedURL = await uploadGroupImage(selectedImage)
-        if (uploadedURL) {
-          photoURL = uploadedURL
-        } else {
-          Alert.alert(
-            "Aviso",
-            "Não foi possível fazer upload da imagem. O grupo será criado sem foto."
-          )
-        }
-      }
-
-      const groupId = await createGroup(
-        groupName.trim(),
-        groupDescription.trim(),
-        photoURL,
-        userData.uid,
-        selectedGroupType === "desafioTempo" ? getDefaultDeadline() : undefined,
-      )
-
-      if (groupId) {
-        Alert.alert(
-          "Sucesso!",
-          "Grupo criado com sucesso!",
-          [
-            {
-              text: "OK",
-              onPress: () => navigation.navigate("HomeDinamica")
-            }
-          ]
-        )
-      } else {
-        Alert.alert("Erro", "Não foi possível criar o grupo")
-      }
-    } catch (error) {
-      console.error("Erro ao criar grupo:", error)
-      Alert.alert("Erro", "Ocorreu um erro ao criar o grupo")
-    } finally {
-      setIsCreating(false)
-    }
+    navigation.navigate("SelecionarCriterioGrupo", {
+      tipoGrupo: selectedGroupType,
+      groupName: groupName.trim(),
+      groupDescription: groupDescription.trim(),
+      selectedImageUri: selectedImage ?? undefined,
+      dataLimite: isDesafio ? dataLimite.toISOString() : undefined,
+    })
   }
 
   return (
@@ -146,7 +120,7 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.titleCard}>
             <Icon icon="poepleGroupIcon" size={24} color="#322D70" />
-            <Text style={styles.pageTitle}>Criar desafio de grupo</Text>
+            <Text style={styles.pageTitle}>{isDesafio ? "Criar desafio de grupo" : "Criar comunidade"}</Text>
         </View>
         <View style={styles.content}>
           <Text style={styles.label}>Preencha os dados básicos do grupo</Text>
@@ -158,22 +132,25 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
                 <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => setSelectedImage(null)}
-                  disabled={isCreating}
                 >
                   <Icon icon="x" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.addImageButton}
-                onPress={pickImage}
-                disabled={isCreating || isUploadingImage}
-              >
-                <Icon icon="uploadIcone" size={16} color="#FFFFFF" />
-                <View style={{backgroundColor:"#72C3E0", alignItems:"center", justifyContent:"center", padding:4, borderRadius:8, marginTop:8  }}>
-                  <Text style={[styles.addImageText, {color: "#FFFFFF"}]}>Selecione uma imagem</Text>
-                </View>
-              </TouchableOpacity>
+              <View style={styles.addImageButton}>
+                <Ionicons name="cloud-upload-outline" size={36} color="#94A3B8" />
+                <TouchableOpacity
+                  style={styles.selectImageButton}
+                  onPress={pickImage}
+                  disabled={isUploadingImage}
+                >
+                  {isUploadingImage ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.selectImageButtonText}>Selecione uma imagem</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
@@ -185,7 +162,6 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
               placeholderTextColor="#94A3B8"
               value={groupName}
               onChangeText={setGroupName}
-              editable={!isCreating}
               maxLength={50}
             />
           </View>
@@ -201,37 +177,52 @@ export const CriarNovoGrupoScreen: React.FC<CriarNovoGrupoScreenProps> = ({ navi
               value={groupDescription}
               onChangeText={setGroupDescription}
               textAlignVertical="top"
-              editable={!isCreating}
               maxLength={200}
             />
           </View>
 
-          {/* Botões */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => navigation.goBack()}
-              disabled={isCreating}
+          {/* Data final — apenas para desafio de tempo */}
+          {isDesafio && (
+            <View style={styles.inputSection}>
+              <TouchableOpacity
+                style={styles.input}
+                onPress={openDatePicker}
             >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.createButton,
-                (isCreating || !groupName.trim() || !groupDescription.trim()) && styles.createButtonDisabled,
-              ]}
-              onPress={handleCreateGroup}
-              disabled={isCreating || !groupName.trim() || !groupDescription.trim()}
-            >
-              {isCreating ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.createButtonText}>Criar Grupo</Text>
+                <Text style={styles.dateInputText}>{formatDate(dataLimite)}</Text>
+              </TouchableOpacity>
+              <Text style={styles.daysHint}>{daysFromNow} dias</Text>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dataLimite}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                  textColor="#1E293B"
+                />
               )}
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
+
         </View>
       </ScrollView>
+
+      {/* Botões fixos no rodapé */}
+      <View style={styles.bottomActions}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.nextButton, !groupName.trim() && styles.nextButtonDisabled]}
+          onPress={handleNext}
+          disabled={!groupName.trim()}
+        >
+          <Text style={styles.nextButtonText}>Próximo</Text>
+        </TouchableOpacity>
+      </View>
     </Screen>
   )
 }
@@ -248,9 +239,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: "#322D70",
-  },
-  backButton: {
-    padding: 4,
   },
   headerTitle: {
     fontSize: 18,
@@ -318,19 +306,24 @@ const styles = StyleSheet.create({
   addImageButton: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#E2E8F0",
     borderStyle: "dashed",
-    paddingVertical: 32,
+    paddingVertical: 24,
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
   },
-  addImageIcon: {
-    fontSize: 48,
+  selectImageButton: {
+    backgroundColor: "#72C3E0",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
-  addImageText: {
+  selectImageButtonText: {
+    color: "#FFFFFF",
     fontSize: 14,
-    color: "#6881BA",
     fontWeight: "600",
   },
   inputSection: {
@@ -355,33 +348,56 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
+  bottomActions: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+    backgroundColor: "#F5F5F5",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
   },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#64748B",
-  },
-  createButton: {
+  backButton: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: "#322D70",
+    borderRadius: 6,
+    backgroundColor: "#94A3B8",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 44,
   },
-  createButtonDisabled: {
-    backgroundColor: "#94A3B8",
-    opacity: 0.6,
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
+  backButtonText: {
     color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  nextButton: {
+    flex: 1,
+    borderRadius: 6,
+    backgroundColor: "#7BC1DC",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+  },
+  nextButtonDisabled: {
+    opacity: 0.5,
+  },
+  nextButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  dateInputText: {
+    fontSize: 15,
+    color: "#1E293B",
+  },
+  daysHint: {
+    fontSize: 13,
+    color: "#322D70",
+    marginTop: 4,
+    marginLeft: 8,
+    fontWeight: "900",
+    marginBottom: 12,
+    paddingHorizontal: 2,
   },
 })

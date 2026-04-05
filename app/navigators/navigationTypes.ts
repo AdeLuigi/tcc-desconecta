@@ -38,6 +38,20 @@ export type AppStackParamList = {
   GruposDeAmigos: undefined
   SelecionarTipoGrupo: undefined
   CriarNovoGrupo: { tipoGrupo: "desafioTempo" | "comunidade" } | undefined
+  SelecionarCriterioGrupo: {
+    tipoGrupo: "desafioTempo" | "comunidade"
+    groupName: string
+    groupDescription: string
+    selectedImageUri?: string
+    dataLimite?: string
+  }
+  SelecionarAppsDesafio: {
+    tipoGrupo: "desafioTempo" | "comunidade"
+    groupName: string
+    groupDescription: string
+    selectedImageUri?: string
+    dataLimite?: string
+  }
   PaginaDoGrupo: undefined
   Atividade: undefined
   Ranking: undefined
