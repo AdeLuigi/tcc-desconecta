@@ -24,7 +24,7 @@ export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ na
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={["top", "bottom"]} contentContainerStyle={styles.container}>
+    <Screen preset="fixed" contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
         <SvgUri uri={backgroundUri} width="100%" height="100%" />
       </View>

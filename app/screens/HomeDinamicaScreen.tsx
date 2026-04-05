@@ -306,20 +306,28 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             
         <TouchableOpacity 
           style={styles.screenTimeCard}
-          onPress={!hasPermission ? handleRequestPermission : undefined}
-          activeOpacity={!hasPermission ? 0.7 : 1}
+          activeOpacity={hasPermission ? 0.95 : 1}
+          disabled={!hasPermission}
         >
           <ImageBackground 
             source={BackgroundImage}
-            style={{ width: '100%', height: 127, justifyContent: 'center' }}
+            style={{ width: '100%', height: 127, justifyContent: 'center', }}
             resizeMode="cover"
           >
             {loading ? (
               <ActivityIndicator size="large" color="#FFFFFF" style={{ marginLeft: 16 }} />
             ) : !hasPermission ? (
-              <View style={{ marginLeft: 16 }}>
-                <Text style={styles.screenTimeText}>--h --m</Text>
-                <Text style={styles.screenTimeLabel}>Toque para conceder permissão</Text>
+              <View style={styles.noPermissionContainer}>
+                <Text style={styles.noPermissionText}>
+                  Sem acesso aos dados, não conseguimos mostrar seu tempo de uso
+                </Text>
+                <TouchableOpacity
+                  style={styles.permissionButton}
+                  onPress={handleRequestPermission}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.permissionButtonText}>Permitir acesso</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <View>
@@ -359,67 +367,74 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
           </ImageBackground>
         </TouchableOpacity>
 
-        {/* Comparison Message */}
-        <TouchableOpacity style={styles.comparisonCard} onPress={() => navigation.navigate("EstatisticaPessoalResumida")}>
-          <View >
-            <Icon 
-              icon="vector" 
-              size={14} 
-              color={isAboveAverage ? "#EF4444" : "#10B981"} 
-              style={{ transform: [{ rotate: isAboveAverage ? '0deg' : '180deg' }] }}
-            />
-          </View>
-          <View style={{ width:"80%"}}>
-            <Text style={styles.comparisonText} >
-             <Text style={{fontWeight: "bold", color: comparisonColor}}>Você está usando {percentageDifference}%</Text> <Text style={{color:"black"}}>{comparisonText} o celular que a média dos usuários</Text>
-            </Text>
-          </View>
-          <View>
-            <Icon icon="chevron" size={20} />
-          </View>
-        </TouchableOpacity>
+        {hasPermission && (
+          <>
+            {/* Comparison Message */}
+            <TouchableOpacity style={styles.comparisonCard} onPress={() => navigation.navigate("EstatisticaPessoalResumida")}>
+              <View >
+                <Icon 
+                  icon="vector" 
+                  size={14} 
+                  color={isAboveAverage ? "#EF4444" : "#10B981"} 
+                  style={{ transform: [{ rotate: isAboveAverage ? '0deg' : '180deg' }] }}
+                />
+              </View>
+              <View style={{ width:"80%"}}>
+                <Text style={styles.comparisonText} >
+                <Text style={{fontWeight: "bold", color: comparisonColor}}>Você está usando {percentageDifference}%</Text> <Text style={{color:"black"}}>{comparisonText} o celular que a média dos usuários</Text>
+                </Text>
+              </View>
+              <View>
+                <Icon icon="chevron" size={20} />
+              </View>
+            </TouchableOpacity>
 
-        {/* Active Challenges Section */}
-        <View style={styles.section}>
-          <TouchableOpacity 
-            style={[styles.sectionHeader, {marginBottom:8}]}
-            onPress={() => navigation.navigate("DesafiosPublicos")}
-          >
-            <Text style={styles.sectionTitle}>Desafios ativos</Text>
-            <Icon icon="chevron" size={20} />
-          </TouchableOpacity>
-          <ActiveChallengesSection 
-            userId={userData?.uid}
-            horizontal={true}
-            showTitle={false}
-            refreshKey={activeChallengesRefreshKey}
-          />
-        </View>
+            {/* Active Challenges Section */}
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={[styles.sectionHeader, {marginBottom:8}]}
+                onPress={() => navigation.navigate("DesafiosPublicos")}
+              >
+                <Text style={styles.sectionTitle}>Desafios ativos</Text>
+                <Icon icon="chevron" size={20} />
+              </TouchableOpacity>
+              <ActiveChallengesSection 
+                userId={userData?.uid}
+                horizontal={true}
+                showTitle={false}
+                refreshKey={activeChallengesRefreshKey}
+              />
+            </View>
+          </>
+        )}
 
         {/* Groups Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.sectionHeader}
               onPress={() => navigation.navigate("GruposDeAmigos")}
+              activeOpacity={groups.length === 0 ? 1 : 0.7}
             >
               <Text style={styles.sectionTitle}>Seus grupos</Text>
-              <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />
+              {groups.length > 0 && <Icon icon="chevron" size={20} style={{ marginLeft: 8 }} />}
             </TouchableOpacity>
-            <View style={styles.groupActionsRow}>
-              <TouchableOpacity 
-                style={styles.joinGroupButton}
-                onPress={() => setJoinModalVisible(true)}
-              >
-                <Icon icon="search" size={16} color="#322D70" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.addGroupButton}
-                onPress={() => navigation.navigate("CriarNovoGrupo")}
-              >
-                <Text style={styles.addGroupButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
+            {groups.length > 0 && (
+              <View style={styles.groupActionsRow}>
+                <TouchableOpacity 
+                  style={styles.joinGroupButton}
+                  onPress={() => setJoinModalVisible(true)}
+                >
+                  <Icon icon="search" size={16} color="#322D70" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.addGroupButton}
+                  onPress={() => navigation.navigate("CriarNovoGrupo")}
+                >
+                  <Text style={styles.addGroupButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
           
           {loadingGroups ? (
@@ -427,13 +442,22 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
           ) : groups.length === 0 ? (
             <View style={styles.emptyGroupsContainer}>
               <Text style={styles.emptyGroupsText}>
-                Você ainda não participa de nenhum grupo
+                Você ainda não faz parte de nenhum grupo
               </Text>
               <TouchableOpacity 
-                style={styles.createGroupButton}
-                onPress={() => navigation.navigate("GruposDeAmigos")}
+                style={styles.emptyActionButton}
+                onPress={() => navigation.navigate("CriarNovoGrupo")}
               >
-                <Text style={styles.createGroupButtonText}>Explorar grupos</Text>
+                <Text style={styles.emptyActionButtonText}>Criar um grupo</Text>
+                <Text style={styles.emptyActionButtonIcon}>+</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.emptyActionButton, styles.emptyActionButtonDashed]}
+                onPress={() => setJoinModalVisible(true)}
+              >
+                <Text style={styles.emptyActionButtonText}>Entrar em um grupo</Text>
+                <Icon icon="search" size={16} color="#322D70" />
               </TouchableOpacity>
             </View>
           ) : (
@@ -596,6 +620,29 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 16,
     fontWeight: "bold",
+  },
+  noPermissionContainer: {
+    marginLeft: 16,
+    width: "78%",
+  },
+  noPermissionText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    lineHeight: 20,
+  },
+  permissionButton: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    backgroundColor: "#73C8E8",
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  permissionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
   mostUsedApps: {
     flexDirection: "row",
@@ -800,26 +847,38 @@ const styles = StyleSheet.create({
     color: "#6881BA",
   },
   emptyGroupsContainer: {
-    alignItems: "center",
-    paddingVertical: 32,
-    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
   emptyGroupsText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6881BA",
-    textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  createGroupButton: {
-    backgroundColor: "#322D70",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+  emptyActionButton: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#CDD8F5",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderRadius: 8,
+    marginBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  createGroupButtonText: {
-    color: "#FFFFFF",
+  emptyActionButtonDashed: {
+    borderStyle: "dashed",
+  },
+  emptyActionButtonText: {
+    color: "#322D70",
     fontSize: 14,
     fontWeight: "600",
+  },
+  emptyActionButtonIcon: {
+    color: "#322D70",
+    fontSize: 20,
+    lineHeight: 20,
+    fontWeight: "300",
   },
   modalOverlay: {
     flex: 1,
