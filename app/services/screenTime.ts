@@ -50,6 +50,14 @@ export interface BackgroundTrackingStatus {
   lastMinutesToday: number;
 }
 
+export interface AppBlockingStatus {
+  accessibilityServiceEnabled: boolean;
+  blockingEnabled: boolean;
+  limitMinutes: number;
+  blockedAppsCount: number;
+  blockedApps: string[];
+}
+
 /**
  * Serviço para capturar dados de tempo de tela no Android
  */
@@ -318,6 +326,85 @@ class ScreenTimeService {
     } catch (error) {
       console.error('Erro ao salvar dados de tempo de tela:', error);
       throw error;
+    }
+  }
+
+  // =============================================
+  // BLOQUEIO DE APPS
+  // =============================================
+
+  /**
+   * Configura a lista de apps bloqueados e limite de tempo no lado nativo.
+   */
+  async configureAppBlocking(
+    blockedApps: string[],
+    limitMinutes: number,
+    enabled: boolean,
+  ): Promise<boolean> {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+    try {
+      return await ScreenTimeModule.configureAppBlocking(blockedApps, limitMinutes, enabled);
+    } catch (error) {
+      console.error('Erro ao configurar bloqueio de apps:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Verifica se o AccessibilityService está ativo.
+   */
+  async isAccessibilityServiceEnabled(): Promise<boolean> {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+    try {
+      return await ScreenTimeModule.isAccessibilityServiceEnabled();
+    } catch (error) {
+      console.error('Erro ao verificar AccessibilityService:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Abre as configurações de acessibilidade para o usuário ativar o serviço.
+   */
+  requestAccessibilityPermission(): void {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+    try {
+      ScreenTimeModule.requestAccessibilityPermission();
+    } catch (error) {
+      console.error('Erro ao solicitar permissão de acessibilidade:', error);
+    }
+  }
+
+  /**
+   * Retorna o status atual do bloqueio de apps.
+   */
+  async getAppBlockingStatus(): Promise<AppBlockingStatus> {
+    if (Platform.OS !== 'android') {
+      return {
+        accessibilityServiceEnabled: false,
+        blockingEnabled: false,
+        limitMinutes: 60,
+        blockedAppsCount: 0,
+        blockedApps: [],
+      };
+    }
+    try {
+      return await ScreenTimeModule.getAppBlockingStatus();
+    } catch (error) {
+      console.error('Erro ao obter status de bloqueio:', error);
+      return {
+        accessibilityServiceEnabled: false,
+        blockingEnabled: false,
+        limitMinutes: 60,
+        blockedAppsCount: 0,
+        blockedApps: [],
+      };
     }
   }
 

@@ -940,4 +940,108 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         // Para versões antigas do Android, retorna sempre "other"
         return "other"
     }
+
+    // =============================================
+    // BLOQUEIO DE APPS
+    // =============================================
+
+    /**
+     * Configura a lista de apps bloqueados e o limite de tempo.
+     * Chamado pelo React Native quando o usuário salva as configurações no perfil.
+     */
+    @ReactMethod
+    fun configureAppBlocking(
+        blockedApps: ReadableArray,
+        limitMinutes: Int,
+        enabled: Boolean,
+        promise: Promise
+    ) {
+        try {
+            val context = reactApplicationContext
+            val appList = mutableListOf<String>()
+            for (i in 0 until blockedApps.size()) {
+                blockedApps.getString(i)?.let { appList.add(it) }
+            }
+
+            AppBlockerConfig.setBlockedApps(context, appList)
+            AppBlockerConfig.setLimitMinutes(context, limitMinutes)
+            AppBlockerConfig.setBlockingEnabled(context, enabled)
+
+            Log.d("ScreenTimeModule", "Bloqueio configurado: ${appList.size} apps, limite=$limitMinutes min, enabled=$enabled")
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
+
+    /**
+     * Verifica se o AccessibilityService está ativo.
+     */
+    @ReactMethod
+    fun isAccessibilityServiceEnabled(promise: Promise) {
+        try {
+            val context = reactApplicationContext
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: ""
+
+            val serviceName = "${context.packageName}/.screentime.AppBlockerAccessibilityService"
+            val isEnabled = enabledServices.contains(serviceName)
+
+            promise.resolve(isEnabled)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
+
+    /**
+     * Abre as configurações de acessibilidade para o usuário ativar o serviço.
+     */
+    @ReactMethod
+    fun requestAccessibilityPermission() {
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            reactApplicationContext.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("ScreenTimeModule", "Erro ao abrir configurações de acessibilidade", e)
+        }
+    }
+
+    /**
+     * Retorna o status atual do bloqueio de apps.
+     */
+    @ReactMethod
+    fun getAppBlockingStatus(promise: Promise) {
+        try {
+            val context = reactApplicationContext
+
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: ""
+            val serviceName = "${context.packageName}/.screentime.AppBlockerAccessibilityService"
+            val isAccessibilityEnabled = enabledServices.contains(serviceName)
+
+            val blockedApps = AppBlockerConfig.getBlockedApps(context)
+            val limitMinutes = AppBlockerConfig.getLimitMinutes(context)
+            val blockingEnabled = AppBlockerConfig.isBlockingEnabled(context)
+
+            val status = WritableNativeMap().apply {
+                putBoolean("accessibilityServiceEnabled", isAccessibilityEnabled)
+                putBoolean("blockingEnabled", blockingEnabled)
+                putInt("limitMinutes", limitMinutes)
+                putInt("blockedAppsCount", blockedApps.size)
+            }
+
+            val appsArray = WritableNativeArray()
+            blockedApps.forEach { appsArray.pushString(it) }
+            status.putArray("blockedApps", appsArray)
+
+            promise.resolve(status)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
 }

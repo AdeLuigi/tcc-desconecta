@@ -92,7 +92,4 @@ app-dependency-graph.svg
 app-dependency-graph.png
 android/app/google-services.json
 ios/GoogleService-Info.plist
-/android/app/
-android/app/
-./android/app/google-services.json
-./android/app/
+/android/app/google-services.json

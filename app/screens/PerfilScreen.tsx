@@ -17,6 +17,7 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAuth } from "@/context/AuthContext"
 import { updateUserData, getUserData } from "@/services/userService"
 import statisticsService from "@/services/statisticsService"
+import screenTimeService from "@/services/screenTime"
 import { AppSiteLimitePicker } from "@/components/AppSiteLimitePicker"
 import * as ImagePicker from "expo-image-picker"
 import storage from "@react-native-firebase/storage"
@@ -158,10 +159,38 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
         },
       })
       if (success) {
+        // Sincroniza configuração de bloqueio no lado nativo
+        let needsAccessibility = false
+        if (limiteAppsAtivo && appsComLimite.length > 0) {
+          await screenTimeService.configureAppBlocking(
+            appsComLimite,
+            limiteTelaMinutos,
+            true,
+          )
+          needsAccessibility = !(await screenTimeService.isAccessibilityServiceEnabled())
+        } else {
+          await screenTimeService.configureAppBlocking([], limiteTelaMinutos, false)
+        }
+
         const updatedUserData = await getUserData(userData.uid)
         if (updatedUserData) setUserData(updatedUserData)
-        Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
         setSelectedImage(null)
+
+        if (needsAccessibility) {
+          Alert.alert(
+            "Perfil salvo — ativar bloqueio",
+            "Perfil atualizado com sucesso!\n\nPara bloquear apps quando o limite for atingido, ative o serviço de acessibilidade do Desconecta nas configurações do sistema.",
+            [
+              { text: "Depois", style: "cancel" },
+              {
+                text: "Ativar agora",
+                onPress: () => screenTimeService.requestAccessibilityPermission(),
+              },
+            ],
+          )
+        } else {
+          Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
+        }
       } else {
         Alert.alert("Erro", "Não foi possível atualizar o perfil. Tente novamente.")
       }
@@ -261,8 +290,10 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
     setPickerVisible(false)
   }
 
-  const decreaseLimite = () => setLimiteTelaMinutos((prev) => Math.max(30, prev - 30))
-  const increaseLimite = () => setLimiteTelaMinutos((prev) => Math.min(1440, prev + 30))
+  const decreaseLimite = () =>
+    setLimiteTelaMinutos((prev) => (prev <= 30 ? Math.max(2, prev - 2) : prev - 30))
+  const increaseLimite = () =>
+    setLimiteTelaMinutos((prev) => (prev < 30 ? Math.min(30, prev + 2) : Math.min(1440, prev + 30)))
 
   const formatMinutes = (min: number) => {
     const hours = Math.floor(min / 60)
