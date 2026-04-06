@@ -17,6 +17,7 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAuth } from "@/context/AuthContext"
 import { updateUserData, getUserData } from "@/services/userService"
 import statisticsService from "@/services/statisticsService"
+import { AppSiteLimitePicker } from "@/components/AppSiteLimitePicker"
 import * as ImagePicker from "expo-image-picker"
 import storage from "@react-native-firebase/storage"
 import auth from "@react-native-firebase/auth"
@@ -44,9 +45,19 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   const [limiteAppsAtivo, setLimiteAppsAtivo] = useState(
     userData?.configuracoes?.bloqueio_apps || false,
   )
+  const [appsComLimite, setAppsComLimite] = useState<string[]>(
+    userData?.configuracoes?.appsComLimite || [],
+  )
+  const [sitesComLimite, setSitesComLimite] = useState<string[]>(
+    userData?.configuracoes?.sitesComLimite || [],
+  )
+  const [limiteAppsNome, setLimiteAppsNome] = useState(
+    userData?.configuracoes?.limiteAppsNome || "",
+  )
   const [notificacoes, setNotificacoes] = useState(
     userData?.configuracoes?.notificacoes ?? true,
   )
+  const [pickerVisible, setPickerVisible] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -59,6 +70,9 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
       setLimiteTelaAtivo(userData.configuracoes?.limite_tela_ativo || false)
       setLimiteTelaMinutos(userData.configuracoes?.limite_tela_minutos || 60)
       setLimiteAppsAtivo(userData.configuracoes?.bloqueio_apps || false)
+      setAppsComLimite(userData.configuracoes?.appsComLimite || [])
+      setSitesComLimite(userData.configuracoes?.sitesComLimite || [])
+      setLimiteAppsNome(userData.configuracoes?.limiteAppsNome || "")
       setNotificacoes(userData.configuracoes?.notificacoes ?? true)
     }
   }, [userData])
@@ -138,6 +152,9 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           limite_tela_ativo: limiteTelaAtivo,
           limite_tela_minutos: limiteTelaMinutos,
           notificacoes,
+          appsComLimite,
+          sitesComLimite,
+          limiteAppsNome,
         },
       })
       if (success) {
@@ -235,6 +252,13 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
         },
       },
     ])
+  }
+
+  const handlePickerConfirm = (apps: string[], sites: string[], nome: string) => {
+    setAppsComLimite(apps)
+    setSitesComLimite(sites)
+    setLimiteAppsNome(nome)
+    setPickerVisible(false)
   }
 
   const decreaseLimite = () => setLimiteTelaMinutos((prev) => Math.max(30, prev - 30))
@@ -381,19 +405,39 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
             <Switch value={limiteAppsAtivo} onValueChange={setLimiteAppsAtivo} editable={!isSaving} />
           </View>
 
-          {/* App item */}
-          <View style={styles.appLimitRow}>
-            <View style={styles.appLimitIconWrapper}>
-              <Text style={styles.appLimitEmoji}>💬</Text>
+          {/* Selected apps list */}
+          {appsComLimite.length === 0 && sitesComLimite.length === 0 ? null : (
+            <View style={styles.appLimitRow}>
+              <View style={styles.appLimitIconWrapper}>
+                <Text style={styles.appLimitEmoji}>📱</Text>
+              </View>
+              <Text style={styles.appLimitName}>
+                {limiteAppsNome || "Sem nome"}
+                {(appsComLimite.length > 0 || sitesComLimite.length > 0) && (
+                  <Text style={styles.appLimitCount}>
+                    {"  "}
+                    {appsComLimite.length > 0 && `${appsComLimite.length} app${appsComLimite.length > 1 ? "s" : ""}`}
+                    {appsComLimite.length > 0 && sitesComLimite.length > 0 && " · "}
+                    {sitesComLimite.length > 0 && `${sitesComLimite.length} site${sitesComLimite.length > 1 ? "s" : ""}`}
+                  </Text>
+                )}
+              </Text>
+              <TouchableOpacity
+                style={styles.appLimitAction}
+                onPress={() => setPickerVisible(true)}
+                disabled={isSaving}
+              >
+                <EditarIcon width={20} height={20} />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.appLimitName}>Sem redes sociais</Text>
-            <TouchableOpacity style={styles.appLimitAction} disabled>
-              <EditarIcon width={20} height={20} />
-            </TouchableOpacity>
-          </View>
+          )}
 
-          {/* Adicionar limite */}
-          <TouchableOpacity style={styles.addLimitRow} disabled>
+          {/* Adicionar / editar limite */}
+          <TouchableOpacity
+            style={styles.addLimitRow}
+            onPress={() => setPickerVisible(true)}
+            disabled={isSaving}
+          >
             <AdicionarIcon width={20} height={20} />
             <Text style={styles.addLimitText}>Adicionar limite de app</Text>
           </TouchableOpacity>
@@ -450,6 +494,15 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           disabled={isSaving || isUploading}
         />
       </ScrollView>
+
+      <AppSiteLimitePicker
+        visible={pickerVisible}
+        initialApps={appsComLimite}
+        initialSites={sitesComLimite}
+        initialName={limiteAppsNome}
+        onConfirm={handlePickerConfirm}
+        onClose={() => setPickerVisible(false)}
+      />
     </Screen>
   )
 }
@@ -680,6 +733,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#322D70",
     fontWeight: "500",
+  },
+  appLimitCount: {
+    fontSize: 12,
+    color: "#6881BA",
+    fontWeight: "400",
   },
   appLimitAction: {
     padding: 4,

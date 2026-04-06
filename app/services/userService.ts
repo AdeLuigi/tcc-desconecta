@@ -18,6 +18,9 @@ export interface UserData {
     limite_tela_ativo: boolean
     limite_tela_minutos: number
     notificacoes: boolean
+    appsComLimite: string[] // package names
+    sitesComLimite: string[]
+    limiteAppsNome: string
   }
   premios_colecionaveis: string[]
   streak: number
@@ -40,6 +43,9 @@ const DEFAULT_USER_DATA = {
     limite_tela_ativo: false,
     limite_tela_minutos: 60,
     notificacoes: true,
+    appsComLimite: [],
+    sitesComLimite: [],
+    limiteAppsNome: "",
   },
   premios_colecionaveis: [],
   streak: 0,

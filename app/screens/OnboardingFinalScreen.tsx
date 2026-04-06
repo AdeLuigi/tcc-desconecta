@@ -1,7 +1,5 @@
 import React from "react"
-import { View, StyleSheet } from "react-native"
-import { Asset } from "expo-asset"
-import { SvgUri } from "react-native-svg"
+import { View, StyleSheet, Image } from "react-native"
 
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
@@ -12,9 +10,6 @@ import { markOnboardingCompleted } from "@/utils/onboarding"
 interface OnboardingFinalScreenProps extends AppStackScreenProps<"OnboardingFinal"> {}
 
 export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ navigation }) => {
-  const backgroundUri = Asset.fromModule(require("../../assets/images/background-2.svg")).uri
-  const illustrationUri = Asset.fromModule(require("../../assets/images/meta-diaria.svg")).uri
-
   const handleLoginPress = () => {
     markOnboardingCompleted()
     navigation.reset({
@@ -26,12 +21,12 @@ export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ na
   return (
     <Screen preset="fixed" contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
-        <SvgUri uri={backgroundUri} width="100%" height="100%" />
+        <Image source={require("../../assets/images/background-2.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
       </View>
 
       <View style={styles.content}>
         <View style={styles.illustrationWrap}>
-          <SvgUri uri={illustrationUri} width="100%" height="100%" />
+          <Image source={require("../../assets/images/meta-diaria.png")} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
         </View>
                 <Text preset="subheading" style={styles.title}>
                   Defina suas metas!

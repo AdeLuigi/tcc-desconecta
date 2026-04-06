@@ -36,11 +36,6 @@ export const PaginaDoGrupoScreen: React.FC<PaginaDoGrupoScreenProps> = ({ naviga
             style={styles.button}
           />
           <Button
-            text="Detalhes do grupo"
-            onPress={() => navigation.navigate("DetalhesDoGrupo")}
-            style={styles.button}
-          />
-          <Button
             text="Voltar → Grupos de amigos"
             onPress={() => navigation.navigate("GruposDeAmigos")}
             style={styles.button}

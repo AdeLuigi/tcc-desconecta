@@ -43,7 +43,8 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "types"
   ],
   "exclude": [
     "node_modules",

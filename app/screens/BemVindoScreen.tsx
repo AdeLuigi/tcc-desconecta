@@ -1,7 +1,5 @@
 import React from "react"
-import { View, StyleSheet } from "react-native"
-import { Asset } from "expo-asset"
-import { SvgUri } from "react-native-svg"
+import { View, StyleSheet, Image } from "react-native"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -10,18 +8,15 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 interface BemVindoScreenProps extends AppStackScreenProps<"BemVindo"> {}
 
 export const BemVindoScreen: React.FC<BemVindoScreenProps> = ({ navigation }) => {
-  const backgroundUri = Asset.fromModule(require("../../assets/images/background-2.svg")).uri
-  const illustrationUri = Asset.fromModule(require("../../assets/images/jovem-negra-1.svg")).uri
-
   return (
     <Screen preset="fixed" contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
-        <SvgUri uri={backgroundUri} width="100%" height="100%" />
+        <Image source={require("../../assets/images/background-2.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
       </View>
 
       <View style={styles.content}>
         <View style={styles.illustrationWrap}>
-          <SvgUri uri={illustrationUri} width="100%" height="100%" />
+          <Image source={require("../../assets/images/jovem-negra-1.png")} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
         </View>
 
         <Text preset="subheading" style={styles.title}>
