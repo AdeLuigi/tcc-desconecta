@@ -10,10 +10,12 @@ export interface UserData {
   nome: string
   photoURL: string
   descricao?: string
+  dataNascimento?: string
   dataCriacao: string
   fcmToken?: string // Token para notificações push
   configuracoes: {
     bloqueio_apps: boolean
+    limite_tela_ativo: boolean
     limite_tela_minutos: number
     notificacoes: boolean
   }
@@ -32,9 +34,11 @@ export interface UserData {
  */
 const DEFAULT_USER_DATA = {
   descricao: "",
+  dataNascimento: "",
   configuracoes: {
     bloqueio_apps: false,
-    limite_tela_minutos: 180,
+    limite_tela_ativo: false,
+    limite_tela_minutos: 60,
     notificacoes: true,
   },
   premios_colecionaveis: [],
@@ -121,7 +125,7 @@ export async function updateUserData(
   try {
     const db = getFirestore()
     const userRef = doc(db, "usuarios", uid)
-    await updateDoc(userRef, data)
+    await updateDoc(userRef, data as Record<string, unknown>)
     return true
   } catch (error) {
     console.error("Erro ao atualizar dados do usuário:", error)

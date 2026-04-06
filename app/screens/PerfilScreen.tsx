@@ -1,28 +1,52 @@
 import React, { useState, useEffect } from "react"
-import { View, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, TextInput, ScrollView } from "react-native"
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
+  TextInput,
+  ScrollView,
+} from "react-native"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Switch } from "@/components/Toggle/Switch"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { useAppTheme } from "@/theme/context"
 import { useAuth } from "@/context/AuthContext"
 import { updateUserData, getUserData } from "@/services/userService"
 import statisticsService from "@/services/statisticsService"
-import * as ImagePicker from 'expo-image-picker'
-import storage from '@react-native-firebase/storage'
+import * as ImagePicker from "expo-image-picker"
+import storage from "@react-native-firebase/storage"
+import auth from "@react-native-firebase/auth"
+import { SvgProps } from "react-native-svg"
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const EditarIcon: React.FC<SvgProps> = require("@assets/icons/editar.svg").default
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const AdicionarIcon: React.FC<SvgProps> = require("@assets/icons/adicionar.svg").default
 
 interface PerfilScreenProps extends AppStackScreenProps<"Perfil"> {}
 
 export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
-  const { theme } = useAppTheme()
   const { userData, setUserData, logout } = useAuth()
-  
+
   const [photoURL, setPhotoURL] = useState(userData?.photoURL || "")
+  const [dataNascimento, setDataNascimento] = useState(userData?.dataNascimento || "")
   const [descricao, setDescricao] = useState(userData?.descricao || "")
-  const [bloqueioApps, setBloqueioApps] = useState(userData?.configuracoes?.bloqueio_apps || false)
-  const [limiteTelaMinutos, setLimiteTelaMinutos] = useState(String(userData?.configuracoes?.limite_tela_minutos || 180))
-  const [notificacoes, setNotificacoes] = useState(userData?.configuracoes?.notificacoes ?? true)
+  const [limiteTelaAtivo, setLimiteTelaAtivo] = useState(
+    userData?.configuracoes?.limite_tela_ativo || false,
+  )
+  const [limiteTelaMinutos, setLimiteTelaMinutos] = useState(
+    userData?.configuracoes?.limite_tela_minutos || 60,
+  )
+  const [limiteAppsAtivo, setLimiteAppsAtivo] = useState(
+    userData?.configuracoes?.bloqueio_apps || false,
+  )
+  const [notificacoes, setNotificacoes] = useState(
+    userData?.configuracoes?.notificacoes ?? true,
+  )
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -30,9 +54,11 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   useEffect(() => {
     if (userData) {
       setPhotoURL(userData.photoURL || "")
+      setDataNascimento(userData.dataNascimento || "")
       setDescricao(userData.descricao || "")
-      setBloqueioApps(userData.configuracoes?.bloqueio_apps || false)
-      setLimiteTelaMinutos(String(userData.configuracoes?.limite_tela_minutos || 180))
+      setLimiteTelaAtivo(userData.configuracoes?.limite_tela_ativo || false)
+      setLimiteTelaMinutos(userData.configuracoes?.limite_tela_minutos || 60)
+      setLimiteAppsAtivo(userData.configuracoes?.bloqueio_apps || false)
       setNotificacoes(userData.configuracoes?.notificacoes ?? true)
     }
   }, [userData])
@@ -40,19 +66,16 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   const pickImage = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      
       if (!permissionResult.granted) {
         Alert.alert("Permissão negada", "Você precisa permitir o acesso à galeria")
         return
       }
-
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       })
-
       if (!result.canceled && result.assets[0]) {
         setSelectedImage(result.assets[0].uri)
       }
@@ -62,15 +85,27 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
     }
   }
 
+  const removePhoto = () => {
+    Alert.alert("Remover foto", "Deseja remover sua foto de perfil?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Remover",
+        style: "destructive",
+        onPress: () => {
+          setSelectedImage(null)
+          setPhotoURL("")
+        },
+      },
+    ])
+  }
+
   const uploadImage = async (uri: string): Promise<string | null> => {
     try {
       setIsUploading(true)
       const filename = `profile/${userData?.uid}/${Date.now()}.jpg`
       const storageRef = storage().ref(filename)
-      
       await storageRef.putFile(uri)
       const downloadURL = await storageRef.getDownloadURL()
-      
       return downloadURL
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error)
@@ -82,17 +117,10 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   }
 
   const handleSave = async () => {
-    if (!userData) {
-      Alert.alert("Erro", "Você precisa estar logado")
-      return
-    }
-
+    if (!userData) return
     try {
       setIsSaving(true)
-      
       let newPhotoURL = photoURL
-
-      // Se tiver uma nova imagem selecionada, faz upload
       if (selectedImage) {
         const uploadedURL = await uploadImage(selectedImage)
         if (uploadedURL) {
@@ -101,32 +129,20 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           Alert.alert("Aviso", "Não foi possível fazer upload da imagem. As outras alterações serão salvas.")
         }
       }
-
-      // Valida o limite de tela
-      const limiteMinutos = parseInt(limiteTelaMinutos, 10)
-      if (isNaN(limiteMinutos) || limiteMinutos < 0) {
-        Alert.alert("Erro", "O limite de tela deve ser um número válido")
-        return
-      }
-
-      // Atualiza os dados no Firestore
       const success = await updateUserData(userData.uid, {
         photoURL: newPhotoURL,
+        dataNascimento: dataNascimento.trim(),
         descricao: descricao.trim(),
         configuracoes: {
-          bloqueio_apps: bloqueioApps,
-          limite_tela_minutos: limiteMinutos,
-          notificacoes: notificacoes,
+          bloqueio_apps: limiteAppsAtivo,
+          limite_tela_ativo: limiteTelaAtivo,
+          limite_tela_minutos: limiteTelaMinutos,
+          notificacoes,
         },
       })
-
       if (success) {
-        // Atualiza os dados locais
         const updatedUserData = await getUserData(userData.uid)
-        if (updatedUserData) {
-          setUserData(updatedUserData)
-        }
-
+        if (updatedUserData) setUserData(updatedUserData)
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
         setSelectedImage(null)
       } else {
@@ -140,20 +156,33 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
     }
   }
 
-  const handleDeleteStatistics = async () => {
-    if (!userData) {
-      Alert.alert("Erro", "Você precisa estar logado")
-      return
-    }
+  const handleResetPassword = () => {
+    const email = userData?.email
+    if (!email) return
+    Alert.alert("Resetar senha", "Enviaremos um email para recuperação de senha.", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Enviar",
+        onPress: async () => {
+          try {
+            await auth().sendPasswordResetEmail(email)
+            Alert.alert("Email enviado", "Verifique sua caixa de entrada.")
+          } catch (error) {
+            console.error("Erro ao enviar email:", error)
+            Alert.alert("Erro", "Não foi possível enviar o email de recuperação.")
+          }
+        },
+      },
+    ])
+  }
 
+  const handleDeleteStatistics = async () => {
+    if (!userData) return
     Alert.alert(
       "Confirmar exclusão",
-      "Tem certeza que deseja apagar TODAS as suas estatísticas de todos os tempos? Esta ação não pode ser desfeita.",
+      "Tem certeza que deseja apagar TODAS as suas estatísticas? Esta ação não pode ser desfeita.",
       [
-        {
-          text: "Cancelar",
-          style: "cancel"
-        },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Apagar Tudo",
           style: "destructive",
@@ -161,16 +190,13 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
             try {
               setIsSaving(true)
               const deletedCount = await statisticsService.deleteAllUserStatistics(userData.uid)
-              
-              if (deletedCount >= 0) {
-                if (deletedCount === 0) {
-                  Alert.alert("Aviso", "Você não possui estatísticas para apagar.")
-                } else {
-                  Alert.alert(
-                    "Sucesso", 
-                    `${deletedCount} ${deletedCount === 1 ? 'estatística foi apagada' : 'estatísticas foram apagadas'} com sucesso.`
-                  )
-                }
+              if (deletedCount === 0) {
+                Alert.alert("Aviso", "Você não possui estatísticas para apagar.")
+              } else if (deletedCount > 0) {
+                Alert.alert(
+                  "Sucesso",
+                  `${deletedCount} ${deletedCount === 1 ? "estatística foi apagada" : "estatísticas foram apagadas"} com sucesso.`,
+                )
               } else {
                 Alert.alert("Erro", "Não foi possível apagar as estatísticas. Tente novamente.")
               }
@@ -180,212 +206,249 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
             } finally {
               setIsSaving(false)
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
+    )
+  }
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Apagar conta",
+      "Tem certeza? Esta ação é irreversível e todos os seus dados serão perdidos.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Apagar", style: "destructive", onPress: () => {} },
+      ],
     )
   }
 
   const handleLogout = () => {
-    Alert.alert(
-      "Sair",
-      "Tem certeza que deseja sair da sua conta?",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel"
+    Alert.alert("Sair", "Tem certeza que deseja sair da sua conta?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: () => {
+          logout()
+          navigation.reset({ index: 0, routes: [{ name: "BemVindo" }] })
         },
-        {
-          text: "Sair",
-          style: "destructive",
-          onPress: () => {
-            logout()
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'BemVindo' }],
-            })
-          }
-        }
-      ]
-    )
+      },
+    ])
+  }
+
+  const decreaseLimite = () => setLimiteTelaMinutos((prev) => Math.max(30, prev - 30))
+  const increaseLimite = () => setLimiteTelaMinutos((prev) => Math.min(1440, prev + 30))
+
+  const formatMinutes = (min: number) => {
+    const hours = Math.floor(min / 60)
+    const mins = min % 60
+    if (mins === 0) return `${hours}h`
+    return `${hours}h ${mins}min`
   }
 
   const displayImage = selectedImage || photoURL || undefined
 
   return (
     <Screen preset="auto" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>
-            Editar Perfil
-          </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>⚙️ Configurações</Text>
+        </View>
 
-          {/* Avatar */}
-          <View style={styles.avatarContainer}>
-            <TouchableOpacity 
-              onPress={pickImage}
-              style={styles.avatarTouchable}
-              disabled={isUploading || isSaving}
-            >
-              <View style={styles.avatar}>
-                {displayImage ? (
-                  <Image 
-                    source={{ uri: displayImage }} 
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <View style={styles.placeholderAvatar}>
-                    <Text style={styles.placeholderText}>
-                      {userData?.nome?.charAt(0)?.toUpperCase() || "?"}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              
-              <View style={styles.cameraIcon}>
-                {isUploading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.cameraEmoji}>📷</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-
-            <Text style={styles.avatarHint}>
-              Toque para alterar a foto
-            </Text>
-          </View>
-
-          {/* Informações básicas */}
-          <View style={styles.infoCard}>
-            {/* Nome */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Nome</Text>
-              <View style={styles.inputDisabled}>
-                <Text style={styles.inputDisabledText}>{userData?.nome}</Text>
-              </View>
-              <Text style={styles.hint}>
-                O nome não pode ser alterado
-              </Text>
-            </View>
-
-            {/* Email */}
-            <View style={[styles.fieldContainer, { marginBottom: 0 }]}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputDisabled}>
-                <Text style={styles.inputDisabledText}>{userData?.email}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Descrição */}
-          <View style={styles.infoCard}>
-            <View style={[styles.fieldContainer, { marginBottom: 0 }]}>
-              <Text style={styles.label}>Descrição</Text>
-              <TextInput
-                style={styles.textArea}
-                value={descricao}
-                onChangeText={setDescricao}
-                placeholder="Conte um pouco sobre você..."
-                placeholderTextColor="#94A3B8"
-                multiline
-                numberOfLines={4}
-                maxLength={200}
-                editable={!isSaving}
-              />
-              <Text style={styles.charCount}>
-                {descricao.length}/200 caracteres
-              </Text>
-            </View>
-          </View>
-
-          {/* Configurações */}
-          <View style={styles.infoCard}>
-            <Text style={styles.sectionTitle}>Configurações</Text>
-
-            {/* Bloqueio de Apps */}
-            <View style={styles.toggleContainer}>
-              <View style={styles.toggleLabelContainer}>
-                <Text style={styles.label}>Bloqueio de apps</Text>
-                <Text style={styles.toggleHint}>
-                  Bloquear acesso a apps específicos
+        {/* Foto de perfil */}
+        <View style={styles.photoSection}>
+          <View style={styles.avatarWrapper}>
+            {displayImage ? (
+              <Image source={{ uri: displayImage }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarPlaceholderText}>
+                  {userData?.nome?.charAt(0)?.toUpperCase() || "?"}
                 </Text>
               </View>
-              <Switch
-                value={bloqueioApps}
-                onValueChange={setBloqueioApps}
-                editable={!isSaving}
-              />
-            </View>
-
-            {/* Limite de Tela */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Limite de tela (minutos/dia)</Text>
-              <TextInput
-                style={styles.input}
-                value={limiteTelaMinutos}
-                onChangeText={setLimiteTelaMinutos}
-                placeholder="180"
-                placeholderTextColor="#94A3B8"
-                keyboardType="numeric"
-                editable={!isSaving}
-              />
-              <Text style={styles.hint}>
-                {Math.floor(parseInt(limiteTelaMinutos || "0") / 60)}h {parseInt(limiteTelaMinutos || "0") % 60}min por dia
-              </Text>
-            </View>
-
-            {/* Notificações */}
-            <View style={[styles.toggleContainer, { marginBottom: 0 }]}>
-              <View style={styles.toggleLabelContainer}>
-                <Text style={styles.label}>Notificações</Text>
-                <Text style={styles.toggleHint}>
-                  Receber alertas e lembretes
-                </Text>
+            )}
+            {isUploading && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator color="#fff" />
               </View>
-              <Switch
-                value={notificacoes}
-                onValueChange={setNotificacoes}
-                editable={!isSaving}
-              />
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.alterarFotoButton}
+            onPress={pickImage}
+            disabled={isUploading || isSaving}
+          >
+            <Text style={styles.alterarFotoText}>Alterar foto</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={removePhoto} disabled={isUploading || isSaving}>
+            <Text style={styles.removerFotoText}>Remover foto</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Dados básicos */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Dados básicos</Text>
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Nome</Text>
+            <View style={styles.inputDisabled}>
+              <Text style={styles.inputDisabledText}>{userData?.nome}</Text>
             </View>
           </View>
 
-          {/* Botões */}
-          <View style={styles.buttonContainer}>
-            <Button
-              text={isSaving ? "Salvando..." : "Salvar Alterações"}
-              onPress={handleSave}
-              style={styles.button}
-              disabled={isSaving || isUploading}
+          <View style={styles.field}>
+            <TextInput
+              style={styles.input}
+              value={dataNascimento}
+              onChangeText={setDataNascimento}
+              placeholder="DD/MM/AAAA"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numbers-and-punctuation"
+              maxLength={10}
+              editable={!isSaving}
             />
           </View>
 
-          {/* Zona de Perigo */}
-          <View style={styles.dangerZone}>
-            <Text style={styles.dangerTitle}>Zona de Perigo</Text>
-            
-            <Button
-              text="Apagar Todas as Estatísticas"
-              onPress={handleDeleteStatistics}
-              style={styles.dangerButton}
-              textStyle={styles.dangerButtonText}
-              disabled={isSaving || isUploading}
-            />
-            
-            <Button
-              text="Sair da Conta"
-              onPress={handleLogout}
-              style={styles.logoutButton}
-              textStyle={styles.logoutButtonText}
-              disabled={isSaving || isUploading}
-            />
+          <View style={[styles.field, { marginBottom: 0 }]}>
+            <Text style={styles.fieldLabel}>Email</Text>
+            <View style={styles.inputDisabled}>
+              <Text style={styles.inputDisabledText}>{userData?.email}</Text>
+            </View>
+            <Text style={styles.fieldHint}>o email não pode ser alterado</Text>
           </View>
         </View>
+
+        {/* Sobre você */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Sobre você</Text>
+          <TextInput
+            style={styles.textArea}
+            value={descricao}
+            onChangeText={setDescricao}
+            placeholder="Descrição"
+            placeholderTextColor="#94A3B8"
+            multiline
+            numberOfLines={4}
+            maxLength={200}
+            editable={!isSaving}
+          />
+        </View>
+
+        {/* Limite de uso */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Limite de uso</Text>
+
+          {/* Limite de tela diário */}
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleLabelBox}>
+              <Text style={styles.toggleLabel}>Limite de tela diário</Text>
+            </View>
+            <Switch value={limiteTelaAtivo} onValueChange={setLimiteTelaAtivo} editable={!isSaving} />
+          </View>
+
+          {/* Tempo permitido */}
+          <View style={styles.tempoRow}>
+            <View style={styles.tempoLabelBox}>
+              <Text style={styles.toggleLabel}>Tempo permitido</Text>
+              <Text style={styles.tempoHint}>
+                Esse tempo é para toda a tela, para cada app configure abaixo
+              </Text>
+            </View>
+            <View style={styles.stepper}>
+              <TouchableOpacity onPress={decreaseLimite} style={styles.stepperBtn}>
+                <Text style={styles.stepperBtnText}>{"<"}</Text>
+              </TouchableOpacity>
+              <Text style={styles.stepperValue}>{formatMinutes(limiteTelaMinutos)}</Text>
+              <TouchableOpacity onPress={increaseLimite} style={styles.stepperBtn}>
+                <Text style={styles.stepperBtnText}>{">"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Limite de uso de apps */}
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>Limite de uso de apps</Text>
+            <Switch value={limiteAppsAtivo} onValueChange={setLimiteAppsAtivo} editable={!isSaving} />
+          </View>
+
+          {/* App item */}
+          <View style={styles.appLimitRow}>
+            <View style={styles.appLimitIconWrapper}>
+              <Text style={styles.appLimitEmoji}>💬</Text>
+            </View>
+            <Text style={styles.appLimitName}>Sem redes sociais</Text>
+            <TouchableOpacity style={styles.appLimitAction} disabled>
+              <EditarIcon width={20} height={20} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Adicionar limite */}
+          <TouchableOpacity style={styles.addLimitRow} disabled>
+            <AdicionarIcon width={20} height={20} />
+            <Text style={styles.addLimitText}>Adicionar limite de app</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Notificações */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Notificações</Text>
+          <View style={[styles.toggleRow, { marginBottom: 0 }]}>
+            <Text style={styles.toggleLabel}>Permitir notificações</Text>
+            <Switch value={notificacoes} onValueChange={setNotificacoes} editable={!isSaving} />
+          </View>
+        </View>
+
+        {/* Outras opções */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Outras opções</Text>
+
+          <Button
+            text="Resetar senha"
+            onPress={handleResetPassword}
+            style={styles.outlinedBtn}
+            textStyle={styles.outlinedBtnText}
+            disabled={isSaving}
+          />
+
+          <Button
+            text="Sair da conta"
+            onPress={handleLogout}
+            style={styles.outlinedBtn}
+            textStyle={styles.outlinedBtnText}
+            disabled={isSaving}
+          />
+
+          <TouchableOpacity style={styles.deleteAccountLink} onPress={handleDeleteAccount}>
+            <Text style={styles.deleteAccountText}>Apagar conta</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Apagar estatísticas */}
+        <Button
+          text="Apagar Todas as Estatísticas"
+          onPress={handleDeleteStatistics}
+          style={styles.dangerButton}
+          textStyle={styles.dangerButtonText}
+          disabled={isSaving || isUploading}
+        />
+
+        {/* Salvar */}
+        <Button
+          text={isSaving ? "Salvando..." : "Salvar Alterações"}
+          onPress={handleSave}
+          style={styles.saveButton}
+          disabled={isSaving || isUploading}
+        />
       </ScrollView>
     </Screen>
   )
@@ -394,236 +457,279 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#F0F0F5",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    paddingVertical: 24,
+    paddingBottom: 40,
   },
-  content: {
-    paddingHorizontal: 16,
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#322D70",
-    marginBottom: 32,
-    alignSelf: "center",
   },
-  avatarContainer: {
+  // Photo
+  photoSection: {
     alignItems: "center",
-    marginBottom: 24,
+    paddingVertical: 20,
   },
-  avatarTouchable: {
-    position: "relative",
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: "#E0E7FF",
-    justifyContent: "center",
-    alignItems: "center",
+  avatarWrapper: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     overflow: "hidden",
     backgroundColor: "#E0E7FF",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 12,
   },
   avatarImage: {
     width: "100%",
     height: "100%",
   },
-  placeholderAvatar: {
-    width: "100%",
-    height: "100%",
+  avatarPlaceholder: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#E0E7FF",
   },
-  placeholderText: {
-    fontSize: 48,
+  avatarPlaceholderText: {
+    fontSize: 40,
     fontWeight: "bold",
     color: "#6881BA",
   },
-  cameraIcon: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 40,
-    height: 40,
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alterarFotoButton: {
+    backgroundColor: "#5B7BF0",
     borderRadius: 20,
-    backgroundColor: "#322D70",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    marginBottom: 6,
   },
-  cameraEmoji: {
-    fontSize: 20,
-  },
-  avatarHint: {
-    marginTop: 12,
-    fontSize: 13,
-    color: "#6881BA",
-  },
-  infoCard: {
-    width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#322D70",
-    marginBottom: 16,
-  },
-  fieldContainer: {
-    width: "100%",
-    marginBottom: 20,
-  },
-  label: {
+  alterarFotoText: {
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 14,
+  },
+  removerFotoText: {
+    color: "#888",
+    fontSize: 13,
+  },
+  // Card
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#322D70",
+    marginBottom: 14,
+  },
+  // Fields
+  field: {
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 13,
     fontWeight: "600",
     color: "#322D70",
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  fieldHint: {
+    fontSize: 11,
+    color: "#94A3B8",
+    marginTop: 4,
   },
   inputDisabled: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
   inputDisabledText: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#64748B",
   },
   input: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     color: "#312E81",
-    fontSize: 15,
+    fontSize: 14,
   },
   textArea: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     color: "#312E81",
-    minHeight: 120,
+    minHeight: 100,
     textAlignVertical: "top",
-    fontSize: 15,
+    fontSize: 14,
   },
-  hint: {
-    fontSize: 12,
-    color: "#6881BA",
-    marginTop: 6,
-  },
-  charCount: {
-    fontSize: 12,
-    color: "#6881BA",
-    marginTop: 6,
-    alignSelf: "flex-end",
-  },
-  toggleContainer: {
+  // Toggles
+  toggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 14,
+  },
+  toggleLabelBox: {
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#322D70",
+  },
+  // Tempo permitido
+  tempoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  tempoLabelBox: {
+    flex: 1,
+    marginRight: 12,
+  },
+  tempoHint: {
+    fontSize: 11,
+    color: "#94A3B8",
+    marginTop: 4,
+    lineHeight: 15,
+  },
+  stepper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  stepperBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  stepperBtnText: {
+    fontSize: 16,
+    color: "#322D70",
+    fontWeight: "600",
+  },
+  stepperValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#322D70",
+    minWidth: 40,
+    textAlign: "center",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginBottom: 14,
+  },
+  // App limits
+  appLimitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
+  appLimitIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#FEE2E2",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  appLimitEmoji: {
+    fontSize: 16,
+  },
+  appLimitName: {
+    flex: 1,
+    fontSize: 14,
+    color: "#322D70",
+    fontWeight: "500",
+  },
+  appLimitAction: {
+    padding: 4,
+  },
+  addLimitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 6,
+  },
+  addLimitText: {
+    fontSize: 14,
+    color: "#6881BA",
+    fontWeight: "500",
+  },
+  // Outras opções buttons
+  outlinedBtn: {
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  outlinedBtnText: {
+    color: "#374151",
+  },
+  deleteAccountLink: {
+    alignItems: "center",
     paddingVertical: 8,
   },
-  toggleLabelContainer: {
-    flex: 1,
-    marginRight: 16,
+  deleteAccountText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "600",
   },
-  toggleHint: {
-    fontSize: 12,
-    color: "#6881BA",
-    marginTop: 4,
-  },
-  buttonContainer: {
-    width: "100%",
-    gap: 12,
-    marginTop: 8,
-  },
-  button: {
-    width: "100%",
-  },
-  dangerZone: {
-    width: "100%",
-    backgroundColor: "#FEF2F2",
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "#FEE2E2",
-  },
-  dangerTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#991B1B",
-    marginBottom: 16,
-  },
+  // Danger / Save
   dangerButton: {
-    width: "100%",
+    marginHorizontal: 16,
+    marginBottom: 10,
     backgroundColor: "#FEE2E2",
     borderWidth: 1,
     borderColor: "#DC2626",
-    marginBottom: 12,
+    borderRadius: 12,
   },
   dangerButtonText: {
     color: "#DC2626",
   },
-  logoutButton: {
-    width: "100%",
-    backgroundColor: "#F3F4F6",
-    borderWidth: 1,
-    borderColor: "#6B7280",
-  },
-  logoutButtonText: {
-    color: "#374151",
-  },
-  configLink: {
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  configLinkText: {
-    fontSize: 15,
-    color: "#6881BA",
-    fontWeight: "600",
+  saveButton: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 12,
   },
 })

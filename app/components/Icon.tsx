@@ -141,8 +141,14 @@ const PeopleGroupIcon: SvgComponent = require("@assets/icons/poeple-group-icon.s
 const NotificationsIcon: SvgComponent = require("@assets/icons/notifications.svg").default
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const SearchIcon: SvgComponent = require("@assets/icons/search.svg").default
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const EditarIcon: SvgComponent = require("@assets/icons/editar.svg").default
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const AdicionarIcon: SvgComponent = require("@assets/icons/adicionar.svg").default
 
 export const iconRegistry = {
+  editar: EditarIcon,
+  adicionar: AdicionarIcon,
   back: require("@assets/icons/back.png"),
   swords: require("@assets/icons/swords.png"),
   bell: require("@assets/icons/bell.png"),
