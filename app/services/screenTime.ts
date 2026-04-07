@@ -50,10 +50,14 @@ export interface BackgroundTrackingStatus {
   lastMinutesToday: number;
 }
 
+export interface AppBlockingConfig {
+  limitMinutes: number;
+  activeDays: string[];
+}
+
 export interface AppBlockingStatus {
   accessibilityServiceEnabled: boolean;
   blockingEnabled: boolean;
-  limitMinutes: number;
   blockedAppsCount: number;
   blockedApps: string[];
 }
@@ -334,18 +338,19 @@ class ScreenTimeService {
   // =============================================
 
   /**
-   * Configura a lista de apps bloqueados e limite de tempo no lado nativo.
+   * Configura o bloqueio de apps com limites individuais por app.
+   * @param appConfigs Mapa de packageName -> { limitMinutes, activeDays }
+   * @param enabled Se o bloqueio está ativo
    */
   async configureAppBlocking(
-    blockedApps: string[],
-    limitMinutes: number,
+    appConfigs: Record<string, AppBlockingConfig>,
     enabled: boolean,
   ): Promise<boolean> {
     if (Platform.OS !== 'android') {
       return false;
     }
     try {
-      return await ScreenTimeModule.configureAppBlocking(blockedApps, limitMinutes, enabled);
+      return await ScreenTimeModule.configureAppBlocking(appConfigs, enabled);
     } catch (error) {
       console.error('Erro ao configurar bloqueio de apps:', error);
       return false;
@@ -389,7 +394,6 @@ class ScreenTimeService {
       return {
         accessibilityServiceEnabled: false,
         blockingEnabled: false,
-        limitMinutes: 60,
         blockedAppsCount: 0,
         blockedApps: [],
       };
@@ -401,7 +405,6 @@ class ScreenTimeService {
       return {
         accessibilityServiceEnabled: false,
         blockingEnabled: false,
-        limitMinutes: 60,
         blockedAppsCount: 0,
         blockedApps: [],
       };

@@ -95,6 +95,30 @@ export type AppStackParamList = {
   BloqueioApps: undefined
   LimiteTela: undefined
   LimiteApps: undefined
+  SelecionarAppsLimite: {
+    initialApps?: string[]
+    initialSites?: string[]
+    editingConfig?: {
+      nome: string
+      emoji: string
+      appsComLimite: string[]
+      sitesComLimite: string[]
+      limiteMinutos: number
+      diasAtivos: string[]
+    } | null
+  } | undefined
+  ConfigurarLimite: {
+    selectedApps: string[]
+    selectedSites: string[]
+    editingConfig?: {
+      nome: string
+      emoji: string
+      appsComLimite: string[]
+      sitesComLimite: string[]
+      limiteMinutos: number
+      diasAtivos: string[]
+    } | null
+  }
   Notificacoes: undefined
   Demo: NavigatorScreenParams<DemoTabParamList>
   // 🔥 Your screens go here

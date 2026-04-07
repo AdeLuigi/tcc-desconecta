@@ -32,6 +32,8 @@ import { PerfilScreen } from "@/screens/PerfilScreen"
 import { BloqueioAppsScreen } from "@/screens/BloqueioAppsScreen"
 import { LimiteTelaScreen } from "@/screens/LimiteTelaScreen"
 import { LimiteAppsScreen } from "@/screens/LimiteAppsScreen"
+import { SelecionarAppsLimiteScreen } from "@/screens/SelecionarAppsLimiteScreen"
+import { ConfigurarLimiteScreen } from "@/screens/ConfigurarLimiteScreen"
 import { NotificacoesScreen } from "@/screens/NotificacoesScreen"
 
 // Types
@@ -66,6 +68,8 @@ const HomeStack = () => {
       <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
       <Stack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
       <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
+      <Stack.Screen name="SelecionarAppsLimite" component={SelecionarAppsLimiteScreen as any} />
+      <Stack.Screen name="ConfigurarLimite" component={ConfigurarLimiteScreen as any} />
       <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>
   )
@@ -123,6 +127,8 @@ const AjustesStack = () => {
       <Stack.Screen name="BloqueioApps" component={BloqueioAppsScreen as any} />
       <Stack.Screen name="LimiteTela" component={LimiteTelaScreen as any} />
       <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
+      <Stack.Screen name="SelecionarAppsLimite" component={SelecionarAppsLimiteScreen as any} />
+      <Stack.Screen name="ConfigurarLimite" component={ConfigurarLimiteScreen as any} />
       <Stack.Screen name="AppModoFoco" component={AppModoFocoScreen as any} />
       <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>

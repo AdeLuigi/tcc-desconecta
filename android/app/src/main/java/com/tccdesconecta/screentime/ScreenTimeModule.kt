@@ -946,28 +946,42 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     // =============================================
 
     /**
-     * Configura a lista de apps bloqueados e o limite de tempo.
-     * Chamado pelo React Native quando o usuário salva as configurações no perfil.
+     * Configura o bloqueio de apps com limites individuais por app.
+     * 
+     * @param appConfigsMap  ReadableMap onde cada chave é packageName e o valor é um
+     *                       ReadableMap com "limitMinutes" (Int) e "activeDays" (ReadableArray de String).
+     *                       Ex: { "com.instagram.android": { "limitMinutes": 30, "activeDays": ["SEG","TER",...] } }
+     * @param enabled        Se o bloqueio está ativo
      */
     @ReactMethod
     fun configureAppBlocking(
-        blockedApps: ReadableArray,
-        limitMinutes: Int,
+        appConfigsMap: ReadableMap,
         enabled: Boolean,
         promise: Promise
     ) {
         try {
             val context = reactApplicationContext
-            val appList = mutableListOf<String>()
-            for (i in 0 until blockedApps.size()) {
-                blockedApps.getString(i)?.let { appList.add(it) }
+            val configs = mutableMapOf<String, Pair<Int, Set<String>>>()
+
+            val iterator = appConfigsMap.keySetIterator()
+            while (iterator.hasNextKey()) {
+                val packageName = iterator.nextKey()
+                val entry = appConfigsMap.getMap(packageName) ?: continue
+                val limitMinutes = entry.getInt("limitMinutes")
+                val daysArray = entry.getArray("activeDays")
+                val days = mutableSetOf<String>()
+                if (daysArray != null) {
+                    for (i in 0 until daysArray.size()) {
+                        daysArray.getString(i)?.let { days.add(it) }
+                    }
+                }
+                configs[packageName] = Pair(limitMinutes, days)
             }
 
-            AppBlockerConfig.setBlockedApps(context, appList)
-            AppBlockerConfig.setLimitMinutes(context, limitMinutes)
+            AppBlockerConfig.setAppConfigs(context, configs)
             AppBlockerConfig.setBlockingEnabled(context, enabled)
 
-            Log.d("ScreenTimeModule", "Bloqueio configurado: ${appList.size} apps, limite=$limitMinutes min, enabled=$enabled")
+            Log.d("ScreenTimeModule", "Bloqueio configurado: ${configs.size} apps com limites individuais, enabled=$enabled")
             promise.resolve(true)
         } catch (e: Exception) {
             promise.reject("ERROR", e.message)
@@ -1025,13 +1039,11 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val isAccessibilityEnabled = enabledServices.contains(serviceName)
 
             val blockedApps = AppBlockerConfig.getBlockedApps(context)
-            val limitMinutes = AppBlockerConfig.getLimitMinutes(context)
             val blockingEnabled = AppBlockerConfig.isBlockingEnabled(context)
 
             val status = WritableNativeMap().apply {
                 putBoolean("accessibilityServiceEnabled", isAccessibilityEnabled)
                 putBoolean("blockingEnabled", blockingEnabled)
-                putInt("limitMinutes", limitMinutes)
                 putInt("blockedAppsCount", blockedApps.size)
             }
 

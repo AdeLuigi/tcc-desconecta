@@ -4,6 +4,15 @@ import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, arrayUnion } 
 /**
  * Interface do usuário no Firestore
  */
+export interface LimiteConfig {
+  nome: string
+  emoji: string
+  appsComLimite: string[] // package names
+  sitesComLimite: string[]
+  limiteMinutos: number
+  diasAtivos: string[] // ex: ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"]
+}
+
 export interface UserData {
   uid: string
   email: string
@@ -18,9 +27,10 @@ export interface UserData {
     limite_tela_ativo: boolean
     limite_tela_minutos: number
     notificacoes: boolean
-    appsComLimite: string[] // package names
+    appsComLimite: string[] // package names (legado, mantido por compatibilidade)
     sitesComLimite: string[]
     limiteAppsNome: string
+    limitesDeApps?: LimiteConfig[]
   }
   premios_colecionaveis: string[]
   streak: number
@@ -46,6 +56,7 @@ const DEFAULT_USER_DATA = {
     appsComLimite: [],
     sitesComLimite: [],
     limiteAppsNome: "",
+    limitesDeApps: [],
   },
   premios_colecionaveis: [],
   streak: 0,

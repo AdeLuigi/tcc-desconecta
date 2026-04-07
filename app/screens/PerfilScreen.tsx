@@ -16,16 +16,14 @@ import { Switch } from "@/components/Toggle/Switch"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAuth } from "@/context/AuthContext"
 import { updateUserData, getUserData } from "@/services/userService"
+import type { LimiteConfig } from "@/services/userService"
 import statisticsService from "@/services/statisticsService"
 import screenTimeService from "@/services/screenTime"
-import { AppSiteLimitePicker } from "@/components/AppSiteLimitePicker"
 import * as ImagePicker from "expo-image-picker"
 import storage from "@react-native-firebase/storage"
 import auth from "@react-native-firebase/auth"
 import { SvgProps } from "react-native-svg"
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const EditarIcon: React.FC<SvgProps> = require("@assets/icons/editar.svg").default
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const AdicionarIcon: React.FC<SvgProps> = require("@assets/icons/adicionar.svg").default
 
@@ -46,19 +44,9 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   const [limiteAppsAtivo, setLimiteAppsAtivo] = useState(
     userData?.configuracoes?.bloqueio_apps || false,
   )
-  const [appsComLimite, setAppsComLimite] = useState<string[]>(
-    userData?.configuracoes?.appsComLimite || [],
-  )
-  const [sitesComLimite, setSitesComLimite] = useState<string[]>(
-    userData?.configuracoes?.sitesComLimite || [],
-  )
-  const [limiteAppsNome, setLimiteAppsNome] = useState(
-    userData?.configuracoes?.limiteAppsNome || "",
-  )
   const [notificacoes, setNotificacoes] = useState(
     userData?.configuracoes?.notificacoes ?? true,
   )
-  const [pickerVisible, setPickerVisible] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -71,9 +59,6 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
       setLimiteTelaAtivo(userData.configuracoes?.limite_tela_ativo || false)
       setLimiteTelaMinutos(userData.configuracoes?.limite_tela_minutos || 60)
       setLimiteAppsAtivo(userData.configuracoes?.bloqueio_apps || false)
-      setAppsComLimite(userData.configuracoes?.appsComLimite || [])
-      setSitesComLimite(userData.configuracoes?.sitesComLimite || [])
-      setLimiteAppsNome(userData.configuracoes?.limiteAppsNome || "")
       setNotificacoes(userData.configuracoes?.notificacoes ?? true)
     }
   }, [userData])
@@ -149,48 +134,37 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
         dataNascimento: dataNascimento.trim(),
         descricao: descricao.trim(),
         configuracoes: {
+          ...userData.configuracoes,
           bloqueio_apps: limiteAppsAtivo,
           limite_tela_ativo: limiteTelaAtivo,
           limite_tela_minutos: limiteTelaMinutos,
           notificacoes,
-          appsComLimite,
-          sitesComLimite,
-          limiteAppsNome,
         },
       })
       if (success) {
         // Sincroniza configuração de bloqueio no lado nativo
-        let needsAccessibility = false
-        if (limiteAppsAtivo && appsComLimite.length > 0) {
-          await screenTimeService.configureAppBlocking(
-            appsComLimite,
-            limiteTelaMinutos,
-            true,
-          )
-          needsAccessibility = !(await screenTimeService.isAccessibilityServiceEnabled())
-        } else {
-          await screenTimeService.configureAppBlocking([], limiteTelaMinutos, false)
+        const limites = userData.configuracoes?.limitesDeApps ?? []
+        if (limiteAppsAtivo && limites.length > 0) {
+          const appConfigs: Record<string, { limitMinutes: number; activeDays: string[] }> = {}
+          for (const config of limites) {
+            for (const pkg of config.appsComLimite) {
+              if (!appConfigs[pkg] || config.limiteMinutos < appConfigs[pkg].limitMinutes) {
+                appConfigs[pkg] = {
+                  limitMinutes: config.limiteMinutos,
+                  activeDays: Array.from(config.diasAtivos),
+                }
+              }
+            }
+          }
+          await screenTimeService.configureAppBlocking(appConfigs, true)
+        } else if (!limiteAppsAtivo) {
+          await screenTimeService.configureAppBlocking({}, false)
         }
 
         const updatedUserData = await getUserData(userData.uid)
         if (updatedUserData) setUserData(updatedUserData)
         setSelectedImage(null)
-
-        if (needsAccessibility) {
-          Alert.alert(
-            "Perfil salvo — ativar bloqueio",
-            "Perfil atualizado com sucesso!\n\nPara bloquear apps quando o limite for atingido, ative o serviço de acessibilidade do Desconecta nas configurações do sistema.",
-            [
-              { text: "Depois", style: "cancel" },
-              {
-                text: "Ativar agora",
-                onPress: () => screenTimeService.requestAccessibilityPermission(),
-              },
-            ],
-          )
-        } else {
-          Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
-        }
+        Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
       } else {
         Alert.alert("Erro", "Não foi possível atualizar o perfil. Tente novamente.")
       }
@@ -283,11 +257,18 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
     ])
   }
 
-  const handlePickerConfirm = (apps: string[], sites: string[], nome: string) => {
-    setAppsComLimite(apps)
-    setSitesComLimite(sites)
-    setLimiteAppsNome(nome)
-    setPickerVisible(false)
+  const limitesDeApps: LimiteConfig[] = userData?.configuracoes?.limitesDeApps ?? []
+
+  const handleEditLimite = (config: LimiteConfig) => {
+    navigation.navigate("SelecionarAppsLimite" as any, {
+      initialApps: config.appsComLimite,
+      initialSites: config.sitesComLimite,
+      editingConfig: config,
+    })
+  }
+
+  const handleAddLimite = () => {
+    navigation.navigate("SelecionarAppsLimite" as any, {})
   }
 
   const decreaseLimite = () =>
@@ -436,37 +417,35 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
             <Switch value={limiteAppsAtivo} onValueChange={setLimiteAppsAtivo} editable={!isSaving} />
           </View>
 
-          {/* Selected apps list */}
-          {appsComLimite.length === 0 && sitesComLimite.length === 0 ? null : (
-            <View style={styles.appLimitRow}>
+          {/* Lista de limites configurados */}
+          {limitesDeApps.map((config, index) => (
+            <TouchableOpacity
+              key={`${config.nome}-${index}`}
+              style={styles.appLimitRow}
+              onPress={() => handleEditLimite(config)}
+              disabled={isSaving}
+              activeOpacity={0.7}
+            >
               <View style={styles.appLimitIconWrapper}>
-                <Text style={styles.appLimitEmoji}>📱</Text>
+                <Text style={styles.appLimitEmoji}>{config.emoji || "📱"}</Text>
               </View>
               <Text style={styles.appLimitName}>
-                {limiteAppsNome || "Sem nome"}
-                {(appsComLimite.length > 0 || sitesComLimite.length > 0) && (
-                  <Text style={styles.appLimitCount}>
-                    {"  "}
-                    {appsComLimite.length > 0 && `${appsComLimite.length} app${appsComLimite.length > 1 ? "s" : ""}`}
-                    {appsComLimite.length > 0 && sitesComLimite.length > 0 && " · "}
-                    {sitesComLimite.length > 0 && `${sitesComLimite.length} site${sitesComLimite.length > 1 ? "s" : ""}`}
-                  </Text>
-                )}
+                {config.nome || "Sem nome"}
+                <Text style={styles.appLimitCount}>
+                  {"  "}
+                  {config.appsComLimite.length > 0 && `${config.appsComLimite.length} app${config.appsComLimite.length > 1 ? "s" : ""}`}
+                  {config.appsComLimite.length > 0 && config.sitesComLimite.length > 0 && " · "}
+                  {config.sitesComLimite.length > 0 && `${config.sitesComLimite.length} site${config.sitesComLimite.length > 1 ? "s" : ""}`}
+                </Text>
               </Text>
-              <TouchableOpacity
-                style={styles.appLimitAction}
-                onPress={() => setPickerVisible(true)}
-                disabled={isSaving}
-              >
-                <EditarIcon width={20} height={20} />
-              </TouchableOpacity>
-            </View>
-          )}
+              <Text style={styles.appLimitChevron}>{"›"}</Text>
+            </TouchableOpacity>
+          ))}
 
-          {/* Adicionar / editar limite */}
+          {/* Adicionar novo limite */}
           <TouchableOpacity
             style={styles.addLimitRow}
-            onPress={() => setPickerVisible(true)}
+            onPress={handleAddLimite}
             disabled={isSaving}
           >
             <AdicionarIcon width={20} height={20} />
@@ -525,15 +504,6 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           disabled={isSaving || isUploading}
         />
       </ScrollView>
-
-      <AppSiteLimitePicker
-        visible={pickerVisible}
-        initialApps={appsComLimite}
-        initialSites={sitesComLimite}
-        initialName={limiteAppsNome}
-        onConfirm={handlePickerConfirm}
-        onClose={() => setPickerVisible(false)}
-      />
     </Screen>
   )
 }
@@ -772,6 +742,11 @@ const styles = StyleSheet.create({
   },
   appLimitAction: {
     padding: 4,
+  },
+  appLimitChevron: {
+    fontSize: 22,
+    color: "#94A3B8",
+    marginLeft: 4,
   },
   addLimitRow: {
     flexDirection: "row",

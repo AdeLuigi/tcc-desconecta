@@ -122,9 +122,12 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       setHasPermission(permission)
       
       if (permission) {
-        await ScreenTimeService.configureBackgroundSyncUser(userData?.uid)
-        await ScreenTimeService.startBackgroundTracking()
+        // Carrega dados de tela imediatamente, sem esperar background sync
         await loadScreenTimeData()
+
+        // Configura background sync/tracking em paralelo (fire-and-forget)
+        ScreenTimeService.configureBackgroundSyncUser(userData?.uid).catch(() => {})
+        ScreenTimeService.startBackgroundTracking().catch(() => {})
       }
     } catch (error) {
       console.error('Erro ao verificar permissão:', error)
@@ -151,16 +154,13 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
       setScreenTimeToday(todayTime)
       setTopApps(appsWithCategory.slice(0, 3)) // Top 3 apps
       
-      // Salvar dados no Firestore se o usuário estiver autenticado
+      // Salvar dados no Firestore em background (não bloqueia a UI)
       if (userData?.uid && todayTime > 0) {
-        // Salvar apenas os dados de hoje
-        // saveLastSevenDaysData foi removido daqui para evitar duplicação
-        // Os dados retroativos devem ser salvos apenas uma vez, manualmente ou em outro fluxo
-        await ScreenTimeService.saveScreenTimeData(
+        ScreenTimeService.saveScreenTimeData(
           userData.uid,
           todayTime,
           appsWithCategory
-        )
+        ).catch((error) => console.error('Erro ao salvar tempo de tela:', error))
       }
     } catch (error) {
       console.error('Erro ao carregar dados de tempo de tela:', error)

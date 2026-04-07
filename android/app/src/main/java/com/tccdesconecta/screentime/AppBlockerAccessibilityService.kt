@@ -54,9 +54,16 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         val blockedApps = AppBlockerConfig.getBlockedApps(this)
         if (!blockedApps.contains(packageName)) return
 
-        // Verifica se o limite de tempo foi atingido
-        val limitMinutes = AppBlockerConfig.getLimitMinutes(this)
-        val usedMinutes = calculateTodayScreenTime()
+        // Verifica se hoje é um dia ativo para bloqueio DESTE app especificamente
+        val todayKey = getTodayDayKey()
+        val activeDays = AppBlockerConfig.getAppActiveDays(this, packageName)
+        if (!activeDays.contains(todayKey)) return
+
+        // Obtém o limite específico deste app
+        val limitMinutes = AppBlockerConfig.getAppLimitMinutes(this, packageName) ?: return
+
+        // Calcula tempo de tela apenas deste app específico
+        val usedMinutes = calculateAppScreenTime(packageName)
 
         if (usedMinutes < limitMinutes) {
             Log.d(TAG, "App $packageName na lista, mas tempo ($usedMinutes min) ainda abaixo do limite ($limitMinutes min)")
@@ -88,9 +95,9 @@ class AppBlockerAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Calcula o tempo total de tela de hoje usando UsageStatsManager.
+     * Calcula o tempo de tela de hoje para um app ESPECÍFICO usando UsageStatsManager.
      */
-    private fun calculateTodayScreenTime(): Int {
+    private fun calculateAppScreenTime(targetPackage: String): Int {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
             ?: return 0
 
@@ -110,7 +117,25 @@ class AppBlockerAccessibilityService : AccessibilityService() {
             endTime
         ) ?: return 0
 
-        val totalMillis = usageStatsList.sumOf { it.totalTimeInForeground }
+        // Filtra apenas o app alvo
+        val appStats = usageStatsList.find { it.packageName == targetPackage }
+        val totalMillis = appStats?.totalTimeInForeground ?: 0L
         return (totalMillis / 1000 / 60).toInt()
+    }
+
+    /**
+     * Retorna a sigla do dia da semana atual (SEG, TER, QUA, QUI, SEX, SAB, DOM).
+     */
+    private fun getTodayDayKey(): String {
+        return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
+            Calendar.MONDAY -> "SEG"
+            Calendar.TUESDAY -> "TER"
+            Calendar.WEDNESDAY -> "QUA"
+            Calendar.THURSDAY -> "QUI"
+            Calendar.FRIDAY -> "SEX"
+            Calendar.SATURDAY -> "SAB"
+            Calendar.SUNDAY -> "DOM"
+            else -> "SEG"
+        }
     }
 }
