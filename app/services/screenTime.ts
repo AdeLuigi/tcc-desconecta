@@ -350,9 +350,13 @@ class ScreenTimeService {
       return false;
     }
     try {
-      return await ScreenTimeModule.configureAppBlocking(appConfigs, enabled);
+      console.log('[screenTime] configureAppBlocking chamado, apps:', Object.keys(appConfigs).length, 'enabled:', enabled);
+      const t0 = Date.now();
+      const result = await ScreenTimeModule.configureAppBlocking(appConfigs, enabled);
+      console.log('[screenTime] configureAppBlocking retornou:', result, 'em', Date.now() - t0, 'ms');
+      return result;
     } catch (error) {
-      console.error('Erro ao configurar bloqueio de apps:', error);
+      console.error('[screenTime] Erro configureAppBlocking:', error);
       return false;
     }
   }
@@ -365,9 +369,13 @@ class ScreenTimeService {
       return false;
     }
     try {
-      return await ScreenTimeModule.isAccessibilityServiceEnabled();
+      console.log('[screenTime] isAccessibilityServiceEnabled chamado');
+      const t0 = Date.now();
+      const result = await ScreenTimeModule.isAccessibilityServiceEnabled();
+      console.log('[screenTime] isAccessibilityServiceEnabled retornou:', result, 'em', Date.now() - t0, 'ms');
+      return result;
     } catch (error) {
-      console.error('Erro ao verificar AccessibilityService:', error);
+      console.error('[screenTime] Erro isAccessibilityServiceEnabled:', error);
       return false;
     }
   }

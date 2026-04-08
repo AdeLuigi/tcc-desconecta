@@ -161,8 +161,20 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           await screenTimeService.configureAppBlocking({}, false)
         }
 
-        const updatedUserData = await getUserData(userData.uid)
-        if (updatedUserData) setUserData(updatedUserData)
+        // Update local userData directly (avoid slow re-fetch from Firestore)
+        setUserData({
+          ...userData,
+          photoURL: newPhotoURL,
+          dataNascimento: dataNascimento.trim(),
+          descricao: descricao.trim(),
+          configuracoes: {
+            ...userData.configuracoes,
+            bloqueio_apps: limiteAppsAtivo,
+            limite_tela_ativo: limiteTelaAtivo,
+            limite_tela_minutos: limiteTelaMinutos,
+            notificacoes,
+          },
+        })
         setSelectedImage(null)
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
       } else {

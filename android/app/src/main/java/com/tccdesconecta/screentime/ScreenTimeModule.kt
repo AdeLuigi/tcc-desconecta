@@ -1000,8 +1000,12 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             ) ?: ""
 
-            val serviceName = "${context.packageName}/.screentime.AppBlockerAccessibilityService"
-            val isEnabled = enabledServices.contains(serviceName)
+            // Check multiple possible formats the OS may use
+            val shortName = "${context.packageName}/.screentime.AppBlockerAccessibilityService"
+            val fullName = "${context.packageName}/com.tccdesconecta.screentime.AppBlockerAccessibilityService"
+            val isEnabled = enabledServices.contains(shortName) || enabledServices.contains(fullName)
+            Log.d("ScreenTimeModule", "enabledServices: $enabledServices")
+            Log.d("ScreenTimeModule", "isAccessibilityEnabled: $isEnabled (short=$shortName, full=$fullName)")
 
             promise.resolve(isEnabled)
         } catch (e: Exception) {

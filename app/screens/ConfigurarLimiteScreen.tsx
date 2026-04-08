@@ -91,6 +91,8 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
 
     try {
       setIsSaving(true)
+      const t0 = Date.now()
+      console.log('[SAVE] ===== INÍCIO DO SALVAMENTO =====')
 
       const newConfig: LimiteConfig = {
         nome: nome.trim(),
@@ -105,7 +107,6 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
       let updatedLimites: LimiteConfig[]
 
       if (editingConfig) {
-        // Replace existing config by matching the old name
         updatedLimites = currentLimites.map((c) =>
           c.nome === editingConfig.nome ? newConfig : c,
         )
@@ -113,24 +114,23 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
         updatedLimites = [...currentLimites, newConfig]
       }
 
+      console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Chamando updateUserData...')
       const success = await updateUserData(userData.uid, {
         configuracoes: {
           ...userData.configuracoes,
           bloqueio_apps: true,
           limitesDeApps: updatedLimites,
-          // Keep legacy fields in sync
           appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
           sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
           limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
         },
       })
+      console.log('[SAVE] +' + (Date.now() - t0) + 'ms | updateUserData retornou:', success)
 
       if (success) {
-        // Build per-app config map: each app gets its config's limit and active days
         const appConfigs: Record<string, { limitMinutes: number; activeDays: string[] }> = {}
         for (const config of updatedLimites) {
           for (const pkg of config.appsComLimite) {
-            // If an app appears in multiple configs, use the stricter (lower) limit
             if (!appConfigs[pkg] || config.limiteMinutos < appConfigs[pkg].limitMinutes) {
               appConfigs[pkg] = {
                 limitMinutes: config.limiteMinutos,
@@ -139,15 +139,31 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
             }
           }
         }
+        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | appConfigs:', JSON.stringify(appConfigs))
 
-        // Sync native blocking with per-app limits
-        await screenTimeService.configureAppBlocking(appConfigs, true)
+        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Chamando configureAppBlocking + isAccessibilityServiceEnabled em paralelo...')
+        const [blockingResult, isAccessibilityEnabled] = await Promise.all([
+          screenTimeService.configureAppBlocking(appConfigs, true),
+          screenTimeService.isAccessibilityServiceEnabled(),
+        ])
+        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | configureAppBlocking:', blockingResult, '| isAccessibilityEnabled:', isAccessibilityEnabled)
 
-        const isAccessibilityEnabled = await screenTimeService.isAccessibilityServiceEnabled()
+        // Update local userData directly (no re-fetch needed)
+        if (userData) {
+          setUserData({
+            ...userData,
+            configuracoes: {
+              ...userData.configuracoes,
+              bloqueio_apps: true,
+              limitesDeApps: updatedLimites,
+              appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
+              sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
+              limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
+            },
+          })
+        }
 
-        const updatedUserData = await getUserData(userData.uid)
-        if (updatedUserData) setUserData(updatedUserData)
-
+        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Mostrando alert. isAccessibilityEnabled=' + isAccessibilityEnabled)
         if (!isAccessibilityEnabled) {
           Alert.alert(
             "Limite salvo — ativar bloqueio",

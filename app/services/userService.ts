@@ -140,12 +140,17 @@ export async function updateUserData(
   data: Partial<UserData>,
 ): Promise<boolean> {
   try {
+    console.log('[userService] updateUserData chamado para uid:', uid)
+    const t0 = Date.now()
     const db = getFirestore()
+    console.log('[userService] +' + (Date.now() - t0) + 'ms | getFirestore ok')
     const userRef = doc(db, "usuarios", uid)
+    console.log('[userService] +' + (Date.now() - t0) + 'ms | doc ref criado, chamando updateDoc...')
     await updateDoc(userRef, data as Record<string, unknown>)
+    console.log('[userService] +' + (Date.now() - t0) + 'ms | updateDoc CONCLUÍDO com sucesso')
     return true
   } catch (error) {
-    console.error("Erro ao atualizar dados do usuário:", error)
+    console.error("[userService] Erro updateDoc:", error)
     return false
   }
 }
