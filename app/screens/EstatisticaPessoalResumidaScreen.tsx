@@ -200,7 +200,8 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   }
 
   const getComparison = () => {
-    if (previousDayMinutes === null || previousDayMinutes === 0) return null
+    if (previousDayMinutes === null) return { percentage: 0, text: 'sem dados de ontem', color: '#666' }
+    if (previousDayMinutes === 0) return { percentage: 100, text: 'mais que ontem', color: '#F44336' }
     const todayMinutes = statistics?.totalTimeInMinutes || 0
     const diff = todayMinutes - previousDayMinutes
     const percentage = Math.abs(Math.round((diff / previousDayMinutes) * 100))
@@ -411,14 +412,14 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
                 </Text>
                 <Text style={styles.summaryLabel}>{comparison.text}</Text>
               </View>
-            ) : (
+            ) : period === 7 ? (
               <View style={styles.summaryCard}>
                 <Text preset="heading" style={styles.summaryValueCyan}>
                   {StatisticsService.formatTime(statistics.averageTimePerDay)}
                 </Text>
                 <Text style={styles.summaryLabel}>Média Diária</Text>
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Categorias mais usadas */}
