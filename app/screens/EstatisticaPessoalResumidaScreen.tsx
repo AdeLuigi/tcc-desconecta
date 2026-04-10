@@ -29,6 +29,15 @@ const getCategoryImage = (category: string) => {
   return OutrosImg
 }
 
+const getCategoryBgColor = (category: string) => {
+  const key = category.toLowerCase()
+  if (['social', 'communication'].includes(key)) return '#D2EAFF'
+  if (['entertainment', 'streaming', 'games', 'music', 'photo'].includes(key)) return '#F4D9FF'
+  if (['productivity', 'education', 'tools', 'browser'].includes(key)) return '#FFECD8'
+  if (['finance', 'shopping', 'maps'].includes(key)) return '#DBFEFF'
+  return '#D2EAFF'
+}
+
 interface EstatisticaPessoalResumidaScreenProps extends AppStackScreenProps<"EstatisticaPessoalResumida"> {}
 
 const screenWidth = Dimensions.get("window").width
@@ -419,7 +428,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
               Object.entries(statistics.categoryTotals)
                 .sort(([, a], [, b]) => b - a)
                 .map(([category, minutes]) => (
-                  <View key={category} style={styles.categoryRow}>
+                  <View key={category} style={[styles.categoryRow, { backgroundColor: getCategoryBgColor(category) }]}>
                     <Image source={getCategoryImage(category)} style={styles.categoryIcon} />
                     <View style={styles.categoryInfo}>
                       <Text style={styles.categoryName}>{StatisticsService.translateCategory(category)}</Text>
@@ -437,7 +446,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           <View style={styles.appsCard}>
             {statistics.topApps.length > 0 ? (
               statistics.topApps.map((app, index) => (
-                <View key={`${app.packageName}-${index}`} style={styles.appRow}>
+                <View key={`${app.packageName}-${index}`} style={[styles.appRow, { backgroundColor: getCategoryBgColor(app.category) }]}>
                   <Image source={getCategoryImage(app.category)} style={styles.appIconSmall} />
                   <View style={styles.appRowInfo}>
                     <Text style={styles.appRowName}>{app.appName}</Text>
@@ -818,7 +827,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 8,
-    backgroundColor: "#D2EAFF",
     padding: 10,
     borderRadius: 12,
   },
@@ -856,7 +864,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 8,
-    backgroundColor: "#D2EAFF",
     padding: 10,
     borderRadius: 12,
   },
