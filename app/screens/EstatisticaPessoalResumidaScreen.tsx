@@ -12,7 +12,20 @@ import StatisticsService, { type StatisticsSummary } from "@/services/statistics
 
 const Logo = require("@assets/images/logo2.png")
 const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
-const Rectangle = require("@assets/images/Rectangle 12.png")
+const RedesSociaisImg = require("@assets/images/redes-sociais.png")
+const EntretenimentoImg = require("@assets/images/entreterimento.png")
+const ProdutividadeImg = require("@assets/images/produtividade.png")
+const FinancasImg = require("@assets/images/financas.png")
+const OutrosImg = require("@assets/images/outros.png")
+
+const getCategoryImage = (category: string) => {
+  const key = category.toLowerCase()
+  if (['social', 'communication'].includes(key)) return RedesSociaisImg
+  if (['entertainment', 'streaming', 'games', 'music', 'photo'].includes(key)) return EntretenimentoImg
+  if (['productivity', 'education', 'tools', 'browser'].includes(key)) return ProdutividadeImg
+  if (['finance', 'shopping', 'maps'].includes(key)) return FinancasImg
+  return OutrosImg
+}
 
 interface EstatisticaPessoalResumidaScreenProps extends AppStackScreenProps<"EstatisticaPessoalResumida"> {}
 
@@ -25,6 +38,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<1 | 7>(7)
   const [refreshing, setRefreshing] = useState(false)
+  const [previousDayMinutes, setPreviousDayMinutes] = useState<number | null>(null)
   const appState = useRef(AppState.currentState)
 
   useEffect(() => {
@@ -59,11 +73,40 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
       setLoading(true)
       const stats = await StatisticsService.getUserStatistics(userData.uid, period)
       setStatistics(stats)
+
+      if (period === 1) {
+        try {
+          const twoDayStats = await StatisticsService.getUserStatistics(userData.uid, 2)
+          if (twoDayStats.dailyStats.length >= 2) {
+            setPreviousDayMinutes(twoDayStats.dailyStats[1].tempo_total_minutos)
+          } else {
+            setPreviousDayMinutes(null)
+          }
+        } catch {
+          setPreviousDayMinutes(null)
+        }
+      }
     } catch (error) {
       console.error("❌ Erro ao carregar estatísticas:", error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const formatSelectedDate = () => {
+    const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+    const now = new Date()
+    return `${dias[now.getDay()]} ${now.getDate()}/${now.getMonth() + 1}`
+  }
+
+  const getComparison = () => {
+    if (previousDayMinutes === null || previousDayMinutes === 0) return null
+    const todayMinutes = statistics?.totalTimeInMinutes || 0
+    const diff = todayMinutes - previousDayMinutes
+    const percentage = Math.abs(Math.round((diff / previousDayMinutes) * 100))
+    if (diff < 0) return { percentage, text: 'menos que ontem', color: '#4CAF50' }
+    if (diff > 0) return { percentage, text: 'mais que ontem', color: '#F44336' }
+    return { percentage: 0, text: 'igual a ontem', color: '#666' }
   }
 
   const onRefresh = async () => {
@@ -147,7 +190,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
               style={[styles.periodButton, period === 7 && styles.periodButtonActive]}
               onPress={() => setPeriod(7)}
             >
-              <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>7 dias</Text>
+              <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>Semanal</Text>
             </TouchableOpacity>
           </View>
 
@@ -185,6 +228,8 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   )
   const appData = topAppsForChart.map(app => app.timeInMinutes)
 
+  const comparison = period === 1 ? getComparison() : null
+
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} contentContainerStyle={styles.container}>
       <ScrollView 
@@ -221,179 +266,170 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
           </View>
 
-          {/* Aqui*/}
+          {/* Seletor de período */}
           <View style={styles.periodSelector}>
             <TouchableOpacity 
               style={[styles.periodButton, period === 1 && styles.periodButtonActive]}
               onPress={() => setPeriod(1)}
             >
-              <Text style={[styles.periodButtonText, period === 1 && styles.periodButtonTextActive ]}>Hoje</Text>
+              <Text style={[styles.periodButtonText, period === 1 && styles.periodButtonTextActive]}>Hoje</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.periodButton, period === 7 && styles.periodButtonActive]}
               onPress={() => setPeriod(7)}
             >
-              <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>7 dias</Text>
+              <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>Semanal</Text>
             </TouchableOpacity>
           </View>
 
-        {/* Cards de resumo */}
-        <Text style={{   fontSize: 16, fontWeight: "bold", color: "#322D70",}}>Tempo de tela do dia</Text>
-        <View style={styles.summaryCards}>
-          <View style={styles.summaryCard}>
-            
-            <Text preset="heading" style={styles.summaryValue}>
-              {StatisticsService.formatTime(statistics.totalTimeInMinutes)}
-            </Text>
-            <Text style={styles.summaryLabel}>de tempo de tela</Text>
-          </View>
+          {/* Navegação de data - apenas modo Hoje */}
+          {period === 1 && (
+            <View style={styles.dateNavigator}>
+              <TouchableOpacity>
+                <Icon icon="caretLeft" size={20} color="#322D70" />
+              </TouchableOpacity>
+              <Text style={styles.dateText}>{formatSelectedDate()}</Text>
+              <TouchableOpacity>
+                <Icon icon="caretRight" size={20} color="#322D70" />
+              </TouchableOpacity>
+            </View>
+          )}
 
-          <View style={styles.summaryCard}>
-
-            <Text preset="heading" style={styles.summaryValue}>
-              {StatisticsService.formatTime(statistics.averageTimePerDay)}
-            </Text>
-            <Text style={styles.summaryLabel}>Média Diária</Text>
-          </View>
-        </View>
-        <Text style={{fontSize: 16, fontWeight: "bold", color: "#322D70",}}>Categorias mais usadas hoje</Text>
-
-        <View style={{padding: 12, backgroundColor: "#FFFFFF", borderRadius: 12,}}>
-          {statistics.categoryTotals && Object.entries(statistics.categoryTotals).map(([category, minutes]) => (
-            <View key={category} style={{flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12, backgroundColor:"#D2EAFF", padding: 8, borderRadius: 12}}>
-          <Image
-          source={Rectangle}
-
-        ></Image>
-              
-            <View>
-
-            <Text style={styles.infoLabel}>{StatisticsService.translateCategory(category)}</Text>
-              <Text preset="subheading" style={styles.infoValue}>
-                {StatisticsService.formatTime(minutes)}
+          {/* Tempo de tela do dia */}
+          <Text style={styles.sectionTitle}>Tempo de tela do dia</Text>
+          <View style={styles.summaryCards}>
+            <View style={styles.summaryCard}>
+              <Text preset="heading" style={styles.summaryValueCyan}>
+                {StatisticsService.formatTime(statistics.totalTimeInMinutes)}
               </Text>
-
+              <Text style={styles.summaryLabel}>de tempo de tela</Text>
             </View>
-            </View>
-          ))}
-
-        </View>
-        {statistics.mostUsedApp && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>App Mais Usado</Text>
-            <Text preset="subheading" style={styles.infoValue}>
-              {statistics.mostUsedApp.appName}
-            </Text>
-            <Text style={styles.infoSubValue}>
-              {StatisticsService.formatTime(statistics.mostUsedApp.timeInMinutes)}
-            </Text>
-          </View>
-        )}
-
-        {statistics.mostUsedCategory && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Categoria Mais Usada</Text>
-            <Text preset="subheading" style={styles.infoValue}>
-              {StatisticsService.translateCategory(statistics.mostUsedCategory)}
-            </Text>
-            <Text style={styles.infoSubValue}>
-              {StatisticsService.formatTime(statistics.categoryTotals[statistics.mostUsedCategory])}
-            </Text>
-          </View>
-        )}
-
-        {/* Gráfico de linha - Tempo de tela diário */}
-        {period > 1 && (
-          <View style={styles.chartCard}>
-            <Text preset="subheading" style={styles.chartTitle}>
-              Tempo de Tela Diário (minutos)
-            </Text>
-            <LineChart
-              data={{
-                labels: dailyLabels,
-                datasets: [{ data: dailyData }],
-              }}
-              width={screenWidth - 64}
-              height={220}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.chart}
-              withVerticalLabels={true}
-              withHorizontalLabels={true}
-              withDots={true}
-              withShadow={false}
-              fromZero={true}
-            />
-          </View>
-        )}
-
-        {/* Gráfico de barras - Top Apps */}
-        {topAppsForChart.length > 0 && (
-          <View style={styles.chartCard}>
-            <Text preset="subheading" style={styles.chartTitle}>
-              Apps Mais Usados (minutos)
-            </Text>
-            <BarChart
-              data={{
-                labels: appLabels,
-                datasets: [{ data: appData }],
-              }}
-              width={screenWidth - 64}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={chartConfig}
-              style={styles.chart}
-              withVerticalLabels={true}
-              withHorizontalLabels={true}
-              fromZero={true}
-              showValuesOnTopOfBars={true}
-            />
-          </View>
-        )}
-
-        {/* Gráfico de pizza - Categorias */}
-        {categoryData.length > 0 && (
-          <View style={styles.chartCard}>
-            <Text preset="subheading" style={styles.chartTitle}>
-              Distribuição por Categoria
-            </Text>
-            <PieChart
-              data={categoryData}
-              width={screenWidth - 64}
-              height={220}
-              chartConfig={chartConfig}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              absolute
-              style={styles.chart}
-            />
-          </View>
-        )}
-
-        {/* Lista detalhada de apps */}
-        <View style={styles.listCard}>
-          <Text preset="subheading" style={styles.listTitle}>
-            Todos os Apps
-          </Text>
-          {statistics.topApps.map((app, index) => (
-            <View key={`${app.packageName}-${index}`} style={styles.appItem}>
-              <View style={styles.appInfo}>
-                <Text style={styles.appRank}>{index + 1}</Text>
-                <View style={styles.appDetails}>
-                  <Text style={styles.appName}>{app.appName}</Text>
-                  <Text style={styles.appCategory}>
-                    {StatisticsService.translateCategory(app.category)}
-                  </Text>
-                </View>
+            {period === 1 && comparison ? (
+              <View style={styles.summaryCard}>
+                <Text preset="heading" style={[styles.summaryValueCyan, { color: comparison.color }]}>
+                  {comparison.percentage}%
+                </Text>
+                <Text style={styles.summaryLabel}>{comparison.text}</Text>
               </View>
-              <Text style={styles.appTime}>
-                {StatisticsService.formatTime(app.timeInMinutes)}
-              </Text>
-            </View>
-          ))}
-        </View>
+            ) : (
+              <View style={styles.summaryCard}>
+                <Text preset="heading" style={styles.summaryValueCyan}>
+                  {StatisticsService.formatTime(statistics.averageTimePerDay)}
+                </Text>
+                <Text style={styles.summaryLabel}>Média Diária</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Categorias mais usadas */}
+          {/* Categorias mais usadas */}
+          <Text style={styles.sectionTitle}>Categorias mais usadas {period === 1 ? 'hoje' : 'na semana'}</Text>
+          <View style={styles.categoriesCard}>
+            {Object.entries(statistics.categoryTotals).length > 0 ? (
+              Object.entries(statistics.categoryTotals)
+                .sort(([, a], [, b]) => b - a)
+                .map(([category, minutes]) => (
+                  <View key={category} style={styles.categoryRow}>
+                    <Image source={getCategoryImage(category)} style={styles.categoryIcon} />
+                    <View style={styles.categoryInfo}>
+                      <Text style={styles.categoryName}>{StatisticsService.translateCategory(category)}</Text>
+                      <Text style={styles.categoryTime}>{StatisticsService.formatTime(minutes)}</Text>
+                    </View>
+                  </View>
+                ))
+            ) : (
+              <Text style={styles.emptySection}>Dados detalhados por categoria ainda não disponíveis.</Text>
+            )}
+          </View>
+
+          {/* Apps mais usados */}
+          <Text style={styles.sectionTitle}>Apps mais usados {period === 1 ? 'hoje' : 'na semana'}</Text>
+          <View style={styles.appsCard}>
+            {statistics.topApps.length > 0 ? (
+              statistics.topApps.map((app, index) => (
+                <View key={`${app.packageName}-${index}`} style={styles.appRow}>
+                  <Image source={getCategoryImage(app.category)} style={styles.appIconSmall} />
+                  <View style={styles.appRowInfo}>
+                    <Text style={styles.appRowName}>{app.appName}</Text>
+                    <Text style={styles.appRowCategory}>{StatisticsService.translateCategory(app.category)}</Text>
+                  </View>
+                  <Text style={styles.appRowTime}>{StatisticsService.formatTime(app.timeInMinutes)}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptySection}>Dados detalhados por app ainda não disponíveis.</Text>
+            )}
+          </View>
+
+          {/* Gráficos - apenas modo Semanal */}
+          {period === 7 && (
+            <>
+              <View style={styles.chartCard}>
+                <Text preset="subheading" style={styles.chartTitle}>
+                  Tempo de Tela Diário (minutos)
+                </Text>
+                <LineChart
+                  data={{
+                    labels: dailyLabels,
+                    datasets: [{ data: dailyData }],
+                  }}
+                  width={screenWidth - 64}
+                  height={220}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                  withVerticalLabels={true}
+                  withHorizontalLabels={true}
+                  withDots={true}
+                  withShadow={false}
+                  fromZero={true}
+                />
+              </View>
+
+              {topAppsForChart.length > 0 && (
+                <View style={styles.chartCard}>
+                  <Text preset="subheading" style={styles.chartTitle}>
+                    Apps Mais Usados (minutos)
+                  </Text>
+                  <BarChart
+                    data={{
+                      labels: appLabels,
+                      datasets: [{ data: appData }],
+                    }}
+                    width={screenWidth - 64}
+                    height={220}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    chartConfig={chartConfig}
+                    style={styles.chart}
+                    withVerticalLabels={true}
+                    withHorizontalLabels={true}
+                    fromZero={true}
+                    showValuesOnTopOfBars={true}
+                  />
+                </View>
+              )}
+
+              {categoryData.length > 0 && (
+                <View style={styles.chartCard}>
+                  <Text preset="subheading" style={styles.chartTitle}>
+                    Distribuição por Categoria
+                  </Text>
+                  <PieChart
+                    data={categoryData}
+                    width={screenWidth - 64}
+                    height={220}
+                    chartConfig={chartConfig}
+                    accessor="population"
+                    backgroundColor="transparent"
+                    paddingLeft="15"
+                    absolute
+                    style={styles.chart}
+                  />
+                </View>
+              )}
+            </>
+          )}
 
         </View>
       </ScrollView>
@@ -652,5 +688,114 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#72C3E0",
+  },
+  dateNavigator: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 20,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#322D70",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#322D70",
+    marginBottom: 12,
+  },
+  summaryValueCyan: {
+    fontSize: 24,
+    color: "#72C3E0",
+    fontWeight: "bold",
+  },
+  categoriesCard: {
+    padding: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  categoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+    backgroundColor: "#D2EAFF",
+    padding: 10,
+    borderRadius: 12,
+  },
+  categoryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  categoryInfo: {
+    flex: 1,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#322D70",
+  },
+  categoryTime: {
+    fontSize: 13,
+    color: "#72C3E0",
+    fontWeight: "600",
+  },
+  appsCard: {
+    padding: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  appRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+    backgroundColor: "#D2EAFF",
+    padding: 10,
+    borderRadius: 12,
+  },
+  appIconSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+  },
+  appRowInfo: {
+    flex: 1,
+  },
+  appRowName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#322D70",
+  },
+  appRowCategory: {
+    fontSize: 12,
+    color: "#666",
+  },
+  appRowTime: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#322D70",
+  },
+  emptySection: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    paddingVertical: 16,
   },
 })
