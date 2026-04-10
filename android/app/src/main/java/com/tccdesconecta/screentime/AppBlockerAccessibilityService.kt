@@ -64,10 +64,18 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val packageName = event.packageName?.toString() ?: return
-        
-        if (packageName == this.packageName) return
-        if (packageName == "com.android.systemui") return
-        if (packageName == "com.android.launcher" || packageName.contains("launcher")) return
+
+        // Se o próprio app, sistema ou launcher entrou em foreground,
+        // limpa currentForegroundPackage para que o poll não continue
+        // tentando bloquear o app anterior enquanto o usuário está aqui.
+        if (packageName == this.packageName ||
+            packageName == "com.android.systemui" ||
+            packageName == "com.android.launcher" ||
+            packageName.contains("launcher")
+        ) {
+            currentForegroundPackage = null
+            return
+        }
 
         // Atualiza o app em foreground para o poll periódico
         currentForegroundPackage = packageName
