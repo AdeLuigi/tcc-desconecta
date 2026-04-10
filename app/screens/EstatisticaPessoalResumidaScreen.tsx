@@ -120,6 +120,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
               appName: app.appName,
               timeInMinutes: app.timeInMinutes,
               category: app.category || 'other',
+              appIcon: app.appIcon,
             }))
 
           const todayDateStr = new Date().toISOString().split('T')[0]
@@ -446,8 +447,12 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           <View style={styles.appsCard}>
             {statistics.topApps.length > 0 ? (
               statistics.topApps.map((app, index) => (
-                <View key={`${app.packageName}-${index}`} style={[styles.appRow, { backgroundColor: getCategoryBgColor(app.category) }]}>
-                  <Image source={getCategoryImage(app.category)} style={styles.appIconSmall} />
+                <View key={`${app.packageName}-${index}`} style={styles.appRow}>
+                  {app.appIcon ? (
+                    <Image source={{ uri: app.appIcon.startsWith('data:') ? app.appIcon : `data:image/png;base64,${app.appIcon}` }} style={styles.appIconSmall} />
+                  ) : (
+                    <Image source={getCategoryImage(app.category)} style={styles.appIconSmall} />
+                  )}
                   <View style={styles.appRowInfo}>
                     <Text style={styles.appRowName}>{app.appName}</Text>
                     <Text style={styles.appRowCategory}>{StatisticsService.translateCategory(app.category)}</Text>
@@ -849,23 +854,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   appsCard: {
-    padding: 12,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   appRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     marginBottom: 8,
-    padding: 10,
+    padding: 12,
     borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   appIconSmall: {
     width: 40,
@@ -877,12 +880,13 @@ const styles = StyleSheet.create({
   },
   appRowName: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#322D70",
   },
   appRowCategory: {
     fontSize: 12,
-    color: "#666",
+    fontWeight: "bold",
+    color: "#6881BA",
   },
   appRowTime: {
     fontSize: 15,

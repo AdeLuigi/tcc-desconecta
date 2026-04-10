@@ -5,6 +5,7 @@ export interface AppStatistic {
   appName: string
   timeInMinutes: number
   category: string
+  appIcon?: string
 }
 
 export interface DayStatistic {
