@@ -36,9 +36,10 @@ class StatisticsService {
    */
   async getUserStatistics(userId: string, days: number = 7): Promise<StatisticsSummary> {
     try {
-      // Calcular data de início (N dias atrás)
+      // Calcular data de início (N dias atrás) usando UTC consistentemente
+      // Os dados no Firestore usam datas UTC (toISOString), então a query também deve usar UTC
       const startDate = new Date()
-      startDate.setDate(startDate.getDate() - days)
+      startDate.setUTCDate(startDate.getUTCDate() - days)
       const startDateStr = startDate.toISOString().split('T')[0]
       
       // Query para buscar estatísticas do usuário

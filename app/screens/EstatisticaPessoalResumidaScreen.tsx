@@ -9,6 +9,8 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { useAuth } from "@/context/AuthContext"
 import StatisticsService, { type StatisticsSummary } from "@/services/statisticsService"
+import ScreenTimeService from "@/services/screenTime"
+import { getAppCategory, type AppCategory } from "@/utils/appCategories"
 
 const Logo = require("@assets/images/logo2.png")
 const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
@@ -71,20 +73,108 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
 
     try {
       setLoading(true)
-      const stats = await StatisticsService.getUserStatistics(userData.uid, period)
-      setStatistics(stats)
 
+      // Para o modo "Hoje", buscar dados nativos em tempo real em vez de depender apenas do Firestore
       if (period === 1) {
         try {
-          const twoDayStats = await StatisticsService.getUserStatistics(userData.uid, 2)
-          if (twoDayStats.dailyStats.length >= 2) {
-            setPreviousDayMinutes(twoDayStats.dailyStats[1].tempo_total_minutos)
-          } else {
+          const [todayTime, apps] = await Promise.all([
+            ScreenTimeService.getScreenTimeToday(),
+            ScreenTimeService.getScreenTimeByApp(0),
+          ])
+
+          const appsWithCategory = apps.map(app => ({
+            ...app,
+            category: getAppCategory(app.packageName, app.category) as string,
+          }))
+
+          // Salvar no Firestore em background para manter histórico atualizado
+          if (todayTime > 0) {
+            ScreenTimeService.saveScreenTimeData(
+              userData.uid,
+              todayTime,
+              appsWithCategory as any
+            ).catch((err) => console.error('Erro ao salvar tempo de tela:', err))
+          }
+
+          // Calcular categorias a partir dos apps nativos
+          const categoryTotals: Record<string, number> = {}
+          appsWithCategory.forEach(app => {
+            const cat = app.category || 'other'
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + app.timeInMinutes
+          })
+
+          const topApps = appsWithCategory
+            .sort((a, b) => b.timeInMinutes - a.timeInMinutes)
+            .slice(0, 10)
+            .map(app => ({
+              packageName: app.packageName,
+              appName: app.appName,
+              timeInMinutes: app.timeInMinutes,
+              category: app.category || 'other',
+            }))
+
+          const todayDateStr = new Date().toISOString().split('T')[0]
+
+          const todayStats: StatisticsSummary = {
+            totalTimeInMinutes: todayTime,
+            averageTimePerDay: todayTime,
+            mostUsedApp: topApps.length > 0 ? topApps[0] : null,
+            mostUsedCategory: Object.entries(categoryTotals).sort(([,a],[,b]) => b - a)[0]?.[0] || null,
+            dailyStats: [{
+              data: todayDateStr,
+              tempo_total_minutos: todayTime,
+              categorias: categoryTotals,
+              top_apps: topApps,
+              timestamp: new Date(),
+            }],
+            categoryTotals,
+            topApps,
+          }
+          setStatistics(todayStats)
+
+          // Buscar dados de ontem para comparação
+          try {
+            const twoDayStats = await StatisticsService.getUserStatistics(userData.uid, 2)
+            if (twoDayStats.dailyStats.length >= 1) {
+              // Encontrar o dia que NÃO é hoje
+              const yesterdayData = twoDayStats.dailyStats.find(d => d.data !== todayDateStr)
+              setPreviousDayMinutes(yesterdayData?.tempo_total_minutos ?? null)
+            } else {
+              setPreviousDayMinutes(null)
+            }
+          } catch {
             setPreviousDayMinutes(null)
           }
-        } catch {
-          setPreviousDayMinutes(null)
+        } catch (nativeError) {
+          console.warn('Fallback para Firestore (dados nativos indisponíveis):', nativeError)
+          // Fallback: usar Firestore se dados nativos não estiverem disponíveis
+          const stats = await StatisticsService.getUserStatistics(userData.uid, period)
+          setStatistics(stats)
         }
+      } else {
+        // Para modo semanal, buscar do Firestore + atualizar hoje com dados nativos
+        try {
+          const [todayTime, apps] = await Promise.all([
+            ScreenTimeService.getScreenTimeToday(),
+            ScreenTimeService.getScreenTimeByApp(0),
+          ])
+          if (todayTime > 0 && userData?.uid) {
+            const appsWithCategory = apps.map(app => ({
+              ...app,
+              category: getAppCategory(app.packageName, app.category) as string,
+            }))
+            await ScreenTimeService.saveScreenTimeData(
+              userData.uid,
+              todayTime,
+              appsWithCategory as any
+            ).catch(() => {})
+          }
+        } catch {
+          // Ignorar erros na sincronização nativa
+        }
+
+        const stats = await StatisticsService.getUserStatistics(userData.uid, period)
+        setStatistics(stats)
       }
     } catch (error) {
       console.error("❌ Erro ao carregar estatísticas:", error)
