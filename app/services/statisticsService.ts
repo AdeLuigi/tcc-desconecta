@@ -1,4 +1,4 @@
-import firestore from '@react-native-firebase/firestore'
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, writeBatch, doc, getDoc } from '@react-native-firebase/firestore'
 
 export interface AppStatistic {
   packageName: string
@@ -44,13 +44,15 @@ class StatisticsService {
       const startDateStr = startDate.toISOString().split('T')[0]
       
       // Query para buscar estatísticas do usuário
-      const querySnapshot = await firestore()
-        .collection('estatisticas')
-        .where('userId', '==', userId)
-        .where('data', '>=', startDateStr)
-        .orderBy('data', 'desc')
-        .limit(days)
-        .get()
+      const db = getFirestore()
+      const q = query(
+        collection(db, 'estatisticas'),
+        where('userId', '==', userId),
+        where('data', '>=', startDateStr),
+        orderBy('data', 'desc'),
+        limit(days)
+      )
+      const querySnapshot = await getDocs(q)
       
       const dailyStats: DayStatistic[] = []
       
@@ -219,11 +221,13 @@ class StatisticsService {
       // Loop para deletar em batches até não haver mais documentos
       while (true) {
         // Query para buscar estatísticas do usuário (limitado a BATCH_SIZE)
-        const querySnapshot = await firestore()
-          .collection('estatisticas')
-          .where('userId', '==', userId)
-          .limit(BATCH_SIZE)
-          .get()
+        const db = getFirestore()
+        const q = query(
+          collection(db, 'estatisticas'),
+          where('userId', '==', userId),
+          limit(BATCH_SIZE)
+        )
+        const querySnapshot = await getDocs(q)
         
         // Se não houver mais documentos, termina o loop
         if (querySnapshot.empty) {
@@ -231,7 +235,7 @@ class StatisticsService {
         }
 
         // Criar batch para deletar os documentos encontrados
-        const batch = firestore().batch()
+        const batch = writeBatch(db)
         
         querySnapshot.forEach((doc) => {
           batch.delete(doc.ref)
@@ -271,10 +275,9 @@ class StatisticsService {
       console.log(`   Dias solicitados: ${days.join(', ')}`)
       
       // Buscar membros do grupo
-      const groupDoc = await firestore()
-        .collection('grupos')
-        .doc(groupId)
-        .get()
+      const db = getFirestore()
+      const groupDocRef = doc(collection(db, 'grupos'), groupId)
+      const groupDoc = await getDoc(groupDocRef)
       
       if (!groupDoc.exists) {
         console.log('❌ Grupo não encontrado!')
@@ -293,12 +296,13 @@ class StatisticsService {
       // DEBUG: Buscar alguns exemplos de estatísticas do primeiro usuário para ver formato
       if (userIds.length > 0) {
         console.log(`\n🔍 Verificando estatísticas disponíveis do primeiro usuário...`)
-        const sampleStats = await firestore()
-          .collection('estatisticas')
-          .where('userId', '==', userIds[0])
-          .orderBy('data', 'desc')
-          .limit(5)
-          .get()
+        const sampleQ = query(
+          collection(db, 'estatisticas'),
+          where('userId', '==', userIds[0]),
+          orderBy('data', 'desc'),
+          limit(5)
+        )
+        const sampleStats = await getDocs(sampleQ)
         
         if (!sampleStats.empty) {
           console.log(`   ✅ Encontradas ${sampleStats.size} estatísticas. Exemplos de datas:`)
@@ -323,11 +327,12 @@ class StatisticsService {
 
         // Para cada membro, buscar estatísticas do dia
         for (const userId of userIds) {
-          let querySnapshot = await firestore()
-            .collection('estatisticas')
-            .where('userId', '==', userId)
-            .where('data', '==', day)
-            .get()
+          const dayQ = query(
+            collection(db, 'estatisticas'),
+            where('userId', '==', userId),
+            where('data', '==', day)
+          )
+          let querySnapshot = await getDocs(dayQ)
 
           let tempoMinutos = 0
           let dataFound = false
@@ -346,11 +351,12 @@ class StatisticsService {
             dataObj.setDate(dataObj.getDate() - 1)
             const prevDay = dataObj.toISOString().split('T')[0]
 
-            const prevQuery = await firestore()
-              .collection('estatisticas')
-              .where('userId', '==', userId)
-              .where('data', '==', prevDay)
-              .get()
+            const prevQ = query(
+              collection(db, 'estatisticas'),
+              where('userId', '==', userId),
+              where('data', '==', prevDay)
+            )
+            const prevQuery = await getDocs(prevQ)
             if (!prevQuery.empty) {
               const prevData = prevQuery.docs[0].data()
               const prevTempo = prevData.tempo_total_minutos || 0
