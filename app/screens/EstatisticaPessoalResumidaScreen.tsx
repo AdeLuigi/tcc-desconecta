@@ -8,12 +8,18 @@ import { Icon } from "@/components/Icon"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { useAuth } from "@/context/AuthContext"
-import StatisticsService, { type StatisticsSummary } from "@/services/statisticsService"
+import StatisticsService, { type StatisticsSummary, type DayStatistic } from "@/services/statisticsService"
+import type { SvgProps } from "react-native-svg"
+
+const FireIcon: React.FC<SvgProps> = require("@assets/images/fire.svg").default
+const CheckIcon: React.FC<SvgProps> = require("@assets/images/check.svg").default
+const CloseIcon: React.FC<SvgProps> = require("@assets/images/close.svg").default
+const EclipseIcon: React.FC<SvgProps> = require("@assets/images/eclipse.svg").default
 import ScreenTimeService from "@/services/screenTime"
 import { getAppCategory, type AppCategory } from "@/utils/appCategories"
 
 const Logo = require("@assets/images/logo2.png")
-const HeaderBackground = require("@assets/images/9ae8f9136d5d3212c5b60df64ba4f3eec8172563.png")
+const HeaderBackground = require("@assets/images/metas.png")
 const RedesSociaisImg = require("@assets/images/redes-sociais.png")
 const EntretenimentoImg = require("@assets/images/entreterimento.png")
 const ProdutividadeImg = require("@assets/images/produtividade.png")
@@ -50,11 +56,20 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const [period, setPeriod] = useState<1 | 7>(7)
   const [refreshing, setRefreshing] = useState(false)
   const [previousDayMinutes, setPreviousDayMinutes] = useState<number | null>(null)
+  const [streakDailyStats, setStreakDailyStats] = useState<DayStatistic[]>([])
   const appState = useRef(AppState.currentState)
 
   useEffect(() => {
     loadStatistics()
   }, [period])
+
+  // Carregar dados semanais para o card de streak (independente do período selecionado)
+  useEffect(() => {
+    if (!userData?.uid) return
+    StatisticsService.getUserStatistics(userData.uid, 7)
+      .then(stats => setStreakDailyStats(stats.dailyStats))
+      .catch(() => {})
+  }, [userData?.uid])
 
   // Recarregar dados quando o app voltar do background
   useEffect(() => {
@@ -216,6 +231,69 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
     setRefreshing(false)
   }
 
+  // --- Streak helpers ---
+  const isStreakFeatureEnabled = Boolean(
+    userData?.configuracoes?.limite_tela_ativo
+  )
+
+  console.log("Streak Daily Stats:", isStreakFeatureEnabled)
+
+  const getCurrentWeekDays = (): string[] => {
+    const today = new Date()
+    const dayOfWeek = today.getDay() // 0=Dom, 1=Seg, ..., 6=Sab
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - daysFromMonday)
+    const days: string[] = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      days.push(d.toISOString().split('T')[0])
+    }
+    return days
+  }
+
+  const getDayInitial = (dateStr: string): string => {
+    const initials = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+    const date = new Date(dateStr + 'T12:00:00')
+    return initials[date.getDay()]
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const getDayStatus = (dateStr: string): 'check' | 'close' | 'eclipse' => {
+    if (dateStr >= todayStr) return 'eclipse' // hoje ou dias futuros
+    const stat = streakDailyStats.find(d => d.data === dateStr)
+    if (!stat) return 'eclipse'
+    const limitMinutes = userData?.configuracoes?.limite_tela_minutos ?? 60
+    return stat.tempo_total_minutos < limitMinutes ? 'check' : 'close'
+  }
+
+  const calculateStreakDays = (): number => {
+    const limitMinutes = userData?.configuracoes?.limite_tela_minutos ?? 60
+    let count = 0
+    const today = new Date()
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today)
+      d.setDate(today.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      const stat = streakDailyStats.find(s => s.data === dateStr)
+      if (!stat || stat.tempo_total_minutos >= limitMinutes) break
+      count++
+    }
+    return count
+  }
+
+  const formatLimitTime = (minutes: number): string => {
+    if (minutes >= 60) {
+      const h = Math.floor(minutes / 60)
+      const m = minutes % 60
+      return m > 0 ? `${h}h${m}min` : `${h}h`
+    }
+    return `${minutes}min`
+  }
+  // --- Fim streak helpers ---
+
   const chartConfig = {
     backgroundColor: "#FFFFFF",
     backgroundGradientFrom: "#FFFFFF",
@@ -358,6 +436,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           </View>
           <View style={styles.headerBannerOverlay} />
         </ImageBackground>
+        
 
         {/* Main Content */}
         <View style={styles.mainContent}>
@@ -367,7 +446,39 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             <Text style={styles.pageTitle}>Estatísticas Pessoais</Text>
           </View>
 
+                    {/* Card de Streak */}
+          {isStreakFeatureEnabled && (
+            <View style={styles.streakCard}>
+              <View style={styles.streakHeader}>
+                <FireIcon width={30} height={30} />
+                <View>
+                  <Text style={styles.streakLabel}>Seu streak</Text>
+                  <Text style={styles.streakCount}>{calculateStreakDays()} dias</Text>
+                </View>
+                <View style={styles.streakDays}>
+                  {getCurrentWeekDays().map(dateStr => {
+                    const status = getDayStatus(dateStr)
+                    return (
+                      <View key={dateStr} style={styles.streakDayItem}>
+                         <Text style={styles.streakDayLabel}>{getDayInitial(dateStr)}</Text>
+                        {status === 'check' && <CheckIcon width={20} height={20} />}
+                        {status === 'close' && <CloseIcon width={20} height={20} />}
+                        {status === 'eclipse' && <EclipseIcon width={20} height={20} />}
+                       
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+            </View>
+          )}
+          {isStreakFeatureEnabled && <Text style={styles.streakDescription}>
+          Você está a {calculateStreakDays()} dias com tempo de tela diário inferior a{" "}
+          {formatLimitTime(userData?.configuracoes?.limite_tela_minutos ?? 60)}
+        </Text>}
+
           {/* Seletor de período */}
+          <Text style={styles.sectionTitle}>Detalhes do uso</Text>   
           <View style={styles.periodSelector}>
             <TouchableOpacity 
               style={[styles.periodButton, period === 1 && styles.periodButtonActive]}
@@ -381,10 +492,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             >
               <Text style={[styles.periodButtonText, period === 7 && styles.periodButtonTextActive]}>Semanal</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Navegação de data - apenas modo Hoje */}
-          {period === 1 && (
+          </View>   
             <View style={styles.dateNavigator}>
               <TouchableOpacity>
                 <Icon icon="caretLeft" size={20} color="#322D70" />
@@ -394,10 +502,10 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
                 <Icon icon="caretRight" size={20} color="#322D70" />
               </TouchableOpacity>
             </View>
-          )}
+          
 
           {/* Tempo de tela do dia */}
-          <Text style={styles.sectionTitle}>Tempo de tela do dia</Text>
+          <Text style={styles.sectionTitle}>Dados de hoje</Text>
           <View style={styles.summaryCards}>
             <View style={styles.summaryCard}>
               <Text preset="heading" style={styles.summaryValueCyan}>
@@ -634,10 +742,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: 12,
-    marginBottom: 24,
     backgroundColor: "#C3CDE3",
     padding: 5,
-    borderRadius: 8,
+    borderTopEndRadius: 8,
+    borderTopStartRadius: 8,
   },
   periodButton: {
     flex: 1,
@@ -800,10 +908,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
     marginBottom: 20,
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dateText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#322D70",
   },
   sectionTitle: {
@@ -899,5 +1016,54 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     paddingVertical: 16,
+  },
+  streakCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    paddingVertical: 4,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  streakHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  streakLabel: {
+    fontSize: 16,
+    color: "#322D70",
+    fontWeight: "bold",
+  },
+  streakCount: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#322D70",
+  },
+  streakDays: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  streakDayItem: {
+    alignItems: "center",
+    gap: 4,
+  },
+  streakDayLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#322D70",
+  },
+  streakDescription: {
+    fontSize: 12,
+    color: "#322D70",
+    textAlign: "center",
+    fontWeight: "600",
+    marginBottom: 16,
   },
 })

@@ -156,6 +156,7 @@ export const iconRegistry = {
   chevron: require("@assets/icons/chevron.png"),
   search: SearchIcon,
   win: require("@assets/icons/win.png"),
+  winSVG: require("@assets/icons/win.svg").default,
   desafioDeTempo: require("@assets/icons/desafio-de-tempo.svg").default,
   comunidade: require("@assets/icons/comunidade.svg").default,
   uploadIcone: require("@assets/icons/uploadIcone.svg").default,
