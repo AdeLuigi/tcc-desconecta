@@ -15,6 +15,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import com.google.firebase.firestore.FirebaseFirestore
+import com.tccdesconecta.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -209,7 +210,7 @@ class ScreenTimeForegroundService : Service() {
 
     private fun buildNotification(contentText: String): Notification {
         val notification = NotificationCompat.Builder(this, ScreenTimeBackgroundConfig.NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_menu_recent_history)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Desconecta monitorando")
             .setContentText(contentText)
             .setOngoing(true)
