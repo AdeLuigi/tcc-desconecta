@@ -317,7 +317,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
         >
           <ImageBackground 
             source={BackgroundImage}
-            style={{ width: '100%', height: 127, justifyContent: 'center', }}
+            style={{ width: '100%', height: 127, justifyContent: 'center', borderRadius: 16, overflow: 'hidden' }}
             resizeMode="cover"
           >
             {loading ? (
@@ -608,7 +608,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   screenTimeCard: {
-
     padding: 16,
     marginBottom: 16,
     alignItems: "center",
