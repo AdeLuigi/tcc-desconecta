@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Clipboard, Share, KeyboardAvoidingView, Platform, RefreshControl } from "react-native"
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker"
 import { useFocusEffect } from "@react-navigation/native"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -11,7 +12,7 @@ import { useAuth } from "@/context/AuthContext"
 import { createFeedPost, type TipoAtividade } from "@/services/feedService"
 import * as ImagePicker from 'expo-image-picker'
 import storage from '@react-native-firebase/storage'
-import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "@react-native-firebase/firestore"
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc } from "@react-native-firebase/firestore"
 import {
   leaveGroup,
   grantAdminRole,
@@ -59,6 +60,18 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
   const [participantsModalVisible, setParticipantsModalVisible] = useState(false)
   const [selectedMember, setSelectedMember] = useState<string | null>(null)
   const [membrosPhotoURLs, setMembrosPhotoURLs] = useState<Record<string, string>>({})
+  const [editDataLimiteModalVisible, setEditDataLimiteModalVisible] = useState(false)
+  const [newDataLimite, setNewDataLimite] = useState(grupo.dataLimite || "")
+  const [dataLimiteDate, setDataLimiteDate] = useState<Date>(() => {
+    if (grupo.dataLimite) {
+      const d = new Date(grupo.dataLimite)
+      return isNaN(d.getTime()) ? new Date() : d
+    }
+    return new Date()
+  })
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [editGroupTypeModalVisible, setEditGroupTypeModalVisible] = useState(false)
+  const [newGroupType, setNewGroupType] = useState<"screenTime" | "screenTimeForApps" | "checkin">(grupo.groupType || "screenTime")
 
   // Verificar se o usuário atual é administrador
   const isAdmin = userData ? isUserAdmin(currentGroup, userData.uid) : false
@@ -261,6 +274,61 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       console.error('Erro ao carregar ranking semanal:', error)
     } finally {
       setLoadingRanking(false)
+    }
+  }
+
+  const formatarData = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return dateStr
+      return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })
+    } catch {
+      return dateStr
+    }
+  }
+
+  const calcularDuracao = (inicio: string, fim: string): number => {
+    try {
+      const inicioDate = new Date(inicio)
+      const fimDate = new Date(fim)
+      const diff = Math.abs(fimDate.getTime() - inicioDate.getTime())
+      return Math.ceil(diff / (1000 * 60 * 60 * 24))
+    } catch {
+      return 0
+    }
+  }
+
+  const handleSaveDataLimite = async (date?: Date) => {
+    if (!userData) return
+    const dateToSave = date ?? dataLimiteDate
+    setIsUpdating(true)
+    try {
+      const db = getFirestore()
+      const groupRef = doc(db, "grupos", grupo.id)
+      const isoDate = dateToSave.toISOString().split("T")[0]
+      await updateDoc(groupRef, { dataLimite: isoDate })
+      setNewDataLimite(isoDate)
+      await refreshGroupData()
+    } catch (e) {
+      Alert.alert("Erro", "Não foi possível salvar a data limite")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleSaveGroupType = async () => {
+    if (!userData) return
+    setIsUpdating(true)
+    try {
+      const db = getFirestore()
+      const groupRef = doc(db, "grupos", grupo.id)
+      await updateDoc(groupRef, { groupType: newGroupType })
+      setEditGroupTypeModalVisible(false)
+      await refreshGroupData()
+    } catch (e) {
+      Alert.alert("Erro", "Não foi possível salvar o critério de rankeamento")
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -1012,13 +1080,63 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
 
             {/* Sobre o grupo */}
             <View style={styles.infoCard}>
-              <Text style={styles.infoCardTitle}>Sobre o grupo</Text>
+              <View style={styles.infoCardHeader}>
+                <Text style={styles.infoCardTitle}>Sobre o grupo</Text>
+                {isAdmin && (
+                  <TouchableOpacity
+                    onPress={() => { setNewDescription(currentGroup.descricao); setNewGroupName(currentGroup.nome); setEditGroupModalVisible(true) }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Icon icon="editSvg" size={18} color="#6881BA" />
+                  </TouchableOpacity>
+                )}
+              </View>
               <Text style={[styles.infoCardText, { color: "#322D70" }]}>{currentGroup.descricao || "Sem descrição"}</Text>
             </View>
 
+            {/* Duração do desafio */}
+            {(currentGroup.criado_em || currentGroup.dataLimite) && (
+              <View style={styles.infoCard}>
+                <View style={styles.infoCardHeader}>
+                  <Text style={styles.infoCardTitle}>Duração do desafio</Text>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      onPress={() => { setDataLimiteDate(currentGroup.dataLimite ? new Date(currentGroup.dataLimite) : new Date()); setEditDataLimiteModalVisible(true) }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Icon icon="editSvg" size={18} color="#6881BA" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {currentGroup.dataLimite && currentGroup.criado_em ? (
+                  <>
+                    <Text style={[styles.infoCardText, { color: "#322D70", fontSize: 18, fontWeight: "bold", marginBottom: 4 }]}>
+                      {calcularDuracao(currentGroup.criado_em, currentGroup.dataLimite)} dias
+                    </Text>
+                    <Text style={[styles.infoCardText, { color: "#6881BA" }]}>
+                      {formatarData(currentGroup.criado_em)} → {formatarData(currentGroup.dataLimite)}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={[styles.infoCardText, { color: "#94A3B8" }]}>Sem data definida</Text>
+                )}
+
+              </View>
+            )}
+
             {/* Critério de rankeamento */}
             <View style={styles.infoCard}>
-              <Text style={styles.infoCardTitle}>Critério de rankeamento</Text>
+              <View style={styles.infoCardHeader}>
+                <Text style={styles.infoCardTitle}>Critério de rankeamento</Text>
+                {isAdmin && (
+                  <TouchableOpacity
+                    onPress={() => { setNewGroupType(currentGroup.groupType || "screenTime"); setEditGroupTypeModalVisible(true) }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Icon icon="editSvg" size={18} color="#6881BA" />
+                  </TouchableOpacity>
+                )}
+              </View>
               <View style={styles.criterionPill}>
                 <Text style={styles.criterionPillText}>
                   {currentGroup.groupType === "screenTimeForApps"
@@ -1048,6 +1166,24 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       >
         <Text style={styles.fabButtonText}>+</Text>
       </TouchableOpacity>
+
+      {/* DatePicker de Data Limite (fora do ScrollView para evitar conflito com dialog nativo Android) */}
+      {editDataLimiteModalVisible && (
+        <DateTimePicker
+          value={dataLimiteDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "compact" : "default"}
+          minimumDate={new Date()}
+          onChange={(_event: DateTimePickerEvent, selectedDate?: Date) => {
+            setEditDataLimiteModalVisible(false)
+            if (selectedDate) {
+              setDataLimiteDate(selectedDate)
+              handleSaveDataLimite(selectedDate)
+            }
+          }}
+          locale="pt-BR"
+        />
+      )}
 
       {/* Modal de Participantes */}
       <Modal
@@ -1360,6 +1496,61 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal de Editar Critério de Rankeamento */}
+      <Modal
+        visible={editGroupTypeModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => !isUpdating && setEditGroupTypeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Critério de rankeamento</Text>
+              <TouchableOpacity onPress={() => setEditGroupTypeModalVisible(false)} disabled={isUpdating}>
+                <Icon icon="x" size={24} color="#322D70" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              {([
+                { value: "screenTime", label: "Menor tempo de tela total" },
+                { value: "screenTimeForApps", label: "Menor tempo em apps selecionados" },
+                { value: "checkin", label: "Check-in diário" },
+              ] as const).map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.groupTypeOption, newGroupType === option.value && styles.groupTypeOptionActive]}
+                  onPress={() => setNewGroupType(option.value)}
+                >
+                  <View style={[styles.groupTypeRadio, newGroupType === option.value && styles.groupTypeRadioActive]}>
+                    {newGroupType === option.value && <View style={styles.groupTypeRadioDot} />}
+                  </View>
+                  <Text style={[styles.groupTypeOptionText, newGroupType === option.value && styles.groupTypeOptionTextActive]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditGroupTypeModalVisible(false)} disabled={isUpdating}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.postButton, isUpdating && styles.postButtonDisabled]}
+                onPress={handleSaveGroupType}
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.postButtonText}>Salvar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Modal de Editar Descrição */}
@@ -2454,5 +2645,61 @@ const styles = StyleSheet.create({
     color: "#322D70",
     marginTop: 12,
     fontWeight: "600",
+  },
+  infoCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  groupTypeOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 10,
+    backgroundColor: "#F8FAFC",
+  },
+  groupTypeOptionActive: {
+    borderColor: "#322D70",
+    backgroundColor: "#E0E7FF",
+  },
+  groupTypeRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#94A3B8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  groupTypeRadioActive: {
+    borderColor: "#322D70",
+  },
+  groupTypeRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#322D70",
+  },
+  groupTypeOptionText: {
+    fontSize: 15,
+    color: "#64748B",
+  },
+  groupTypeOptionTextActive: {
+    color: "#322D70",
+    fontWeight: "600",
+  },
+  datePreviewText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#322D70",
+    fontWeight: "600",
+    textAlign: "center",
+    textTransform: "capitalize",
   },
 })

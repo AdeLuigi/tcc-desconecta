@@ -166,6 +166,7 @@ export const iconRegistry = {
   participantes: require("@assets/icons/participantes.svg").default,
   shareSvg: require("@assets/icons/share.svg").default,
   copySvg: require("@assets/icons/copy.svg").default,
+  editSvg: require("@assets/icons/Edit.svg").default,
   share: require("@assets/icons/share.png"),
   caretLeft: require("@assets/icons/caretLeft.png"),
   caretRight: require("@assets/icons/caretRight.png"),
