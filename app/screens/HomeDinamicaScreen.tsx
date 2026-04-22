@@ -117,53 +117,58 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
   }
 
   const checkPermissionAndLoadData = async () => {
+    const t0 = Date.now()
     try {
+      const tPerm = Date.now()
       const permission = await ScreenTimeService.hasPermission()
+      console.log(`[Home] hasPermission: ${Date.now() - tPerm}ms → ${permission}`)
       setHasPermission(permission)
       
       if (permission) {
-        // Carrega dados de tela imediatamente, sem esperar background sync
         await loadScreenTimeData()
-
-        // Configura background sync/tracking em paralelo (fire-and-forget)
         ScreenTimeService.configureBackgroundSyncUser(userData?.uid).catch(() => {})
         ScreenTimeService.startBackgroundTracking().catch(() => {})
       }
     } catch (error) {
       console.error('Erro ao verificar permissão:', error)
     } finally {
+      console.log(`[Home] checkPermissionAndLoadData total: ${Date.now() - t0}ms`)
       setLoading(false)
     }
   }
 
   const loadScreenTimeData = async () => {
+    const t0 = Date.now()
     try {
-      const [todayTime, apps] = await Promise.all([
-        ScreenTimeService.getScreenTimeToday(),
-        ScreenTimeService.getScreenTimeByApp(0), // 0 = apenas hoje
-      ])
-      
-      console.log('✅ Tempo de tela de hoje:', todayTime, 'minutos')
+      const tNative = Date.now()
+      const apps = await ScreenTimeService.getScreenTimeByApp(0)
+      console.log(`[Home] getScreenTimeByApp(0): ${Date.now() - tNative}ms → ${apps.length} apps`)
 
-      // Adicionar categoria com fallback para lista manual
+      const todayTime = apps.reduce((sum, app) => sum + app.timeInMinutes, 0)
+      console.log(`[Home] Tempo total de hoje: ${todayTime}min`)
+
       const appsWithCategory = apps.map(app => ({
         ...app,
         category: getAppCategory(app.packageName, app.category),
       }))
       
       setScreenTimeToday(todayTime)
-      setTopApps(appsWithCategory.slice(0, 3)) // Top 3 apps
+      setTopApps(appsWithCategory.slice(0, 3))
       
-      // Salvar dados no Firestore em background (não bloqueia a UI)
       if (userData?.uid && todayTime > 0) {
+        const tSave = Date.now()
         ScreenTimeService.saveScreenTimeData(
           userData.uid,
           todayTime,
           appsWithCategory
-        ).catch((error) => console.error('Erro ao salvar tempo de tela:', error))
+        )
+          .then(() => console.log(`[Home] saveScreenTimeData (bg): ${Date.now() - tSave}ms`))
+          .catch((error) => console.error('[Home] Erro ao salvar tempo de tela:', error))
       }
     } catch (error) {
-      console.error('Erro ao carregar dados de tempo de tela:', error)
+      console.error('[Home] Erro ao carregar dados de tempo de tela:', error)
+    } finally {
+      console.log(`[Home] loadScreenTimeData total: ${Date.now() - t0}ms`)
     }
   }
 

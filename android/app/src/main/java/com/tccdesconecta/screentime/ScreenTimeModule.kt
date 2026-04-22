@@ -34,6 +34,13 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         )
     }
 
+    // Cache de packages aprovados/rejeitados para evitar consultas repetidas ao PackageManager
+    private val approvedAppsCache = mutableSetOf<String>()
+    private val rejectedAppsCache = mutableSetOf<String>()
+
+    // Cache de ícones Base64 para evitar recompressão de bitmap a cada chamada
+    private val iconCache = HashMap<String, String>(64)
+
     // Retorna o nome do módulo que será usado no JavaScript
     override fun getName(): String {
         return "ScreenTimeModule"
@@ -41,9 +48,14 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
     // Verifica se um app é relevante para o usuário
     private fun isAppRelevant(pkg: String, packageManager: PackageManager): Boolean {
+        // Consultar cache de aprovados/rejeitados antes de qualquer I/O
+        if (approvedAppsCache.contains(pkg)) return true
+        if (rejectedAppsCache.contains(pkg)) return false
+
         // Regra zero: Sempre inclui o próprio app (Desconecta)
         if (pkg == reactApplicationContext.packageName) {
             Log.d("ScreenTimeModule", "App relevante (Próprio App): $pkg")
+            approvedAppsCache.add(pkg)
             return true
         }
 
@@ -103,6 +115,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
             if (excludedPackages.contains(pkg)) {
                 Log.d("ScreenTimeModule", "App ignorado (Blacklist): $pkg")
+                rejectedAppsCache.add(pkg)
                 return false
             }
 
@@ -111,6 +124,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             // mas o usuário gasta tempo neles.
             if (pkg == "com.android.settings" || pkg == "com.hawei.android.libs.services" || pkg == "com.google.android.settings.intelligence") {
                 Log.d("ScreenTimeModule", "App relevante (Configurações): $pkg")
+                approvedAppsCache.add(pkg)
                 return true
             }
 
@@ -119,6 +133,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val homeList = packageManager.queryIntentActivities(homeIntent, 0)
             if (homeList.isNotEmpty()) {
                 Log.d("ScreenTimeModule", "App ignorado (Launcher/Home): $pkg")
+                rejectedAppsCache.add(pkg)
                 return false
             }
 
@@ -132,6 +147,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val list = packageManager.queryIntentActivities(intent, 0)
             if (list.isNotEmpty()) {
                 Log.d("ScreenTimeModule", "App relevante (Launcher): $pkg")
+                approvedAppsCache.add(pkg)
                 return true
             }
 
@@ -141,6 +157,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             
             if (!isSystemApp || isUpdatedSystemApp) {
                 Log.d("ScreenTimeModule", "App relevante (Usuário/Atualizado): $pkg")
+                approvedAppsCache.add(pkg)
                 return true
             }
             
@@ -148,13 +165,16 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
             val hasInternet = packageManager.checkPermission(android.Manifest.permission.INTERNET, pkg) == PackageManager.PERMISSION_GRANTED
             if (hasInternet) {
                  Log.d("ScreenTimeModule", "App relevante (Internet Permission): $pkg")
+                 approvedAppsCache.add(pkg)
                  return true
             }
 
             Log.d("ScreenTimeModule", "App ignorado: $pkg")
+            rejectedAppsCache.add(pkg)
             return false
         } catch (e: PackageManager.NameNotFoundException) {
             Log.d("ScreenTimeModule", "App não encontrado (desinstalado ou sem permissão): $pkg")
+            rejectedAppsCache.add(pkg)
             return false
         } catch (e: Exception) {
             Log.e("ScreenTimeModule", "Erro ao verificar app $pkg", e)
@@ -609,13 +629,17 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                     val appName = pm.getApplicationLabel(appInfo).toString()
                     appData.putString("appName", appName)
                     
-                    // Obtém o ícone do app
-                    val icon = pm.getApplicationIcon(entry.key)
-                    // Converte o ícone para Base64
-                    val iconBase64 = drawableToBase64(icon)
-                    // Se a conversão foi bem-sucedida, adiciona ao resultado
-                    if (iconBase64 != null) {
-                        appData.putString("appIcon", iconBase64)
+                    // Obtém o ícone usando cache para evitar recompressão de bitmap
+                    val cachedIcon = iconCache[entry.key]
+                    if (cachedIcon != null) {
+                        appData.putString("appIcon", cachedIcon)
+                    } else {
+                        val icon = pm.getApplicationIcon(entry.key)
+                        val iconBase64 = drawableToBase64(icon)
+                        if (iconBase64 != null) {
+                            iconCache[entry.key] = iconBase64
+                            appData.putString("appIcon", iconBase64)
+                        }
                     }
 
                     // Se o Android for Oreo (API 26) ou superior
@@ -860,13 +884,17 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                     val appName = pm.getApplicationLabel(appInfo).toString()
                     appData.putString("appName", appName)
                     
-                    // Obtém o ícone do app
-                    val icon = pm.getApplicationIcon(entry.key)
-                    // Converte o ícone para Base64
-                    val iconBase64 = drawableToBase64(icon)
-                    // Se a conversão foi bem-sucedida, adiciona ao resultado
-                    if (iconBase64 != null) {
-                        appData.putString("appIcon", iconBase64)
+                    // Obtém o ícone usando cache para evitar recompressão de bitmap
+                    val cachedIcon = iconCache[entry.key]
+                    if (cachedIcon != null) {
+                        appData.putString("appIcon", cachedIcon)
+                    } else {
+                        val icon = pm.getApplicationIcon(entry.key)
+                        val iconBase64 = drawableToBase64(icon)
+                        if (iconBase64 != null) {
+                            iconCache[entry.key] = iconBase64
+                            appData.putString("appIcon", iconBase64)
+                        }
                     }
 
                     // Se o Android for Oreo (API 26) ou superior

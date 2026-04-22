@@ -66,15 +66,25 @@ export interface AppBlockingStatus {
  * Serviço para capturar dados de tempo de tela no Android
  */
 class ScreenTimeService {
+  private _permissionCache: { value: boolean; ts: number } | null = null;
+  private readonly PERMISSION_CACHE_TTL_MS = 30_000; // 30 segundos
+
   /**
-   * Verifica se o app tem permissão para acessar estatísticas de uso
+   * Verifica se o app tem permissão para acessar estatísticas de uso.
+   * Resultado cacheado por 30s para evitar round-trips nativos repetidos.
    */
   async hasPermission(): Promise<boolean> {
     if (Platform.OS !== 'android') {
       return false;
     }
+    const now = Date.now();
+    if (this._permissionCache && (now - this._permissionCache.ts) < this.PERMISSION_CACHE_TTL_MS) {
+      return this._permissionCache.value;
+    }
     try {
-      return await ScreenTimeModule.hasUsageStatsPermission();
+      const value = await ScreenTimeModule.hasUsageStatsPermission();
+      this._permissionCache = { value, ts: now };
+      return value;
     } catch (error) {
       console.error('Erro ao verificar permissão:', error);
       return false;
@@ -89,6 +99,7 @@ class ScreenTimeService {
       return;
     }
     try {
+      this._permissionCache = null; // Invalida o cache para re-verificar após o usuário conceder
       ScreenTimeModule.requestUsageStatsPermission();
     } catch (error) {
       console.error('Erro ao solicitar permissão:', error);
@@ -434,28 +445,31 @@ class ScreenTimeService {
       // Começamos do dia 1 para não duplicar o salvamento de hoje
       for (let daysAgo = 1; daysAgo <= 7; daysAgo++) {
         try {
-          // Buscar dados do dia específico
-          const dayData = await this.getScreenTimeForSpecificDay(daysAgo);
-          
-          if (!dayData || dayData.totalTimeInMinutes === 0) {
-            skippedDays.push(dayData?.date || `${daysAgo} dias atrás`);
+          // Calcular a data do dia
+          const d = new Date();
+          d.setDate(d.getDate() - daysAgo);
+          const dateKey = d.toISOString().split('T')[0];
+
+          // Verificar no Firestore ANTES de qualquer chamada nativa
+          // Dias passados já computados não precisam ser recalculados
+          const db = getFirestore();
+          const existingDocs = await getDocs(query(
+            collection(db, "estatisticas"),
+            where("userId", "==", userId),
+            where("data", "==", dateKey),
+            limit(1)
+          ));
+
+          if (!existingDocs.empty) {
+            skippedDays.push(dateKey);
             continue;
           }
 
-          // Verificar se já existe registro para essa data
-          const db = getFirestore();
-          const tempoTelaRef = collection(db, "estatisticas");
-          const q = query(
-            tempoTelaRef,
-            where("userId", "==", userId),
-            where("data", "==", dayData.date),
-            limit(1)
-          );
+          // Só acessa o módulo nativo se não houver dado salvo
+          const dayData = await this.getScreenTimeForSpecificDay(daysAgo);
           
-          const existingDocs = await getDocs(q);
-          
-          if (!existingDocs.empty) {
-            skippedDays.push(dayData.date);
+          if (!dayData || dayData.totalTimeInMinutes === 0) {
+            skippedDays.push(dateKey);
             continue;
           }
 

@@ -202,14 +202,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
     loadStatistics()
   }, [period])
 
-  // Carregar dados semanais para o card de streak (independente do período selecionado)
-  useEffect(() => {
-    if (!userData?.uid) return
-    StatisticsService.getUserStatistics(userData.uid, 7)
-      .then(stats => setStreakDailyStats(stats.dailyStats))
-      .catch(() => {})
-  }, [userData?.uid])
-
   // Recarregar dados quando o app voltar do background
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -234,29 +226,34 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
       return
     }
 
+    const t0 = Date.now()
+    console.log(`[Stats] loadStatistics iniciado (period=${period})`)
+
     try {
       setLoading(true)
 
-      // Para o modo "Hoje", buscar dados nativos em tempo real em vez de depender apenas do Firestore
       if (period === 1) {
         try {
-          const [todayTime, apps] = await Promise.all([
-            ScreenTimeService.getScreenTimeToday(),
-            ScreenTimeService.getScreenTimeByApp(0),
-          ])
+          const tNative = Date.now()
+          const apps = await ScreenTimeService.getScreenTimeByApp(0)
+          console.log(`[Stats] getScreenTimeByApp(0): ${Date.now() - tNative}ms → ${apps.length} apps`)
+          const todayTime = apps.reduce((sum, app) => sum + app.timeInMinutes, 0)
+          console.log(`[Stats] Tempo total hoje: ${todayTime}min`)
 
           const appsWithCategory = apps.map(app => ({
             ...app,
             category: getAppCategory(app.packageName, app.category) as string,
           }))
 
-          // Salvar no Firestore em background para manter histórico atualizado
           if (todayTime > 0) {
+            const tSave = Date.now()
             ScreenTimeService.saveScreenTimeData(
               userData.uid,
               todayTime,
               appsWithCategory as any
-            ).catch((err) => console.error('Erro ao salvar tempo de tela:', err))
+            )
+              .then(() => console.log(`[Stats] saveScreenTimeData (bg): ${Date.now() - tSave}ms`))
+              .catch((err) => console.error('[Stats] Erro ao salvar tempo de tela:', err))
           }
 
           // Calcular categorias a partir dos apps nativos
@@ -296,16 +293,13 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           }
           setStatistics(todayStats)
 
-          // Buscar dados de ontem para comparação
           try {
-            const twoDayStats = await StatisticsService.getUserStatistics(userData.uid, 2)
-            if (twoDayStats.dailyStats.length >= 1) {
-              // Encontrar o dia que NÃO é hoje
-              const yesterdayData = twoDayStats.dailyStats.find(d => d.data !== todayDateStr)
-              setPreviousDayMinutes(yesterdayData?.tempo_total_minutos ?? null)
-            } else {
-              setPreviousDayMinutes(null)
-            }
+            const tFirestore = Date.now()
+            const historicalStats = await StatisticsService.getUserStatistics(userData.uid, 7)
+            console.log(`[Stats] getUserStatistics(7) para streak/comparação: ${Date.now() - tFirestore}ms → ${historicalStats.dailyStats.length} dias`)
+            setStreakDailyStats(historicalStats.dailyStats)
+            const yesterdayData = historicalStats.dailyStats.find(d => d.data !== todayDateStr)
+            setPreviousDayMinutes(yesterdayData?.tempo_total_minutos ?? null)
           } catch {
             setPreviousDayMinutes(null)
           }
@@ -316,14 +310,12 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           setStatistics(stats)
         }
       } else {
-        // Para modo semanal, buscar do Firestore + atualizar hoje com dados nativos
         let nativeIconMap: Record<string, string> = {}
         try {
-          const [todayTime, apps] = await Promise.all([
-            ScreenTimeService.getScreenTimeToday(),
-            ScreenTimeService.getScreenTimeByApp(0),
-          ])
-          // Montar mapa de ícones a partir dos dados nativos
+          const tNative = Date.now()
+          const apps = await ScreenTimeService.getScreenTimeByApp(0)
+          console.log(`[Stats] getScreenTimeByApp(0) [semanal]: ${Date.now() - tNative}ms → ${apps.length} apps`)
+          const todayTime = apps.reduce((sum, app) => sum + app.timeInMinutes, 0)
           apps.forEach(app => {
             if (app.appIcon) nativeIconMap[app.packageName] = app.appIcon
           })
@@ -332,17 +324,24 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
               ...app,
               category: getAppCategory(app.packageName, app.category) as string,
             }))
-            await ScreenTimeService.saveScreenTimeData(
+            const tSave = Date.now()
+            ScreenTimeService.saveScreenTimeData(
               userData.uid,
               todayTime,
               appsWithCategory as any
-            ).catch(() => {})
+            )
+              .then(() => console.log(`[Stats] saveScreenTimeData [semanal]: ${Date.now() - tSave}ms`))
+              .catch(() => {})
           }
         } catch {
           // Ignorar erros na sincronização nativa
         }
 
+        const tFirestore = Date.now()
         const stats = await StatisticsService.getUserStatistics(userData.uid, period)
+        console.log(`[Stats] getUserStatistics(${period}): ${Date.now() - tFirestore}ms → ${stats.dailyStats.length} dias`)
+        // Reaproveitamos os dados semanais para o card de streak
+        setStreakDailyStats(stats.dailyStats)
         // Enriquecer topApps com ícones nativos (não salvos no Firestore)
         if (Object.keys(nativeIconMap).length > 0) {
           stats.topApps = stats.topApps.map(app => ({
@@ -361,6 +360,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
     } catch (error) {
       console.error("❌ Erro ao carregar estatísticas:", error)
     } finally {
+      console.log(`[Stats] loadStatistics total: ${Date.now() - t0}ms`)
       setLoading(false)
     }
   }
@@ -392,8 +392,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
   const isStreakFeatureEnabled = Boolean(
     userData?.configuracoes?.limite_tela_ativo
   )
-
-  console.log("Streak Daily Stats:", isStreakFeatureEnabled)
 
   const getCurrentWeekDays = (): string[] => {
     const today = new Date()
