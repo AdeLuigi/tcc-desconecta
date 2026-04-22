@@ -780,7 +780,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                         onPress={() => { loadMembrosPhotoURLs(); setParticipantsModalVisible(true) }}
                       >
                         <Icon icon="participantes" size={24} color="#322D70" />
-                        <Text style={styles.participantsText}>{currentGroup.membros.length} participantes</Text>
+                        <Text style={styles.participantsText} numberOfLines={1}>{currentGroup.membros.length} participantes</Text>
                         <Text style={styles.participantsChevron}>›</Text>
                       </TouchableOpacity>
               </View>
@@ -964,7 +964,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                     onPress={() => { loadMembrosPhotoURLs(); setParticipantsModalVisible(true) }}
                   >
                     <Icon icon="participantes" size={24} color="#322D70" />
-                    <Text style={styles.participantsText}>{currentGroup.membros.length} participantes</Text>
+                    <Text style={styles.participantsText} numberOfLines={1}>{currentGroup.membros.length} participantes</Text>
                     <Text style={styles.participantsChevron}>›</Text>
                   </TouchableOpacity>
                 </View>
@@ -1659,12 +1659,11 @@ const styles = StyleSheet.create({
   },
   groupSummaryTop: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     marginBottom: 12,
   },
   groupSummaryPhoto: {
     width: 120,
-    height: 120,
     borderRadius: 16,
     backgroundColor: "#E0E7FF",
     justifyContent: "center",
@@ -1673,8 +1672,11 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   groupSummaryImage: {
-    width: "100%",
-    height: "100%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   groupSummaryInitial: {
     fontSize: 40,
@@ -1683,7 +1685,7 @@ const styles = StyleSheet.create({
   },
   groupSummaryInfo: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "space-between",
   },
   bestMemberRow: {
     flexDirection: "row",
@@ -1755,7 +1757,7 @@ const styles = StyleSheet.create({
   },
   participantsText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#6881BA",
     marginLeft: 12,
