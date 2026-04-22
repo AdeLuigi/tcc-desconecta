@@ -48,6 +48,145 @@ interface EstatisticaPessoalResumidaScreenProps extends AppStackScreenProps<"Est
 
 const screenWidth = Dimensions.get("window").width
 
+// --- Weekly Stacked Bar Chart ---
+const STACKED_BAR_HEIGHT = 180
+const MAX_CHART_MINUTES = 8 * 60
+
+const CHART_CATEGORY_COLORS: Record<string, string> = {
+  social: '#E91E63',
+  communication: '#4CAF50',
+  entertainment: '#FF9800',
+  streaming: '#E91E63',
+  games: '#9C27B0',
+  music: '#F44336',
+  photo: '#00BCD4',
+  productivity: '#2196F3',
+  education: '#3F51B5',
+  tools: '#607D8B',
+  browser: '#2196F3',
+  finance: '#FFC107',
+  shopping: '#FFC107',
+  news: '#795548',
+  other: '#9E9E9E',
+  others: '#9E9E9E',
+}
+
+const WEEK_DAY_ABBREVS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
+const HOUR_LABELS = [14 ,12 ,10 ,8 , 6, 4, 2, 0]
+
+const WeeklyStackedBarChart: React.FC<{ dailyStats: DayStatistic[] }> = ({ dailyStats }) => {
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+
+  const sunday = new Date(today)
+  sunday.setDate(today.getDate() - today.getDay())
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(sunday)
+    d.setDate(sunday.getDate() + i)
+    return d.toISOString().split('T')[0]
+  })
+
+  const Y_AXIS_WIDTH = 30
+  const chartInnerWidth = screenWidth - 32 - Y_AXIS_WIDTH - 16
+  const barWidth = Math.floor((chartInnerWidth / 7) * 0.55)
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', height: STACKED_BAR_HEIGHT }}>
+        {/* Y-axis labels */}
+        <View style={{ width: Y_AXIS_WIDTH, height: STACKED_BAR_HEIGHT, justifyContent: 'space-between' }}>
+          {HOUR_LABELS.map(h => (
+            <Text key={h} style={{ fontSize: 10, color: '#888', textAlign: 'right', paddingRight: 4, lineHeight: 12, fontWeight:"bold" }}>
+              {h > 0 ? `${h}h` : '0'}
+            </Text>
+          ))}
+        </View>
+
+        {/* Chart area */}
+        <View style={{ flex: 1, height: STACKED_BAR_HEIGHT, position: 'relative' }}>
+          {/* Horizontal grid lines */}
+          {HOUR_LABELS.map((h, idx) => (
+            <View
+              key={`grid-${h}`}
+              style={{
+                position: 'absolute',
+                top: idx * (STACKED_BAR_HEIGHT / (HOUR_LABELS.length - 1)),
+                left: 0,
+                right: 0,
+                height: 1,
+                backgroundColor: '#EBEBEB',
+              }}
+            />
+          ))}
+
+          {/* Bars */}
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
+            {weekDays.map((dateStr, i) => {
+              const stat = dailyStats.find(d => d.data === dateStr)
+              const isToday = dateStr === todayStr
+              const isFuture = dateStr > todayStr
+              const totalMinutes = stat?.tempo_total_minutos || 0
+              const cats = stat?.categorias || {}
+
+              const clampedMinutes = Math.min(totalMinutes, MAX_CHART_MINUTES)
+              const barH = clampedMinutes > 0 ? (clampedMinutes / MAX_CHART_MINUTES) * STACKED_BAR_HEIGHT : 0
+
+              // Sort ascending so the largest segment renders last (visually at the bottom)
+              const segments = Object.entries(cats)
+                .filter(([, m]) => (m as number) > 0)
+                .sort(([, a], [, b]) => (a as number) - (b as number))
+
+              return (
+                <View key={dateStr} style={{ width: barWidth, height: STACKED_BAR_HEIGHT, justifyContent: 'flex-end' }}>
+                  {!isFuture && barH > 0 && (
+                    <View
+                      style={{
+                        width: barWidth,
+                        height: barH,
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                        opacity: isToday ? 0.55 : 1,
+                      }}
+                    >
+                      {segments.map(([cat, mins]) => (
+                        <View
+                          key={cat}
+                          style={{
+                            width: '100%',
+                            height: Math.max(1, Math.round(((mins as number) / totalMinutes) * barH)),
+                            backgroundColor: CHART_CATEGORY_COLORS[cat] ?? '#9E9E9E',
+                          }}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )
+            })}
+          </View>
+        </View>
+      </View>
+
+      {/* X-axis day labels */}
+      <View style={{ flexDirection: 'row', marginLeft: Y_AXIS_WIDTH, marginTop: 4 }}>
+        {weekDays.map((dateStr, i) => (
+          <View key={dateStr} style={{ flex: 1, alignItems: 'center' }}>
+            <Text
+              style={{
+                fontSize: 10,
+                color: dateStr === todayStr ? '#322D70' : '#888',
+                fontWeight: dateStr === todayStr ? '700' : '400',
+              }}
+            >
+              {WEEK_DAY_ABBREVS[i]}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
 export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumidaScreenProps> = ({ navigation }) => {
   const { theme } = useAppTheme()
   const { userData } = useAuth()
@@ -178,11 +317,16 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
         }
       } else {
         // Para modo semanal, buscar do Firestore + atualizar hoje com dados nativos
+        let nativeIconMap: Record<string, string> = {}
         try {
           const [todayTime, apps] = await Promise.all([
             ScreenTimeService.getScreenTimeToday(),
             ScreenTimeService.getScreenTimeByApp(0),
           ])
+          // Montar mapa de ícones a partir dos dados nativos
+          apps.forEach(app => {
+            if (app.appIcon) nativeIconMap[app.packageName] = app.appIcon
+          })
           if (todayTime > 0 && userData?.uid) {
             const appsWithCategory = apps.map(app => ({
               ...app,
@@ -199,6 +343,19 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
         }
 
         const stats = await StatisticsService.getUserStatistics(userData.uid, period)
+        // Enriquecer topApps com ícones nativos (não salvos no Firestore)
+        if (Object.keys(nativeIconMap).length > 0) {
+          stats.topApps = stats.topApps.map(app => ({
+            ...app,
+            appIcon: app.appIcon ?? nativeIconMap[app.packageName],
+          }))
+          if (stats.mostUsedApp && !stats.mostUsedApp.appIcon) {
+            stats.mostUsedApp = {
+              ...stats.mostUsedApp,
+              appIcon: nativeIconMap[stats.mostUsedApp.packageName],
+            }
+          }
+        }
         setStatistics(stats)
       }
     } catch (error) {
@@ -530,7 +687,14 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             ) : null}
           </View>
 
-          {/* Categorias mais usadas */}
+          {/* Gráfico de StackedBar - Tempo semanal */}
+          {period === 7 && (
+            <View style={styles.chartCard}>
+              <Text preset="subheading" style={styles.chartTitle}>Uso por categoria na semana</Text>
+              <WeeklyStackedBarChart dailyStats={statistics.dailyStats} />
+            </View>
+          )}
+
           {/* Categorias mais usadas */}
           <Text style={styles.sectionTitle}>Categorias mais usadas {period === 1 ? 'hoje' : 'na semana'}</Text>
           <View style={styles.categoriesCard}>
@@ -573,77 +737,6 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
               <Text style={styles.emptySection}>Dados detalhados por app ainda não disponíveis.</Text>
             )}
           </View>
-
-          {/* Gráficos - apenas modo Semanal */}
-          {period === 7 && (
-            <>
-              <View style={styles.chartCard}>
-                <Text preset="subheading" style={styles.chartTitle}>
-                  Tempo de Tela Diário (minutos)
-                </Text>
-                <LineChart
-                  data={{
-                    labels: dailyLabels,
-                    datasets: [{ data: dailyData }],
-                  }}
-                  width={screenWidth - 64}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  style={styles.chart}
-                  withVerticalLabels={true}
-                  withHorizontalLabels={true}
-                  withDots={true}
-                  withShadow={false}
-                  fromZero={true}
-                />
-              </View>
-
-              {topAppsForChart.length > 0 && (
-                <View style={styles.chartCard}>
-                  <Text preset="subheading" style={styles.chartTitle}>
-                    Apps Mais Usados (minutos)
-                  </Text>
-                  <BarChart
-                    data={{
-                      labels: appLabels,
-                      datasets: [{ data: appData }],
-                    }}
-                    width={screenWidth - 64}
-                    height={220}
-                    yAxisLabel=""
-                    yAxisSuffix=""
-                    chartConfig={chartConfig}
-                    style={styles.chart}
-                    withVerticalLabels={true}
-                    withHorizontalLabels={true}
-                    fromZero={true}
-                    showValuesOnTopOfBars={true}
-                  />
-                </View>
-              )}
-
-              {categoryData.length > 0 && (
-                <View style={styles.chartCard}>
-                  <Text preset="subheading" style={styles.chartTitle}>
-                    Distribuição por Categoria
-                  </Text>
-                  <PieChart
-                    data={categoryData}
-                    width={screenWidth - 64}
-                    height={220}
-                    chartConfig={chartConfig}
-                    accessor="population"
-                    backgroundColor="transparent"
-                    paddingLeft="15"
-                    absolute
-                    style={styles.chart}
-                  />
-                </View>
-              )}
-            </>
-          )}
-
         </View>
       </ScrollView>
     </Screen>
