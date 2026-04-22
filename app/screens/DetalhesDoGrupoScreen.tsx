@@ -777,7 +777,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                                       {/* Participants Button */}
                       <TouchableOpacity
                         style={styles.participantsButton}
-                        onPress={() => { loadMembrosPhotoURLs(); setParticipantsModalVisible(true) }}
+                        onPress={() => navigation.navigate("ParticipantesDoGrupo", { grupo: currentGroup })}
                       >
                         <Icon icon="participantes" size={24} color="#322D70" />
                         <Text style={styles.participantsText} numberOfLines={1}>{currentGroup.membros.length} participantes</Text>
@@ -961,7 +961,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                   )}
                   <TouchableOpacity
                     style={styles.participantsButton}
-                    onPress={() => { loadMembrosPhotoURLs(); setParticipantsModalVisible(true) }}
+                    onPress={() => navigation.navigate("ParticipantesDoGrupo", { grupo: currentGroup })}
                   >
                     <Icon icon="participantes" size={24} color="#322D70" />
                     <Text style={styles.participantsText} numberOfLines={1}>{currentGroup.membros.length} participantes</Text>

@@ -83,6 +83,30 @@ export type AppStackParamList = {
   DetalhesDoUsuario: {
     userId: string
   }
+  ParticipantesDoGrupo: {
+    grupo: {
+      id: string
+      nome: string
+      descricao: string
+      foto: string
+      codigoGrupo: string
+      criado_em: string
+      dataLimite?: string
+      groupType?: "screenTime" | "screenTimeForApps" | "checkin"
+      selectedApps?: string[]
+      selectedSites?: string[]
+      membros: Array<{
+        userId: string
+        cargo: "administrador" | "membro"
+        nome: string
+      }>
+      ranking_mensal: Array<{
+        userId: string
+        pontos: number
+        nome: string
+      }>
+    }
+  }
   DesafiosPublicos: undefined
   DesafiosInscrito: undefined
   DesafiosDisponiveis: undefined

@@ -35,6 +35,7 @@ import { LimiteAppsScreen } from "@/screens/LimiteAppsScreen"
 import { SelecionarAppsLimiteScreen } from "@/screens/SelecionarAppsLimiteScreen"
 import { ConfigurarLimiteScreen } from "@/screens/ConfigurarLimiteScreen"
 import { NotificacoesScreen } from "@/screens/NotificacoesScreen"
+import { ParticipantesDoGrupoScreen } from "@/screens/ParticipantesDoGrupoScreen"
 
 // Types
 import type { BottomTabParamList } from "./navigationTypes"
@@ -70,6 +71,7 @@ const HomeStack = () => {
       <Stack.Screen name="LimiteApps" component={LimiteAppsScreen as any} />
       <Stack.Screen name="SelecionarAppsLimite" component={SelecionarAppsLimiteScreen as any} />
       <Stack.Screen name="ConfigurarLimite" component={ConfigurarLimiteScreen as any} />
+      <Stack.Screen name="ParticipantesDoGrupo" component={ParticipantesDoGrupoScreen as any} />
       <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>
   )
@@ -90,6 +92,7 @@ const GruposStack = () => {
       <Stack.Screen name="Batepapo" component={BatepapoScreen as any} />
       <Stack.Screen name="DetalhesDoGrupo" component={DetalhesDoGrupoScreen as any} />
       <Stack.Screen name="DetalhesDoUsuario" component={DetalhesDoUsuarioScreen as any} />
+      <Stack.Screen name="ParticipantesDoGrupo" component={ParticipantesDoGrupoScreen as any} />
       <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
       <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
     </Stack.Navigator>
