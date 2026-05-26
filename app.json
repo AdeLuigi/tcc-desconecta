@@ -16,7 +16,7 @@
   ],
   "android": {
     "icon": "./assets/images/desconecta-icon.png",
-    "package": "com.tccdesconecta",
+    "package": "com.desconecta",
     "adaptiveIcon": {
       "foregroundImage": "./assets/images/desconecta-icon.png",
       "backgroundImage": "./assets/images/desconecta-icon.png"
@@ -27,7 +27,7 @@
   "ios": {
     "icon": "./assets/images/desconecta-icon.png",
     "supportsTablet": true,
-    "bundleIdentifier": "com.tccdesconecta"
+    "bundleIdentifier": "com.desconecta"
   },
   "web": {
     "favicon": "./assets/images/desconecta-icon.png",

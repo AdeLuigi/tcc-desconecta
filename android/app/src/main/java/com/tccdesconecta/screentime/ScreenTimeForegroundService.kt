@@ -1,4 +1,4 @@
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -15,7 +15,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import com.google.firebase.firestore.FirebaseFirestore
-import com.tccdesconecta.R
+import com.desconecta.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

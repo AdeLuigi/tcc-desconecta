@@ -1,4 +1,4 @@
-package com.tccdesconecta
+package com.desconecta
 
 import android.app.Application
 import android.content.res.Configuration
@@ -16,8 +16,8 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
-import com.tccdesconecta.screentime.ScreenTimePackage
-import com.tccdesconecta.installedapps.InstalledAppsPackage
+import com.desconecta.screentime.ScreenTimePackage
+import com.desconecta.installedapps.InstalledAppsPackage
 
 class MainApplication : Application(), ReactApplication {
 

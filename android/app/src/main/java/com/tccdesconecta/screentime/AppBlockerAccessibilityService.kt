@@ -1,4 +1,5 @@
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
+import com.desconecta.screentime.BlockActivity
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo

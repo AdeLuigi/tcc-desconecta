@@ -1,4 +1,4 @@
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
 
 import android.content.Context
 import android.content.SharedPreferences

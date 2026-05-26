@@ -1,4 +1,4 @@
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
 
 import android.app.Activity
 import android.content.Intent

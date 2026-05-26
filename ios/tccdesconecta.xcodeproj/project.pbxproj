@@ -263,7 +263,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.tccdesconecta";
+				   PRODUCT_BUNDLE_IDENTIFIER = "com.desconecta";
 				PRODUCT_NAME = "tccdesconecta";
 				SWIFT_OBJC_BRIDGING_HEADER = "tccdesconecta/tccdesconecta-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";

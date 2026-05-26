@@ -1,4 +1,4 @@
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

@@ -1,4 +1,4 @@
-package com.tccdesconecta
+package com.desconecta
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -1,4 +1,4 @@
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
 
 object ScreenTimeBackgroundConfig {
     const val PREFS_NAME = "screentime_background_prefs"
@@ -7,8 +7,8 @@ object ScreenTimeBackgroundConfig {
     const val PREF_LAST_SYNC_AT = "last_sync_at"
     const val PREF_LAST_MINUTES_TODAY = "last_minutes_today"
 
-    const val ACTION_START = "com.tccdesconecta.screentime.action.START"
-    const val ACTION_STOP = "com.tccdesconecta.screentime.action.STOP"
+    const val ACTION_START = "com.desconecta.screentime.action.START"
+    const val ACTION_STOP = "com.desconecta.screentime.action.STOP"
 
     const val NOTIFICATION_CHANNEL_ID = "screentime_background_channel"
     const val NOTIFICATION_CHANNEL_NAME = "Monitoramento de tempo de tela"

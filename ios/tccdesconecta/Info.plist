@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>tcc-desconecta</string>
-          <string>com.tccdesconecta</string>
+          <string>com.desconecta</string>
         </array>
       </dict>
       <dict>

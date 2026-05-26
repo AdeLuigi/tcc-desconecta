@@ -1,5 +1,5 @@
 // Define o pacote do módulo
-package com.tccdesconecta.screentime
+package com.desconecta.screentime
 
 // Importações necessárias para verificar permissões e acessar estatísticas de uso
 import android.app.AppOpsManager
@@ -1030,7 +1030,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
             // Check multiple possible formats the OS may use
             val shortName = "${context.packageName}/.screentime.AppBlockerAccessibilityService"
-            val fullName = "${context.packageName}/com.tccdesconecta.screentime.AppBlockerAccessibilityService"
+            val fullName = "${context.packageName}/com.desconecta.screentime.AppBlockerAccessibilityService"
             val isEnabled = enabledServices.contains(shortName) || enabledServices.contains(fullName)
             Log.d("ScreenTimeModule", "enabledServices: $enabledServices")
             Log.d("ScreenTimeModule", "isAccessibilityEnabled: $isEnabled (short=$shortName, full=$fullName)")
