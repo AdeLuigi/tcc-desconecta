@@ -115,7 +115,7 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
       }
 
       console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Chamando updateUserData...')
-      const success = await updateUserData(userData.uid, {
+      await updateUserData(userData.uid, {
         configuracoes: {
           ...userData.configuracoes,
           bloqueio_apps: true,
@@ -125,9 +125,8 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
           limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
         },
       })
-      console.log('[SAVE] +' + (Date.now() - t0) + 'ms | updateUserData retornou:', success)
 
-      if (success) {
+      {
         const appConfigs: Record<string, { limitMinutes: number; activeDays: string[] }> = {}
         for (const config of updatedLimites) {
           for (const pkg of config.appsComLimite) {
@@ -187,8 +186,6 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
           Alert.alert("Sucesso", "Limite de apps salvo com sucesso!")
           navigation.popToTop()
         }
-      } else {
-        Alert.alert("Erro", "Não foi possível salvar. Tente novamente.")
       }
     } catch (error) {
       console.error("Erro ao salvar limite:", error)

@@ -129,7 +129,7 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           Alert.alert("Aviso", "Não foi possível fazer upload da imagem. As outras alterações serão salvas.")
         }
       }
-      const success = await updateUserData(userData.uid, {
+      await updateUserData(userData.uid, {
         photoURL: newPhotoURL,
         dataNascimento: dataNascimento.trim(),
         descricao: descricao.trim(),
@@ -141,7 +141,7 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
           notificacoes,
         },
       })
-      if (success) {
+      {
         // Sincroniza configuração de bloqueio no lado nativo
         const limites = userData.configuracoes?.limitesDeApps ?? []
         if (limiteAppsAtivo && limites.length > 0) {
@@ -177,8 +177,6 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
         })
         setSelectedImage(null)
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
-      } else {
-        Alert.alert("Erro", "Não foi possível atualizar o perfil. Tente novamente.")
       }
     } catch (error) {
       console.error("Erro ao salvar perfil:", error)

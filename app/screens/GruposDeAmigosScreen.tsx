@@ -7,6 +7,7 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
+import { isDomainError } from "@/domain/errors"
 import { useAuth } from "@/context/AuthContext"
 
 const Logo = require("@assets/images/logo2.png")
@@ -84,38 +85,35 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
 
     setIsJoiningGroup(true)
     try {
-      const result = await joinGroupByCode(groupCode.trim().toUpperCase(), userData.uid)
-      
-      if (result.success && result.group) {
-        const group = result.group
-        Alert.alert(
-          "Sucesso!",
-          result.message,
-          [
-            {
-              text: "Ver Grupo",
-              onPress: () => {
-                setJoinModalVisible(false)
-                setGroupCode("")
-                navigation.navigate("DetalhesDoGrupo", { grupo: group })
-              },
+      const group = await joinGroupByCode(groupCode.trim().toUpperCase(), userData.uid)
+      Alert.alert(
+        "Sucesso!",
+        `Você entrou no grupo "${group.nome}" com sucesso!`,
+        [
+          {
+            text: "Ver Grupo",
+            onPress: () => {
+              setJoinModalVisible(false)
+              setGroupCode("")
+              navigation.navigate("DetalhesDoGrupo", { grupo: group })
             },
-            {
-              text: "OK",
-              onPress: () => {
-                setJoinModalVisible(false)
-                setGroupCode("")
-                loadUserGroups() // Recarregar grupos
-              },
+          },
+          {
+            text: "OK",
+            onPress: () => {
+              setJoinModalVisible(false)
+              setGroupCode("")
+              loadUserGroups()
             },
-          ]
-        )
-      } else {
-        Alert.alert("Erro", result.message)
-      }
+          },
+        ]
+      )
     } catch (error) {
-      console.error("Erro ao entrar no grupo:", error)
-      Alert.alert("Erro", "Ocorreu um erro ao tentar entrar no grupo")
+      if (isDomainError(error)) {
+        Alert.alert("Erro", error.message)
+      } else {
+        Alert.alert("Erro", "Ocorreu um erro ao tentar entrar no grupo")
+      }
     } finally {
       setIsJoiningGroup(false)
     }

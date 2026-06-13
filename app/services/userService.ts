@@ -1,5 +1,6 @@
 import auth from "@react-native-firebase/auth"
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, arrayUnion } from "@react-native-firebase/firestore"
+import { NetworkError, NotFoundError } from "@/domain/errors"
 
 /**
  * Interface do usuário no Firestore
@@ -69,67 +70,41 @@ const DEFAULT_USER_DATA = {
  * Se já existir, apenas busca os dados
  */
 export async function syncUserWithFirestore(): Promise<UserData | null> {
-  try {
-    const currentUser = auth().currentUser
+  const currentUser = auth().currentUser
+  if (!currentUser) return null
 
-    if (!currentUser) {
-      console.error("Nenhum usuário autenticado")
-      return null
-    }
+  const { uid, email, displayName, photoURL } = currentUser
+  if (!email) return null
 
-    const { uid, email, displayName, photoURL } = currentUser
+  const db = getFirestore()
+  const userRef = doc(db, "usuarios", uid)
+  const userDoc = await getDoc(userRef)
 
-    if (!email) {
-      console.error("Usuário sem email")
-      return null
-    }
-
-    const db = getFirestore()
-    const userRef = doc(db, "usuarios", uid)
-    const userDoc = await getDoc(userRef)
-
-    if (userDoc.exists()) {
-      // Usuário já existe, retorna os dados
-      const userData = userDoc.data() as UserData
-      return userData
-    } else {
-      // Usuário novo, cria documento
-      const newUserData: UserData = {
-        uid,
-        email,
-        nome: displayName || email.split("@")[0],
-        photoURL: photoURL || "",
-        dataCriacao: new Date().toISOString(),
-        ...DEFAULT_USER_DATA,
-      }
-
-      await setDoc(userRef, newUserData)
-      return newUserData
-    }
-  } catch (error) {
-    console.error("Erro ao sincronizar usuário com Firestore:", error)
-    return null
+  if (userDoc.exists()) {
+    return userDoc.data() as UserData
   }
+
+  const newUserData: UserData = {
+    uid,
+    email,
+    nome: displayName || email.split("@")[0],
+    photoURL: photoURL || "",
+    dataCriacao: new Date().toISOString(),
+    ...DEFAULT_USER_DATA,
+  }
+  await setDoc(userRef, newUserData)
+  return newUserData
 }
 
 /**
  * Busca os dados do usuário do Firestore
  */
 export async function getUserData(uid: string): Promise<UserData | null> {
-  try {
-    const db = getFirestore()
-    const userRef = doc(db, "usuarios", uid)
-    const userDoc = await getDoc(userRef)
-
-    if (userDoc.exists()) {
-      return userDoc.data() as UserData
-    }
-
-    return null
-  } catch (error) {
-    console.error("Erro ao buscar dados do usuário:", error)
-    return null
-  }
+  const db = getFirestore()
+  const userRef = doc(db, "usuarios", uid)
+  const userDoc = await getDoc(userRef)
+  if (!userDoc.exists()) return null
+  return userDoc.data() as UserData
 }
 
 /**
@@ -138,21 +113,10 @@ export async function getUserData(uid: string): Promise<UserData | null> {
 export async function updateUserData(
   uid: string,
   data: Partial<UserData>,
-): Promise<boolean> {
-  try {
-    console.log('[userService] updateUserData chamado para uid:', uid)
-    const t0 = Date.now()
-    const db = getFirestore()
-    console.log('[userService] +' + (Date.now() - t0) + 'ms | getFirestore ok')
-    const userRef = doc(db, "usuarios", uid)
-    console.log('[userService] +' + (Date.now() - t0) + 'ms | doc ref criado, chamando updateDoc...')
-    await updateDoc(userRef, data as Record<string, unknown>)
-    console.log('[userService] +' + (Date.now() - t0) + 'ms | updateDoc CONCLUÍDO com sucesso')
-    return true
-  } catch (error) {
-    console.error("[userService] Erro updateDoc:", error)
-    return false
-  }
+): Promise<void> {
+  const db = getFirestore()
+  const userRef = doc(db, "usuarios", uid)
+  await updateDoc(userRef, data as Record<string, unknown>)
 }
 
 /**
@@ -161,61 +125,33 @@ export async function updateUserData(
 export async function updateUserSettings(
   uid: string,
   settings: Partial<UserData["configuracoes"]>,
-): Promise<boolean> {
-  try {
-    const db = getFirestore()
-    const userRef = doc(db, "usuarios", uid)
-    const currentData = await getDoc(userRef)
+): Promise<void> {
+  const db = getFirestore()
+  const userRef = doc(db, "usuarios", uid)
+  const currentData = await getDoc(userRef)
 
-    if (!currentData.exists()) {
-      console.error("Usuário não encontrado")
-      return false
-    }
+  if (!currentData.exists()) throw new NotFoundError("Usuário", uid)
 
-    const currentSettings = currentData.data()?.configuracoes || {}
-
-    await updateDoc(userRef, {
-      configuracoes: {
-        ...currentSettings,
-        ...settings,
-      },
-    })
-
-    return true
-  } catch (error) {
-    console.error("Erro ao atualizar configurações:", error)
-    return false
-  }
+  const currentSettings = currentData.data()?.configuracoes || {}
+  await updateDoc(userRef, {
+    configuracoes: { ...currentSettings, ...settings },
+  })
 }
 
 /**
  * Atualiza o streak do usuário
  */
-export async function updateUserStreak(uid: string, streak: number): Promise<boolean> {
-  try {
-    const db = getFirestore()
-    const userRef = doc(db, "usuarios", uid)
-    await updateDoc(userRef, { streak })
-    return true
-  } catch (error) {
-    console.error("Erro ao atualizar streak:", error)
-    return false
-  }
+export async function updateUserStreak(uid: string, streak: number): Promise<void> {
+  const db = getFirestore()
+  const userRef = doc(db, "usuarios", uid)
+  await updateDoc(userRef, { streak })
 }
 
 /**
  * Adiciona um prêmio à coleção do usuário
  */
-export async function addPremioColecao(uid: string, premioId: string): Promise<boolean> {
-  try {
-    const db = getFirestore()
-    const userRef = doc(db, "usuarios", uid)
-    await updateDoc(userRef, {
-      premios_colecionaveis: arrayUnion(premioId),
-    })
-    return true
-  } catch (error) {
-    console.error("Erro ao adicionar prêmio:", error)
-    return false
-  }
+export async function addPremioColecao(uid: string, premioId: string): Promise<void> {
+  const db = getFirestore()
+  const userRef = doc(db, "usuarios", uid)
+  await updateDoc(userRef, { premios_colecionaveis: arrayUnion(premioId) })
 }

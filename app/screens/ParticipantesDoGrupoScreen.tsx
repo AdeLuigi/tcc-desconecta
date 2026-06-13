@@ -19,6 +19,7 @@ import {
   isUserAdmin,
   getGroupById,
 } from "@/services/groupService"
+import { isDomainError } from "@/domain/errors"
 import { getFirestore, doc, getDoc } from "@react-native-firebase/firestore"
 
 const Logo = require("@assets/images/logo2.png")
@@ -90,13 +91,14 @@ export const ParticipantesDoGrupoScreen: React.FC<ParticipantesDoGrupoScreenProp
         onPress: async () => {
           if (!userData) return
           setIsUpdating(true)
-          const result = await grantAdminRole(grupo.id, membro.userId, userData.uid)
-          setIsUpdating(false)
-          if (result.success) {
+          try {
+            await grantAdminRole(grupo.id, membro.userId, userData.uid)
             Alert.alert("Sucesso", `${membro.nome} agora é administrador`)
             await refreshGroup()
-          } else {
-            Alert.alert("Erro", result.message || "Não foi possível promover o membro")
+          } catch (error) {
+            Alert.alert("Erro", isDomainError(error) ? error.message : "Não foi possível promover o membro")
+          } finally {
+            setIsUpdating(false)
           }
         },
       })
@@ -117,13 +119,14 @@ export const ParticipantesDoGrupoScreen: React.FC<ParticipantesDoGrupoScreenProp
               onPress: async () => {
                 if (!userData) return
                 setIsUpdating(true)
-                const success = await removeMemberFromGroup(grupo.id, membro.userId)
-                setIsUpdating(false)
-                if (success) {
+                try {
+                  await removeMemberFromGroup(grupo.id, membro.userId)
                   Alert.alert("Sucesso", `${membro.nome} foi removido do grupo`)
                   await refreshGroup()
-                } else {
-                  Alert.alert("Erro", "Não foi possível remover o membro")
+                } catch (error) {
+                  Alert.alert("Erro", isDomainError(error) ? error.message : "Não foi possível remover o membro")
+                } finally {
+                  setIsUpdating(false)
                 }
               },
             },

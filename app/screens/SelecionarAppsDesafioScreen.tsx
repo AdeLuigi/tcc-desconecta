@@ -159,13 +159,9 @@ export const SelecionarAppsDesafioScreen: React.FC<SelecionarAppsDesafioScreenPr
         Array.from(selectedSites),
       )
 
-      if (groupId) {
-        Alert.alert("Sucesso!", "Grupo criado com sucesso!", [
-          { text: "OK", onPress: () => navigation.navigate("HomeDinamica") },
-        ])
-      } else {
-        Alert.alert("Erro", "Não foi possível criar o grupo")
-      }
+      Alert.alert("Sucesso!", "Grupo criado com sucesso!", [
+        { text: "OK", onPress: () => navigation.navigate("HomeDinamica") },
+      ])
     } catch (error) {
       console.error("Erro ao criar grupo:", error)
       Alert.alert("Erro", "Ocorreu um erro ao criar o grupo")

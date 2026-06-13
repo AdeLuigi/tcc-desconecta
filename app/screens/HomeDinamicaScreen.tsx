@@ -11,6 +11,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
+import { isDomainError } from "@/domain/errors"
 import { ActiveChallengesSection } from "@/components/ActiveChallengesSection"
 const Logo = require("@assets/images/logo2.png")
 const BackgroundImage = require("@assets/images/frame home 1.png")
@@ -240,39 +241,35 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
     setIsJoiningGroup(true)
     try {
-      const result = await joinGroupByCode(groupCode.trim().toUpperCase(), userData.uid)
-      
-      if (result.success && result.group) {
-        Alert.alert(
-          "Sucesso!",
-          result.message,
-          [
-            {
-              text: "Ver Grupo",
-              onPress: () => {
-                setJoinModalVisible(false)
-                setGroupCode("")
-                if (result.group) {
-                  navigation.navigate("DetalhesDoGrupo", { grupo: result.group })
-                }
-              },
+      const group = await joinGroupByCode(groupCode.trim().toUpperCase(), userData.uid)
+      Alert.alert(
+        "Sucesso!",
+        `Você entrou no grupo "${group.nome}" com sucesso!`,
+        [
+          {
+            text: "Ver Grupo",
+            onPress: () => {
+              setJoinModalVisible(false)
+              setGroupCode("")
+              navigation.navigate("DetalhesDoGrupo", { grupo: group })
             },
-            {
-              text: "OK",
-              onPress: () => {
-                setJoinModalVisible(false)
-                setGroupCode("")
-                loadUserGroups() // Recarregar grupos
-              },
+          },
+          {
+            text: "OK",
+            onPress: () => {
+              setJoinModalVisible(false)
+              setGroupCode("")
+              loadUserGroups()
             },
-          ]
-        )
-      } else {
-        Alert.alert("Erro", result.message)
-      }
+          },
+        ]
+      )
     } catch (error) {
-      console.error("Erro ao entrar no grupo:", error)
-      Alert.alert("Erro", "Ocorreu um erro ao tentar entrar no grupo")
+      if (isDomainError(error)) {
+        Alert.alert("Erro", error.message)
+      } else {
+        Alert.alert("Erro", "Ocorreu um erro ao tentar entrar no grupo")
+      }
     } finally {
       setIsJoiningGroup(false)
     }

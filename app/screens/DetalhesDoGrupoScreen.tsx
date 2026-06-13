@@ -23,6 +23,7 @@ import {
   isUserAdmin,
   getGroupById
 } from "@/services/groupService"
+import { isDomainError } from "@/domain/errors"
 const Logo = require("@assets/images/logo2.png")
 
 
@@ -530,15 +531,15 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
             if (!userData) return
 
             setIsUpdating(true)
-            const result = await leaveGroup(grupo.id, userData.uid)
-            setIsUpdating(false)
-
-            if (result.success) {
-              Alert.alert("Sucesso", result.message, [
+            try {
+              await leaveGroup(grupo.id, userData.uid)
+              Alert.alert("Sucesso", "Você saiu do grupo com sucesso.", [
                 { text: "OK", onPress: () => navigation.goBack() }
               ])
-            } else {
-              Alert.alert("Erro", result.message)
+            } catch (error) {
+              Alert.alert("Erro", isDomainError(error) ? error.message : "Erro ao tentar sair do grupo.")
+            } finally {
+              setIsUpdating(false)
             }
           }
         },
@@ -574,14 +575,14 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               text: "Confirmar",
               onPress: async () => {
                 setIsUpdating(true)
-                const result = await grantAdminRole(grupo.id, member.userId, userData.uid)
-                setIsUpdating(false)
-
-                if (result.success) {
-                  Alert.alert("Sucesso", result.message)
+                try {
+                  await grantAdminRole(grupo.id, member.userId, userData.uid)
+                  Alert.alert("Sucesso", `${member.nome} agora é administrador.`)
                   await refreshGroupData()
-                } else {
-                  Alert.alert("Erro", result.message)
+                } catch (error) {
+                  Alert.alert("Erro", isDomainError(error) ? error.message : "Não foi possível promover o membro")
+                } finally {
+                  setIsUpdating(false)
                 }
               }
             }
@@ -622,14 +623,14 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
               style: "destructive",
               onPress: async () => {
                 setIsUpdating(true)
-                const success = await removeMemberFromGroup(grupo.id, member.userId)
-                setIsUpdating(false)
-
-                if (success) {
+                try {
+                  await removeMemberFromGroup(grupo.id, member.userId)
                   Alert.alert("Sucesso", `${member.nome} foi removido do grupo`)
                   await refreshGroupData()
-                } else {
-                  Alert.alert("Erro", "Não foi possível remover o membro")
+                } catch (error) {
+                  Alert.alert("Erro", isDomainError(error) ? error.message : "Não foi possível remover o membro")
+                } finally {
+                  setIsUpdating(false)
                 }
               }
             }
@@ -673,18 +674,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
       }
 
       if (promises.length > 0) {
-        const results = await Promise.all(promises)
-        const failed = results.find((r) => !r.success)
-        if (failed) {
-          Alert.alert("Erro", failed.message)
-          return
-        }
+        await Promise.all(promises)
       }
 
       setEditGroupModalVisible(false)
       await refreshGroupData()
     } catch (e) {
-      Alert.alert("Erro", "Não foi possível salvar as alterações")
+      Alert.alert("Erro", isDomainError(e) ? e.message : "Não foi possível salvar as alterações")
     } finally {
       setIsUpdating(false)
     }
@@ -721,15 +717,10 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         const downloadURL = await reference.getDownloadURL()
 
         // Atualizar no Firestore
-        const updateResult = await updateGroupPhoto(grupo.id, downloadURL, userData.uid)
+        await updateGroupPhoto(grupo.id, downloadURL, userData.uid)
         setIsUpdating(false)
-
-        if (updateResult.success) {
-          Alert.alert("Sucesso", updateResult.message)
-          await refreshGroupData()
-        } else {
-          Alert.alert("Erro", updateResult.message)
-        }
+        Alert.alert("Sucesso", "Foto do grupo atualizada com sucesso.")
+        await refreshGroupData()
       }
     } catch (error) {
       setIsUpdating(false)
@@ -1235,13 +1226,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                               text: "👑 Promover a admin",
                               onPress: async () => {
                                 if (!userData) return
-                                const result = await grantAdminRole(grupo.id, membro.userId, userData.uid)
-                                if (result.success) {
+                                try {
+                                  await grantAdminRole(grupo.id, membro.userId, userData.uid)
                                   Alert.alert("Sucesso", `${membro.nome} agora é administrador`)
                                   const updated = await getGroupById(grupo.id)
                                   if (updated) setCurrentGroup(updated)
-                                } else {
-                                  Alert.alert("Erro", result.message || "Não foi possível promover o membro")
+                                } catch (error) {
+                                  Alert.alert("Erro", isDomainError(error) ? error.message : "Não foi possível promover o membro")
                                 }
                               }
                             })
@@ -1260,13 +1251,13 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
                                     style: "destructive",
                                     onPress: async () => {
                                       if (!userData) return
-                                      const success = await removeMemberFromGroup(grupo.id, membro.userId)
-                                      if (success) {
+                                      try {
+                                        await removeMemberFromGroup(grupo.id, membro.userId)
                                         Alert.alert("Sucesso", `${membro.nome} foi removido do grupo`)
                                         const updated = await getGroupById(grupo.id)
                                         if (updated) setCurrentGroup(updated)
-                                      } else {
-                                        Alert.alert("Erro", "Não foi possível remover o membro")
+                                      } catch (error) {
+                                        Alert.alert("Erro", isDomainError(error) ? error.message : "Não foi possível remover o membro")
                                       }
                                     }
                                   }

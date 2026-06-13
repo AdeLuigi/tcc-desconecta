@@ -1,5 +1,6 @@
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, arrayUnion, query, where } from "@react-native-firebase/firestore"
 import { getUserData } from "./userService"
+import { NotFoundError, PermissionError, ConflictError, NetworkError } from "@/domain/errors"
 
 /**
  * Gera um código alfanumérico de 6 caracteres
@@ -113,8 +114,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
       }
     })
   } catch (error) {
-    console.error("Erro ao buscar grupos do usuário:", error)
-    return []
+    throw new NetworkError("Erro ao buscar grupos do usuário.")
   }
 }
 
@@ -122,34 +122,27 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
  * Busca um grupo específico por ID
  */
 export async function getGroupById(groupId: string): Promise<Group | null> {
-  try {
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    const groupDoc = await getDoc(groupRef)
+  const db = getFirestore()
+  const groupRef = doc(db, "grupos", groupId)
+  const groupDoc = await getDoc(groupRef)
 
-    if (groupDoc.exists()) {
-      const data = groupDoc.data()
-      return {
-        id: groupDoc.id,
-        nome: data?.nome || "",
-        descricao: data?.descricao || "",
-        foto: data?.foto || "",
-        criado_em: data?.criado_em || "",
-        dataLimite: data?.dataLimite || undefined,
-        criterioRanking: data?.criterioRanking || undefined,
-        groupType: data?.groupType || undefined,
-        selectedApps: data?.selectedApps || undefined,
-        selectedSites: data?.selectedSites || undefined,
-        membros: data?.membros || [],
-        ranking_mensal: data?.ranking_mensal || [],
-        codigoGrupo: data?.codigoGrupo || "",
-      }
-    }
+  if (!groupDoc.exists()) return null
 
-    return null
-  } catch (error) {
-    console.error("Erro ao buscar grupo:", error)
-    return null
+  const data = groupDoc.data()
+  return {
+    id: groupDoc.id,
+    nome: data?.nome || "",
+    descricao: data?.descricao || "",
+    foto: data?.foto || "",
+    criado_em: data?.criado_em || "",
+    dataLimite: data?.dataLimite || undefined,
+    criterioRanking: data?.criterioRanking || undefined,
+    groupType: data?.groupType || undefined,
+    selectedApps: data?.selectedApps || undefined,
+    selectedSites: data?.selectedSites || undefined,
+    membros: data?.membros || [],
+    ranking_mensal: data?.ranking_mensal || [],
+    codigoGrupo: data?.codigoGrupo || "",
   }
 }
 
@@ -166,51 +159,43 @@ export async function createGroup(
   groupType?: GroupType,
   selectedApps?: string[],
   selectedSites?: string[],
-): Promise<string | null> {
-  try {
-    // Buscar dados do usuário para obter o nome
-    const userData = await getUserData(adminUserId)
-    const userName = userData?.nome || "Admin"
+): Promise<string> {
+  const userData = await getUserData(adminUserId)
+  const userName = userData?.nome || "Admin"
+  const codigoGrupo = await generateUniqueGroupCode()
 
-    // Gerar código único para o grupo
-    const codigoGrupo = await generateUniqueGroupCode()
-
-    const newGroup = {
-      nome,
-      descricao,
-      foto,
-      criado_em: new Date().toISOString(),
-      ...(dataLimite ? { dataLimite } : {}),
-      ...(criterioRanking ? { criterioRanking } : {}),
-      ...(groupType ? { groupType } : {}),
-      ...(selectedApps && selectedApps.length > 0 ? { selectedApps } : {}),
-      ...(selectedSites && selectedSites.length > 0 ? { selectedSites } : {}),
-      codigoGrupo,
-      membrosIds: [adminUserId],
-      membros: [
-        {
-          userId: adminUserId,
-          cargo: "administrador" as const,
-          nome: userName,
-        },
-      ],
-      ranking_mensal: [
-        {
-          userId: adminUserId,
-          pontos: 0,
-          nome: userName,
-        },
-      ],
-    }
-
-    const db = getFirestore()
-    const groupsRef = collection(db, "grupos")
-    const docRef = await addDoc(groupsRef, newGroup)
-    return docRef.id
-  } catch (error) {
-    console.error("Erro ao criar grupo:", error)
-    return null
+  const newGroup = {
+    nome,
+    descricao,
+    foto,
+    criado_em: new Date().toISOString(),
+    ...(dataLimite ? { dataLimite } : {}),
+    ...(criterioRanking ? { criterioRanking } : {}),
+    ...(groupType ? { groupType } : {}),
+    ...(selectedApps && selectedApps.length > 0 ? { selectedApps } : {}),
+    ...(selectedSites && selectedSites.length > 0 ? { selectedSites } : {}),
+    codigoGrupo,
+    membrosIds: [adminUserId],
+    membros: [
+      {
+        userId: adminUserId,
+        cargo: "administrador" as const,
+        nome: userName,
+      },
+    ],
+    ranking_mensal: [
+      {
+        userId: adminUserId,
+        pontos: 0,
+        nome: userName,
+      },
+    ],
   }
+
+  const db = getFirestore()
+  const groupsRef = collection(db, "grupos")
+  const docRef = await addDoc(groupsRef, newGroup)
+  return docRef.id
 }
 
 /**
@@ -219,28 +204,14 @@ export async function createGroup(
 export async function addMemberToGroup(
   groupId: string,
   userId: string,
-): Promise<boolean> {
-  try {
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    
-    await updateDoc(groupRef, {
-      membrosIds: arrayUnion(userId),
-      membros: arrayUnion({
-        userId,
-        cargo: "membro",
-      }),
-      ranking_mensal: arrayUnion({
-        userId: userId,
-        pontos: 0,
-      }),
-    })
-
-    return true
-  } catch (error) {
-    console.error("Erro ao adicionar membro:", error)
-    return false
-  }
+): Promise<void> {
+  const db = getFirestore()
+  const groupRef = doc(db, "grupos", groupId)
+  await updateDoc(groupRef, {
+    membrosIds: arrayUnion(userId),
+    membros: arrayUnion({ userId, cargo: "membro" }),
+    ranking_mensal: arrayUnion({ userId, pontos: 0 }),
+  })
 }
 
 /**
@@ -249,27 +220,20 @@ export async function addMemberToGroup(
 export async function removeMemberFromGroup(
   groupId: string,
   userId: string,
-): Promise<boolean> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) return false
+): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    const updatedMembros = group.membros.filter((m) => m.userId !== userId)
-    const updatedRanking = group.ranking_mensal.filter((r) => r.userId !== userId)
+  const updatedMembros = group.membros.filter((m) => m.userId !== userId)
+  const updatedRanking = group.ranking_mensal.filter((r) => r.userId !== userId)
 
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    await updateDoc(groupRef, {
-      membrosIds: updatedMembros.map((m) => m.userId),
-      membros: updatedMembros,
-      ranking_mensal: updatedRanking,
-    })
-
-    return true
-  } catch (error) {
-    console.error("Erro ao remover membro:", error)
-    return false
-  }
+  const db = getFirestore()
+  const groupRef = doc(db, "grupos", groupId)
+  await updateDoc(groupRef, {
+    membrosIds: updatedMembros.map((m) => m.userId),
+    membros: updatedMembros,
+    ranking_mensal: updatedRanking,
+  })
 }
 
 /**
@@ -279,197 +243,92 @@ export async function updateMemberPoints(
   groupId: string,
   userId: string,
   pontos: number,
-): Promise<boolean> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) return false
+): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    const updatedRanking = group.ranking_mensal.map((member) => {
-      if (member.userId === userId) {
-        return { ...member, pontos }
-      }
-      return member
-    })
+  const updatedRanking = group.ranking_mensal.map((member) =>
+    member.userId === userId ? { ...member, pontos } : member,
+  )
 
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    await updateDoc(groupRef, {
-      ranking_mensal: updatedRanking,
-    })
-
-    return true
-  } catch (error) {
-    console.error("Erro ao atualizar pontos:", error)
-    return false
-  }
+  const db = getFirestore()
+  const groupRef = doc(db, "grupos", groupId)
+  await updateDoc(groupRef, { ranking_mensal: updatedRanking })
 }
 
 /**
  * Busca um grupo pelo código
  */
 export async function getGroupByCode(code: string): Promise<Group | null> {
-  try {
-    const db = getFirestore()
-    const groupsRef = collection(db, "grupos")
-    const q = query(groupsRef, where("codigoGrupo", "==", code.toUpperCase()))
-    const snapshot = await getDocs(q)
+  const db = getFirestore()
+  const groupsRef = collection(db, "grupos")
+  const q = query(groupsRef, where("codigoGrupo", "==", code.toUpperCase()))
+  const snapshot = await getDocs(q)
 
-    if (snapshot.empty) {
-      return null
-    }
+  if (snapshot.empty) return null
 
-    const docSnap = snapshot.docs[0]
-    const data = docSnap.data()
-    
-    return {
-      id: docSnap.id,
-      nome: data.nome || "",
-      descricao: data.descricao || "",
-      foto: data.foto || "",
-      criado_em: data.criado_em || "",
-      membros: data.membros || [],
-      ranking_mensal: data.ranking_mensal || [],
-      codigoGrupo: data.codigoGrupo || "",
-    }
-  } catch (error) {
-    console.error("Erro ao buscar grupo por código:", error)
-    return null
+  const docSnap = snapshot.docs[0]
+  const data = docSnap.data()
+  return {
+    id: docSnap.id,
+    nome: data.nome || "",
+    descricao: data.descricao || "",
+    foto: data.foto || "",
+    criado_em: data.criado_em || "",
+    membros: data.membros || [],
+    ranking_mensal: data.ranking_mensal || [],
+    codigoGrupo: data.codigoGrupo || "",
   }
 }
 
 /**
  * Adiciona o usuário a um grupo usando o código
  */
-export async function joinGroupByCode(
-  code: string,
-  userId: string,
-): Promise<{ success: boolean; message: string; group?: Group }> {
-  try {
-    // Buscar grupo pelo código
-    const group = await getGroupByCode(code)
-    
-    if (!group) {
-      return {
-        success: false,
-        message: "Código inválido. Grupo não encontrado.",
-      }
-    }
+export async function joinGroupByCode(code: string, userId: string): Promise<Group> {
+  const group = await getGroupByCode(code)
+  if (!group) throw new NotFoundError("Grupo", code)
 
-    // Verificar se o usuário já é membro
-    const isAlreadyMember = group.membros.some((m) => m.userId === userId)
-    if (isAlreadyMember) {
-      return {
-        success: false,
-        message: "Você já é membro deste grupo.",
-        group,
-      }
-    }
+  const isAlreadyMember = group.membros.some((m) => m.userId === userId)
+  if (isAlreadyMember) throw new ConflictError("Você já é membro deste grupo.")
 
-    // Buscar dados do usuário
-    const userData = await getUserData(userId)
-    const userName = userData?.nome || "Usuário"
+  const userData = await getUserData(userId)
+  const userName = userData?.nome || "Usuário"
 
-    // Adicionar usuário ao grupo
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", group.id)
-    
-    await updateDoc(groupRef, {
-      membrosIds: arrayUnion(userId),
-      membros: arrayUnion({
-        userId,
-        cargo: "membro",
-        nome: userName,
-      }),
-      ranking_mensal: arrayUnion({
-        userId,
-        pontos: 0,
-        nome: userName,
-      }),
-    })
+  const db = getFirestore()
+  const groupRef = doc(db, "grupos", group.id)
+  await updateDoc(groupRef, {
+    membrosIds: arrayUnion(userId),
+    membros: arrayUnion({ userId, cargo: "membro", nome: userName }),
+    ranking_mensal: arrayUnion({ userId, pontos: 0, nome: userName }),
+  })
 
-    // Buscar grupo atualizado
-    const updatedGroup = await getGroupById(group.id)
-
-    return {
-      success: true,
-      message: `Você entrou no grupo "${group.nome}" com sucesso!`,
-      group: updatedGroup || group,
-    }
-  } catch (error) {
-    console.error("Erro ao entrar no grupo:", error)
-    return {
-      success: false,
-      message: "Erro ao tentar entrar no grupo. Tente novamente.",
-    }
-  }
+  return (await getGroupById(group.id)) ?? group
 }
 
 /**
  * Sair de um grupo (usuário remove a si mesmo)
  */
-export async function leaveGroup(
-  groupId: string,
-  userId: string,
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) {
-      return {
-        success: false,
-        message: "Grupo não encontrado.",
-      }
-    }
+export async function leaveGroup(groupId: string, userId: string): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    // Verificar se é o último membro
-    if (group.membros.length === 1) {
-      // Se for o último membro, deletar o grupo
-      const db = getFirestore()
-      const groupRef = doc(db, "grupos", groupId)
-      await deleteDoc(groupRef)
-      
-      return {
-        success: true,
-        message: "Você era o último membro. O grupo foi excluído.",
-      }
-    }
+  if (group.membros.length === 1) {
+    const db = getFirestore()
+    await deleteDoc(doc(db, "grupos", groupId))
+    return
+  }
 
-    // Verificar se é administrador
-    const userMember = group.membros.find((m) => m.userId === userId)
-    const isAdmin = userMember?.cargo === "administrador"
+  const userMember = group.membros.find((m) => m.userId === userId)
+  const isAdmin = userMember?.cargo === "administrador"
 
-    // Se for admin, verificar se há outros admins
-    if (isAdmin) {
-      const adminCount = group.membros.filter((m) => m.cargo === "administrador").length
-      if (adminCount === 1) {
-        // É o único admin, não pode sair
-        return {
-          success: false,
-          message: "Você é o único administrador. Promova outro membro antes de sair.",
-        }
-      }
-    }
-
-    // Remover usuário do grupo
-    const success = await removeMemberFromGroup(groupId, userId)
-    
-    if (success) {
-      return {
-        success: true,
-        message: "Você saiu do grupo com sucesso.",
-      }
-    } else {
-      return {
-        success: false,
-        message: "Erro ao sair do grupo.",
-      }
-    }
-  } catch (error) {
-    console.error("Erro ao sair do grupo:", error)
-    return {
-      success: false,
-      message: "Erro ao tentar sair do grupo.",
+  if (isAdmin) {
+    const adminCount = group.membros.filter((m) => m.cargo === "administrador").length
+    if (adminCount === 1) {
+      throw new PermissionError("Você é o único administrador. Promova outro membro antes de sair.")
     }
   }
+
+  await removeMemberFromGroup(groupId, userId)
 }
 
 /**
@@ -479,67 +338,28 @@ export async function grantAdminRole(
   groupId: string,
   userId: string,
   adminUserId: string,
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) {
-      return {
-        success: false,
-        message: "Grupo não encontrado.",
-      }
-    }
+): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    // Verificar se quem está concedendo é admin
-    const adminMember = group.membros.find((m) => m.userId === adminUserId)
-    if (!adminMember || adminMember.cargo !== "administrador") {
-      return {
-        success: false,
-        message: "Você não tem permissão para conceder administrador.",
-      }
-    }
-
-    // Verificar se o usuário alvo é membro
-    const targetMember = group.membros.find((m) => m.userId === userId)
-    if (!targetMember) {
-      return {
-        success: false,
-        message: "Usuário não é membro do grupo.",
-      }
-    }
-
-    // Verificar se já é admin
-    if (targetMember.cargo === "administrador") {
-      return {
-        success: false,
-        message: "Este usuário já é administrador.",
-      }
-    }
-
-    // Atualizar cargo para administrador
-    const updatedMembros = group.membros.map((m) => {
-      if (m.userId === userId) {
-        return { ...m, cargo: "administrador" as const }
-      }
-      return m
-    })
-
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    await updateDoc(groupRef, {
-      membros: updatedMembros,
-    })
-
-    return {
-      success: true,
-      message: `${targetMember.nome} agora é administrador.`,
-    }
-  } catch (error) {
-    console.error("Erro ao conceder administrador:", error)
-    return {
-      success: false,
-      message: "Erro ao conceder cargo de administrador.",
-    }
+  const adminMember = group.membros.find((m) => m.userId === adminUserId)
+  if (!adminMember || adminMember.cargo !== "administrador") {
+    throw new PermissionError("Você não tem permissão para conceder administrador.")
   }
+
+  const targetMember = group.membros.find((m) => m.userId === userId)
+  if (!targetMember) throw new NotFoundError("Membro")
+
+  if (targetMember.cargo === "administrador") {
+    throw new ConflictError("Este usuário já é administrador.")
+  }
+
+  const updatedMembros = group.membros.map((m) =>
+    m.userId === userId ? { ...m, cargo: "administrador" as const } : m,
+  )
+
+  const db = getFirestore()
+  await updateDoc(doc(db, "grupos", groupId), { membros: updatedMembros })
 }
 
 /**
@@ -549,42 +369,17 @@ export async function updateGroupDescription(
   groupId: string,
   newDescription: string,
   userId: string,
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) {
-      return {
-        success: false,
-        message: "Grupo não encontrado.",
-      }
-    }
+): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    // Verificar se é admin
-    const userMember = group.membros.find((m) => m.userId === userId)
-    if (!userMember || userMember.cargo !== "administrador") {
-      return {
-        success: false,
-        message: "Apenas administradores podem editar a descrição.",
-      }
-    }
-
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    await updateDoc(groupRef, {
-      descricao: newDescription.trim(),
-    })
-
-    return {
-      success: true,
-      message: "Descrição atualizada com sucesso.",
-    }
-  } catch (error) {
-    console.error("Erro ao atualizar descrição:", error)
-    return {
-      success: false,
-      message: "Erro ao atualizar descrição do grupo.",
-    }
+  const userMember = group.membros.find((m) => m.userId === userId)
+  if (!userMember || userMember.cargo !== "administrador") {
+    throw new PermissionError("Apenas administradores podem editar a descrição.")
   }
+
+  const db = getFirestore()
+  await updateDoc(doc(db, "grupos", groupId), { descricao: newDescription.trim() })
 }
 
 /**
@@ -594,42 +389,17 @@ export async function updateGroupPhoto(
   groupId: string,
   newPhotoURL: string,
   userId: string,
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) {
-      return {
-        success: false,
-        message: "Grupo não encontrado.",
-      }
-    }
+): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    // Verificar se é admin
-    const userMember = group.membros.find((m) => m.userId === userId)
-    if (!userMember || userMember.cargo !== "administrador") {
-      return {
-        success: false,
-        message: "Apenas administradores podem editar a foto.",
-      }
-    }
-
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    await updateDoc(groupRef, {
-      foto: newPhotoURL,
-    })
-
-    return {
-      success: true,
-      message: "Foto do grupo atualizada com sucesso.",
-    }
-  } catch (error) {
-    console.error("Erro ao atualizar foto:", error)
-    return {
-      success: false,
-      message: "Erro ao atualizar foto do grupo.",
-    }
+  const userMember = group.membros.find((m) => m.userId === userId)
+  if (!userMember || userMember.cargo !== "administrador") {
+    throw new PermissionError("Apenas administradores podem editar a foto.")
   }
+
+  const db = getFirestore()
+  await updateDoc(doc(db, "grupos", groupId), { foto: newPhotoURL })
 }
 
 /**
@@ -639,27 +409,17 @@ export async function updateGroupName(
   groupId: string,
   newName: string,
   userId: string,
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const group = await getGroupById(groupId)
-    if (!group) {
-      return { success: false, message: "Grupo não encontrado." }
-    }
+): Promise<void> {
+  const group = await getGroupById(groupId)
+  if (!group) throw new NotFoundError("Grupo", groupId)
 
-    const userMember = group.membros.find((m) => m.userId === userId)
-    if (!userMember || userMember.cargo !== "administrador") {
-      return { success: false, message: "Apenas administradores podem editar o nome." }
-    }
-
-    const db = getFirestore()
-    const groupRef = doc(db, "grupos", groupId)
-    await updateDoc(groupRef, { nome: newName.trim() })
-
-    return { success: true, message: "Nome atualizado com sucesso." }
-  } catch (error) {
-    console.error("Erro ao atualizar nome:", error)
-    return { success: false, message: "Erro ao atualizar nome do grupo." }
+  const userMember = group.membros.find((m) => m.userId === userId)
+  if (!userMember || userMember.cargo !== "administrador") {
+    throw new PermissionError("Apenas administradores podem editar o nome.")
   }
+
+  const db = getFirestore()
+  await updateDoc(doc(db, "grupos", groupId), { nome: newName.trim() })
 }
 
 /**

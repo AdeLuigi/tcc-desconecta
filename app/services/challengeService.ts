@@ -197,6 +197,6 @@ export async function getUserActiveChallenges(userId: string): Promise<UserActiv
     return activeChallenges.filter((challenge) => challenge !== null) as UserActiveChallenge[]
   } catch (error) {
     console.error("Erro ao buscar desafios ativos do usuário:", error)
-    return []
+    throw error
   }
 }

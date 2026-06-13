@@ -53,39 +53,19 @@ export async function getFCMToken(): Promise<string | null> {
 /**
  * Salva o token FCM do usuário no Firestore
  */
-export async function saveFCMToken(userId: string, token: string): Promise<boolean> {
-  try {
-    const db = getFirestore()
-    const userRef = doc(db, 'usuarios', userId)
-    
-    await updateDoc(userRef, {
-      fcmToken: token,
-    })
-    
-    return true
-  } catch (error) {
-    console.error('Erro ao salvar token FCM:', error)
-    return false
-  }
+export async function saveFCMToken(userId: string, token: string): Promise<void> {
+  const db = getFirestore()
+  const userRef = doc(db, 'usuarios', userId)
+  await updateDoc(userRef, { fcmToken: token })
 }
 
 /**
  * Remove o token FCM do usuário ao fazer logout
  */
-export async function removeFCMToken(userId: string): Promise<boolean> {
-  try {
-    const db = getFirestore()
-    const userRef = doc(db, 'usuarios', userId)
-    
-    await updateDoc(userRef, {
-      fcmToken: null,
-    })
-    
-    return true
-  } catch (error) {
-    console.error('Erro ao remover token FCM:', error)
-    return false
-  }
+export async function removeFCMToken(userId: string): Promise<void> {
+  const db = getFirestore()
+  const userRef = doc(db, 'usuarios', userId)
+  await updateDoc(userRef, { fcmToken: null })
 }
 
 /**
