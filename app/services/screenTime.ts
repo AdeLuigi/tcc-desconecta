@@ -1,6 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, getDocs, orderBy, limit } from "@react-native-firebase/firestore"
 import { getAppCategory, type AppCategory } from '@/utils/appCategories';
+import excludedSystemPackages from '@/data/excludedSystemPackages.json';
 
 const { ScreenTimeModule } = NativeModules;
 
@@ -500,4 +501,12 @@ class ScreenTimeService {
   }
 }
 
-export default new ScreenTimeService();
+const screenTimeService = new ScreenTimeService();
+
+// Enviar lista de exclusão de apps de sistema ao módulo nativo na inicialização
+if (Platform.OS === 'android') {
+  const arr = excludedSystemPackages.packages;
+  ScreenTimeModule.setExcludedPackages(arr);
+}
+
+export default screenTimeService;

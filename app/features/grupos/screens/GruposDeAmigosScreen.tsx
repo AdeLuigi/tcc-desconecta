@@ -8,6 +8,7 @@ import { useAppTheme } from "@/theme/context"
 import { Icon } from "@/components/Icon"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
 import { isDomainError } from "@/domain/errors"
+import { Group as DomainGroup } from "@/domain/Group"
 import { useAuth } from "@/context/AuthContext"
 
 const Logo = require("@assets/images/logo2.png")
@@ -44,7 +45,18 @@ export const GruposDeAmigosScreen: React.FC<GruposDeAmigosScreenProps> = ({ navi
 
       setLoadingGroups(true)
       const userGroups = await getUserGroups(userData.uid)
-      setGroups(userGroups)
+      const activeGroups = userGroups.filter(group => {
+        const domainGroup = DomainGroup.create({
+          id: group.id,
+          nome: group.nome,
+          codigo: group.codigoGrupo,
+          adminId: group.membros.find(m => m.cargo === "administrador")?.userId ?? "",
+          membros: group.membros,
+          dataLimite: group.dataLimite,
+        })
+        return !domainGroup.isExpired()
+      })
+      setGroups(activeGroups)
     } catch (error) {
       console.error("Erro ao carregar grupos:", error)
     } finally {

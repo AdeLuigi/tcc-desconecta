@@ -38,6 +38,19 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     private val approvedAppsCache = mutableSetOf<String>()
     private val rejectedAppsCache = mutableSetOf<String>()
 
+    // Lista de exclusão de apps de sistema — pode ser sobrescrita pelo JS via setExcludedPackages()
+    private var excludedPackagesOverride: Set<String>? = null
+
+    @ReactMethod
+    fun setExcludedPackages(packages: ReadableArray) {
+        excludedPackagesOverride = (0 until packages.size())
+            .mapNotNull { packages.getString(it) }
+            .toSet()
+        // Limpar caches para que a nova lista seja aplicada nas próximas consultas
+        approvedAppsCache.clear()
+        rejectedAppsCache.clear()
+    }
+
     // Cache de ícones Base64 para evitar recompressão de bitmap a cada chamada
     private val iconCache = HashMap<String, String>(64)
 
@@ -60,8 +73,8 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         }
 
         try {
-            // Lista de exclusão explícita para apps de sistema comuns que não são "consumo"
-            val excludedPackages = setOf(
+            // Usar lista enviada pelo JS (via setExcludedPackages) ou fallback para lista padrão
+            val excludedPackages = excludedPackagesOverride ?: setOf(
                 // --- Google / Android Puro ---
                 "com.android.vending", // Play Store
                 "com.google.android.packageinstaller",

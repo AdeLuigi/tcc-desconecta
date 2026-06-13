@@ -14,6 +14,10 @@ export const EstatisticasPessoaisScreen: React.FC<EstatisticasPessoaisScreenProp
   return (
     <Screen preset="scroll" safeAreaEdges={["top", "bottom"]} contentContainerStyle={styles.container}>
       <View style={styles.content}>
+        <View style={styles.devBanner}>
+          <Text style={styles.devBannerText}>🚧 Em desenvolvimento</Text>
+        </View>
+
         <Text preset="heading" style={styles.title}>
           Estatísticas pessoais
         </Text>
@@ -43,6 +47,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 24,
+  },
+  devBanner: {
+    width: "100%",
+    backgroundColor: "#FFF3CD",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#FFC107",
+  },
+  devBannerText: {
+    color: "#856404",
+    fontWeight: "600" as const,
   },
   content: {
     width: "80%",
