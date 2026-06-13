@@ -21,7 +21,6 @@ import { useAppTheme } from "@/theme/context"
 import { isOnboardingCompleted } from "@/utils/onboarding"
 
 import { BottomTabNavigator } from "./BottomTabNavigator"
-import { DemoNavigator } from "./DemoNavigator"
 import type { AppStackParamList, NavigationProps } from "./navigationTypes"
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 
@@ -57,7 +56,6 @@ const AppStack = () => {
         <>
           <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="Demo" component={DemoNavigator} />
         </>
       ) : (
         <>
