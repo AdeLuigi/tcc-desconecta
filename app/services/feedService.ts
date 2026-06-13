@@ -1,5 +1,5 @@
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from "@react-native-firebase/firestore"
-import { sendGroupNotification } from "./notificationService"
+import functions from "@react-native-firebase/functions"
 
 export type TipoAtividade = 'desafio_completo' | 'atividade_alternativa' | 'meta_atingida' | 'progresso' | 'leitura'
 
@@ -83,24 +83,13 @@ export async function createFeedPost(
     const feedRef = collection(db, "grupos", groupId, "feed")
     const docRef = await addDoc(feedRef, newPost)
 
-    // Buscar informações do grupo para enviar notificação
+    // Enviar notificação para os membros do grupo via Cloud Function
     try {
-      const groupRef = doc(db, "grupos", groupId)
-      const groupDoc = await getDoc(groupRef)
-      
-      if (groupDoc.exists()) {
-        const groupData = groupDoc.data()
-        const groupName = groupData?.nome || "seu grupo"
-        
-        // Enviar notificação para todos os membros do grupo
-        await sendGroupNotification(
-          groupId,
-          userId,
-          userName,
-          descricao,
-          groupName
-        )
-      }
+      await functions().httpsCallable("sendGroupNotification")({
+        groupId,
+        senderId: userId,
+        message: descricao,
+      })
     } catch (notificationError) {
       // Não falhar a criação do post se houver erro ao enviar notificação
       console.error("Erro ao enviar notificação:", notificationError)

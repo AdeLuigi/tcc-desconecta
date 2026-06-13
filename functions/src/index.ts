@@ -10,6 +10,11 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
+// Importar novas funções
+export {onActivityRegistered} from "./triggers/onActivityRegistered.js";
+export {onChallengeCompleted} from "./triggers/onChallengeCompleted.js";
+export {sendGroupNotification} from "./callable/sendGroupNotification.js";
+
 // Inicializar Firebase Admin
 admin.initializeApp();
 
