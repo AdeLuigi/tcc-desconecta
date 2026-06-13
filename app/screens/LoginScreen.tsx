@@ -11,9 +11,8 @@ import { useAuth } from "@/context/AuthContext"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
-import { signInWithGoogle, configureGoogleSignIn } from "@/services/auth"
-import { syncUserWithFirestore } from "@/services/userService"
-import { initializeNotifications, setupNotificationListeners } from "@/services/notificationService"
+import { useGoogleLogin } from "@/hooks/useGoogleLogin"
+import { setupNotificationListeners } from "@/services/notificationService"
 
 const Logo = require("@assets/images/logonovo.png")
 const BackgroundImage = require("@assets/images/background.png")
@@ -26,22 +25,17 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
   const [authPassword, setAuthPassword] = useState("")
   const [isAuthPasswordHidden, setIsAuthPasswordHidden] = useState(true)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const { authEmail, setAuthEmail, setAuthToken, setUserData, validationError } = useAuth()
+  const { authEmail, setAuthEmail, setAuthToken, validationError } = useAuth()
+  const { login: loginWithGoogle, isLoading: isGoogleLoading, error: googleError } = useGoogleLogin()
 
   const {
     themed,
     theme: { colors },
   } = useAppTheme()
 
-  // Configura o Google Sign-In quando o componente é montado
   useEffect(() => {
-    configureGoogleSignIn()
-    // Configurar listeners de notificação
     const unsubscribe = setupNotificationListeners()
-    
     return () => {
-      // Limpar listeners ao desmontar
       if (unsubscribe) unsubscribe()
     }
   }, [])
@@ -61,63 +55,6 @@ export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
 
     // We'll mock this with a fake token.
     setAuthToken(String(Date.now()))
-  }
-
-  async function loginWithGoogle() {
-    try {
-      setIsGoogleLoading(true)
-      const result = await signInWithGoogle()
-
-      if (result.success && result.user) {
-        // Salva o email do usuário e o token de autenticação
-        if (result.user.email) {
-          setAuthEmail(result.user.email)
-        }
-        setAuthToken(result.idToken || result.user.uid)
-        
-        // Sincroniza com o Firestore
-        const userData = await syncUserWithFirestore()
-        
-        if (userData) {
-          setUserData(userData)
-          
-          // Inicializar notificações após login bem-sucedido
-          try {
-            await initializeNotifications(userData.uid)
-            console.log('Notificações inicializadas com sucesso')
-          } catch (notifError) {
-            console.error('Erro ao inicializar notificações:', notifError)
-            // Não falhar o login se houver erro nas notificações
-          }
-          
-          // Mostra mensagem de sucesso
-          Alert.alert(
-            "Sucesso!",
-            `Bem-vindo(a), ${userData.nome}!`,
-          )
-        } else {
-          console.warn("Não foi possível sincronizar com o Firestore")
-          Alert.alert(
-            "Sucesso!",
-            `Bem-vindo(a), ${result.user.displayName || result.user.email}!`,
-          )
-        }
-      } else {
-        // Mostra erro se o login falhou
-        Alert.alert(
-          "Erro no Login",
-          result.error || "Não foi possível fazer login com Google",
-        )
-      }
-    } catch (error: any) {
-      console.error("Error in loginWithGoogle:", error)
-      Alert.alert(
-        "Erro",
-        error.message || "Ocorreu um erro ao fazer login com Google",
-      )
-    } finally {
-      setIsGoogleLoading(false)
-    }
   }
 
   const PasswordRightAccessory: ComponentType<TextFieldAccessoryProps> = useMemo(

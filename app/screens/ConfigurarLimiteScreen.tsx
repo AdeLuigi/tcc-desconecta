@@ -12,10 +12,11 @@ import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Button } from "@/components/Button"
 import { useAuth } from "@/context/AuthContext"
-import { updateUserData, getUserData } from "@/services/userService"
 import type { LimiteConfig } from "@/services/userService"
-import screenTimeService from "@/services/screenTime"
 import { getInstalledApps, type InstalledApp } from "@/utils/installedApps"
+import { saveLimitConfigUseCase } from "@/useCases/limits/saveLimitConfigUseCase"
+import { isDomainError } from "@/domain/errors"
+import screenTimeService from "@/services/screenTime"
 
 const DAYS = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"]
 const ALL_DAYS = [...DAYS]
@@ -84,16 +85,9 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
 
   const handleSave = async () => {
     if (!userData) return
-    if (!nome.trim()) {
-      Alert.alert("Aviso", "Dê um nome para este limite.")
-      return
-    }
 
+    setIsSaving(true)
     try {
-      setIsSaving(true)
-      const t0 = Date.now()
-      console.log('[SAVE] ===== INÍCIO DO SALVAMENTO =====')
-
       const newConfig: LimiteConfig = {
         nome: nome.trim(),
         emoji,
@@ -103,93 +97,36 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
         diasAtivos: Array.from(diasAtivos),
       }
 
-      const currentLimites = userData.configuracoes?.limitesDeApps ?? []
-      let updatedLimites: LimiteConfig[]
+      const isAccessibilityEnabled = await saveLimitConfigUseCase(
+        { userId: userData.uid, userData, newConfig, editingConfig },
+        setUserData,
+      )
 
-      if (editingConfig) {
-        updatedLimites = currentLimites.map((c) =>
-          c.nome === editingConfig.nome ? newConfig : c,
+      if (!isAccessibilityEnabled) {
+        Alert.alert(
+          "Limite salvo — ativar bloqueio",
+          "Limite criado com sucesso!\n\nPara bloquear apps quando o limite for atingido, ative o serviço de acessibilidade do Desconecta.",
+          [
+            { text: "Depois", style: "cancel", onPress: () => navigation.popToTop() },
+            {
+              text: "Ativar agora",
+              onPress: () => {
+                screenTimeService.requestAccessibilityPermission()
+                navigation.popToTop()
+              },
+            },
+          ],
         )
       } else {
-        updatedLimites = [...currentLimites, newConfig]
-      }
-
-      console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Chamando updateUserData...')
-      await updateUserData(userData.uid, {
-        configuracoes: {
-          ...userData.configuracoes,
-          bloqueio_apps: true,
-          limitesDeApps: updatedLimites,
-          appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
-          sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
-          limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
-        },
-      })
-
-      {
-        const appConfigs: Record<string, { limitMinutes: number; activeDays: string[] }> = {}
-        for (const config of updatedLimites) {
-          for (const pkg of config.appsComLimite) {
-            if (!appConfigs[pkg] || config.limiteMinutos < appConfigs[pkg].limitMinutes) {
-              appConfigs[pkg] = {
-                limitMinutes: config.limiteMinutos,
-                activeDays: Array.from(config.diasAtivos),
-              }
-            }
-          }
-        }
-        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | appConfigs:', JSON.stringify(appConfigs))
-
-        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Chamando configureAppBlocking + isAccessibilityServiceEnabled em paralelo...')
-        const [blockingResult, isAccessibilityEnabled] = await Promise.all([
-          screenTimeService.configureAppBlocking(appConfigs, true),
-          screenTimeService.isAccessibilityServiceEnabled(),
-        ])
-        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | configureAppBlocking:', blockingResult, '| isAccessibilityEnabled:', isAccessibilityEnabled)
-
-        // Update local userData directly (no re-fetch needed)
-        if (userData) {
-          setUserData({
-            ...userData,
-            configuracoes: {
-              ...userData.configuracoes,
-              bloqueio_apps: true,
-              limitesDeApps: updatedLimites,
-              appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
-              sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
-              limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
-            },
-          })
-        }
-
-        console.log('[SAVE] +' + (Date.now() - t0) + 'ms | Mostrando alert. isAccessibilityEnabled=' + isAccessibilityEnabled)
-        if (!isAccessibilityEnabled) {
-          Alert.alert(
-            "Limite salvo — ativar bloqueio",
-            "Limite criado com sucesso!\n\nPara bloquear apps quando o limite for atingido, ative o serviço de acessibilidade do Desconecta.",
-            [
-              {
-                text: "Depois",
-                style: "cancel",
-                onPress: () => navigation.popToTop(),
-              },
-              {
-                text: "Ativar agora",
-                onPress: () => {
-                  screenTimeService.requestAccessibilityPermission()
-                  navigation.popToTop()
-                },
-              },
-            ],
-          )
-        } else {
-          Alert.alert("Sucesso", "Limite de apps salvo com sucesso!")
-          navigation.popToTop()
-        }
+        Alert.alert("Sucesso", "Limite de apps salvo com sucesso!")
+        navigation.popToTop()
       }
     } catch (error) {
-      console.error("Erro ao salvar limite:", error)
-      Alert.alert("Erro", "Ocorreu um erro ao salvar o limite.")
+      if (isDomainError(error)) {
+        Alert.alert("Atenção", error.message)
+      } else {
+        Alert.alert("Erro", "Ocorreu um erro ao salvar o limite.")
+      }
     } finally {
       setIsSaving(false)
     }
