@@ -21,12 +21,12 @@ export const OnboardingFinalScreen: React.FC<OnboardingFinalScreenProps> = ({ na
   return (
     <Screen preset="fixed" contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
-        <Image source={require("../../assets/images/background-2.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+        <Image source={require("@assets/images/background-2.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
       </View>
 
       <View style={styles.content}>
         <View style={styles.illustrationWrap}>
-          <Image source={require("../../assets/images/meta-diaria.png")} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+          <Image source={require("@assets/images/meta-diaria.png")} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
         </View>
                 <Text preset="subheading" style={styles.title}>
                   Defina suas metas!

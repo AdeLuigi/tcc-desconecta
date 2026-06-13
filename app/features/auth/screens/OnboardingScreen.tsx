@@ -5,31 +5,31 @@ import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
-interface BemVindoScreenProps extends AppStackScreenProps<"BemVindo"> {}
+interface OnboardingScreenProps extends AppStackScreenProps<"Onboarding"> {}
 
-export const BemVindoScreen: React.FC<BemVindoScreenProps> = ({ navigation }) => {
+export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   return (
     <Screen preset="fixed" contentContainerStyle={styles.container}>
       <View style={styles.background} pointerEvents="none">
-        <Image source={require("../../assets/images/background-2.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+        <Image source={require("@assets/images/background-2.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
       </View>
 
       <View style={styles.content}>
         <View style={styles.illustrationWrap}>
-          <Image source={require("../../assets/images/jovem-negra-1.png")} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+          <Image source={require("@assets/images/dispute-com-amigos.png")} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
         </View>
 
         <Text preset="subheading" style={styles.title}>
-          Bem vindo, ao Desconecta!
+          Dispute com amigos!
         </Text>
 
         <Text size="xs" style={styles.subtitle}>
-          O app que te ajuda a diminuir seu tempo de tela e a ganhar de volta seus momentos offline!
+          Compare seu tempo com os amigos, acompanhe o ranking e se motive a usar cada vez menos o celular.
         </Text>
 
         <View style={styles.pagination}>
-          <View style={[styles.dot, styles.dotActive]} />
           <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive]} />
           <View style={styles.dot} />
         </View>
 
@@ -42,7 +42,7 @@ export const BemVindoScreen: React.FC<BemVindoScreenProps> = ({ navigation }) =>
           />
           <Button
             text="Próximo"
-            onPress={() => navigation.navigate("Onboarding")}
+            onPress={() => navigation.navigate("OnboardingFinal")}
             style={[styles.button, styles.nextButton]}
             textStyle={styles.nextButtonText}
           />
@@ -68,9 +68,9 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   illustrationWrap: {
-    width: 210,
-    height: 210,
-    marginBottom: 26,
+    width: 230,
+    height: 230,
+    marginBottom: 22,
   },
   title: {
     color: "#FFFFFF",
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     textAlign: "center",
     opacity: 0.92,
-    maxWidth: 280,
+    maxWidth: 290,
     marginBottom: 20,
   },
   pagination: {

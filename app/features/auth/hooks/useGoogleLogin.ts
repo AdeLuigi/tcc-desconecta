@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react"
-import { signInWithGoogleUseCase } from "@/useCases/auth/signInWithGoogleUseCase"
+import { signInWithGoogleUseCase } from "@/features/auth/useCases/signInWithGoogleUseCase"
 import { useAuth } from "@/context/AuthContext"
 import { isDomainError, isNetworkError } from "@/domain/errors"
 

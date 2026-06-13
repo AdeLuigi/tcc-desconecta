@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Image, ImageBackground, TouchableOpacity, RefreshControl } from "react-native"
-import { useAppForeground } from "@/hooks/useAppForeground"
+import { useAppForeground } from "@/shared/hooks/useAppForeground"
 import { LineChart, BarChart, PieChart } from "react-native-chart-kit"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"

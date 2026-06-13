@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ImageBackground, Modal, TextInput, Alert, ActivityIndicator, RefreshControl } from "react-native"
-import { useAppForeground } from "@/hooks/useAppForeground"
+import { useAppForeground } from "@/shared/hooks/useAppForeground"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import ProgressBar from "@/components/ProgressBar"

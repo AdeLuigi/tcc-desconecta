@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput, Modal, Alert, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from "react-native"
-import { useAppForeground } from "@/hooks/useAppForeground"
+import { useAppForeground } from "@/shared/hooks/useAppForeground"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"

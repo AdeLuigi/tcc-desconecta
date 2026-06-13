@@ -14,7 +14,7 @@ import { Button } from "@/components/Button"
 import { useAuth } from "@/context/AuthContext"
 import type { LimiteConfig } from "@/services/userService"
 import { getInstalledApps, type InstalledApp } from "@/utils/installedApps"
-import { saveLimitConfigUseCase } from "@/useCases/limits/saveLimitConfigUseCase"
+import { saveLimitConfigUseCase } from "@/features/limites/useCases/saveLimitConfigUseCase"
 import { isDomainError } from "@/domain/errors"
 import screenTimeService from "@/services/screenTime"
 

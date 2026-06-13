@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
-import { useGoogleLogin } from "@/hooks/useGoogleLogin"
+import { useGoogleLogin } from "@/features/auth/hooks/useGoogleLogin"
 import { setupNotificationListeners } from "@/services/notificationService"
 
 const Logo = require("@assets/images/logonovo.png")
