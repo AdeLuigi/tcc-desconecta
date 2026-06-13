@@ -1,5 +1,4 @@
-import { updateUserData } from "@/services/userService"
-import screenTimeService from "@/services/screenTime"
+import { userRepository, screenTimeGateway } from "@/adapters"
 import { DomainError } from "@/domain/errors"
 import type { UserData, LimiteConfig } from "@/services/userService"
 
@@ -32,34 +31,24 @@ export async function saveLimitConfigUseCase(
     updatedLimites = [...currentLimites, newConfig]
   }
 
-  await updateUserData(userId, {
-    configuracoes: {
-      ...userData.configuracoes,
-      bloqueio_apps: true,
-      limitesDeApps: updatedLimites,
-      appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
-      sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
-      limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
-    },
-  })
+  const updatedConfiguracoes = {
+    ...userData.configuracoes,
+    bloqueio_apps: true,
+    limitesDeApps: updatedLimites,
+    appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
+    sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
+    limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
+  }
+
+  await userRepository.update(userId, { configuracoes: updatedConfiguracoes })
 
   const appConfigs = buildAppBlockingConfigs(updatedLimites)
   const [, isAccessibilityEnabled] = await Promise.all([
-    screenTimeService.configureAppBlocking(appConfigs, true),
-    screenTimeService.isAccessibilityServiceEnabled(),
+    screenTimeGateway.configureBlocking(appConfigs, true),
+    screenTimeGateway.isAccessibilityServiceEnabled(),
   ])
 
-  setUserData({
-    ...userData,
-    configuracoes: {
-      ...userData.configuracoes,
-      bloqueio_apps: true,
-      limitesDeApps: updatedLimites,
-      appsComLimite: updatedLimites.flatMap((c) => c.appsComLimite),
-      sitesComLimite: updatedLimites.flatMap((c) => c.sitesComLimite),
-      limiteAppsNome: updatedLimites.map((c) => c.nome).join(", "),
-    },
-  })
+  setUserData({ ...userData, configuracoes: updatedConfiguracoes })
 
   return isAccessibilityEnabled as boolean
 }

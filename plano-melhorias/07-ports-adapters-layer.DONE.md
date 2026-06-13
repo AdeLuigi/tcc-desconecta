@@ -128,7 +128,7 @@ export class FirestoreUserRepository implements IUserRepository {
   }
 
   async save(userData: UserData): Promise<void> {
-    await setDoc(doc(this.db, "usuarios", userData.userId), userData)
+    await setDoc(doc(this.db, "usuarios", userData.uid), userData)
   }
 
   async update(userId: string, partial: Partial<UserData>): Promise<void> {
