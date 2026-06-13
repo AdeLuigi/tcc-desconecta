@@ -88,41 +88,30 @@ export interface Group {
 export async function getUserGroups(userId: string): Promise<Group[]> {
   try {
     const db = getFirestore()
-    const groupsRef = collection(db, "grupos")
-    
-    // Firestore tem limitações com array-contains em objetos,
-    // então buscamos todos os grupos e filtramos manualmente
-    const allGroupsSnapshot = await getDocs(groupsRef)
-    
-    const groups: Group[] = []
-    
-    allGroupsSnapshot.forEach((docSnap: any) => {
+    const q = query(
+      collection(db, "grupos"),
+      where("membrosIds", "array-contains", userId),
+    )
+    const snapshot = await getDocs(q)
+
+    return snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data()
-      const membros = data.membros || []
-      
-      // Verifica se o usuário está nos membros
-      const isMember = membros.some((membro: GroupMember) => membro.userId === userId)
-      
-      if (isMember) {
-        groups.push({
-          id: docSnap.id,
-          nome: data.nome || "",
-          descricao: data.descricao || "",
-          foto: data.foto || "",
-          criado_em: data.criado_em || "",
-          dataLimite: data.dataLimite || undefined,
-          criterioRanking: data.criterioRanking || undefined,
-          groupType: data.groupType || undefined,
-          selectedApps: data.selectedApps || undefined,
-          selectedSites: data.selectedSites || undefined,
-          membros: data.membros || [],
-          ranking_mensal: data.ranking_mensal || [],
-          codigoGrupo: data.codigoGrupo || "",
-        })
+      return {
+        id: docSnap.id,
+        nome: data.nome || "",
+        descricao: data.descricao || "",
+        foto: data.foto || "",
+        criado_em: data.criado_em || "",
+        dataLimite: data.dataLimite || undefined,
+        criterioRanking: data.criterioRanking || undefined,
+        groupType: data.groupType || undefined,
+        selectedApps: data.selectedApps || undefined,
+        selectedSites: data.selectedSites || undefined,
+        membros: data.membros || [],
+        ranking_mensal: data.ranking_mensal || [],
+        codigoGrupo: data.codigoGrupo || "",
       }
     })
-
-    return groups
   } catch (error) {
     console.error("Erro ao buscar grupos do usuário:", error)
     return []
@@ -197,6 +186,7 @@ export async function createGroup(
       ...(selectedApps && selectedApps.length > 0 ? { selectedApps } : {}),
       ...(selectedSites && selectedSites.length > 0 ? { selectedSites } : {}),
       codigoGrupo,
+      membrosIds: [adminUserId],
       membros: [
         {
           userId: adminUserId,
@@ -235,6 +225,7 @@ export async function addMemberToGroup(
     const groupRef = doc(db, "grupos", groupId)
     
     await updateDoc(groupRef, {
+      membrosIds: arrayUnion(userId),
       membros: arrayUnion({
         userId,
         cargo: "membro",
@@ -269,6 +260,7 @@ export async function removeMemberFromGroup(
     const db = getFirestore()
     const groupRef = doc(db, "grupos", groupId)
     await updateDoc(groupRef, {
+      membrosIds: updatedMembros.map((m) => m.userId),
       membros: updatedMembros,
       ranking_mensal: updatedRanking,
     })
@@ -382,6 +374,7 @@ export async function joinGroupByCode(
     const groupRef = doc(db, "grupos", group.id)
     
     await updateDoc(groupRef, {
+      membrosIds: arrayUnion(userId),
       membros: arrayUnion({
         userId,
         cargo: "membro",
