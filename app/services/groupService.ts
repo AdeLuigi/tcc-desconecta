@@ -1,18 +1,7 @@
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, arrayUnion, query, where } from "@react-native-firebase/firestore"
 import { getUserData } from "./userService"
 import { NotFoundError, PermissionError, ConflictError, NetworkError } from "@/domain/errors"
-
-/**
- * Gera um código alfanumérico de 6 caracteres
- */
-function generateGroupCode(): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += characters.charAt(Math.floor(Math.random() * characters.length))
-  }
-  return code
-}
+import { GroupCode } from "@/domain/GroupCode"
 
 /**
  * Verifica se um código de grupo já existe
@@ -31,15 +20,15 @@ async function groupCodeExists(code: string): Promise<boolean> {
 }
 
 /**
- * Gera um código único para o grupo
+ * Gera um código único para o grupo usando crypto (seguro)
  */
 async function generateUniqueGroupCode(): Promise<string> {
-  let code = generateGroupCode()
+  let code = GroupCode.generate().toString()
   let attempts = 0
   const maxAttempts = 10
 
   while (await groupCodeExists(code) && attempts < maxAttempts) {
-    code = generateGroupCode()
+    code = GroupCode.generate().toString()
     attempts++
   }
 

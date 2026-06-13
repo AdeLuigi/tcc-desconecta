@@ -12,6 +12,7 @@ import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
 import { isDomainError } from "@/domain/errors"
+import { Group as DomainGroup } from "@/domain/Group"
 import { ActiveChallengesSection } from "@/components/ActiveChallengesSection"
 const Logo = require("@assets/images/logo2.png")
 const BackgroundImage = require("@assets/images/frame home 1.png")
@@ -90,11 +91,16 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
 
       setLoadingGroups(true)
       const userGroups = await getUserGroups(userData.uid)
-      // Filter out groups whose challenge deadline has passed
-      const now = new Date()
       const activeGroups = userGroups.filter(group => {
-        if (!group.dataLimite) return true
-        return new Date(group.dataLimite) > now
+        const domainGroup = DomainGroup.create({
+          id: group.id,
+          nome: group.nome,
+          codigo: group.codigoGrupo,
+          adminId: group.membros.find(m => m.cargo === "administrador")?.userId ?? "",
+          membros: group.membros,
+          dataLimite: group.dataLimite,
+        })
+        return !domainGroup.isExpired()
       })
       setGroups(activeGroups)
     } catch (error) {
