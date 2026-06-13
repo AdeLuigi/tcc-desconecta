@@ -1,29 +1,22 @@
 import auth, { GoogleAuthProvider, getAuth, signInWithCredential } from "@react-native-firebase/auth"
 import { GoogleSignin } from "@react-native-google-signin/google-signin"
+import Constants from "expo-constants"
 
 /**
  * Configura o Google Sign-In
  * Deve ser chamado antes de usar qualquer funcionalidade do Google Sign-In
  */
 export function configureGoogleSignIn() {
-  // IMPORTANTE: Você precisa adicionar o Web Client ID do Firebase Console
-  // Para obter: Firebase Console > Project Settings > General > Your apps > Web app
-  // Ou em: Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
-  const webClientId = "373913932164-hrh6hnuukr8ur6te4sn4k0kf9med8lvl.apps.googleusercontent.com" // Adicione seu Web Client ID aqui
-  
+  const webClientId = Constants.expoConfig?.extra?.googleWebClientId as string | undefined
+
   if (!webClientId) {
-    console.warn(
-      "⚠️ ATENÇÃO: Web Client ID não configurado!\n" +
-      "Para o login com Google funcionar, você precisa:\n" +
-      "1. Ir no Firebase Console\n" +
-      "2. Acessar Project Settings > General\n" +
-      "3. Copiar o Web Client ID (OAuth 2.0 client)\n" +
-      "4. Colar no arquivo app/services/auth.ts\n"
+    throw new Error(
+      "GOOGLE_WEB_CLIENT_ID não configurado. Verifique o arquivo .env e app.config.ts."
     )
   }
-  
+
   GoogleSignin.configure({
-    webClientId: webClientId,
+    webClientId,
   })
 }
 
