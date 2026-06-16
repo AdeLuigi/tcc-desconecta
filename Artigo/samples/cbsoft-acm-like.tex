@@ -28,9 +28,9 @@
 
 %% Only for papers written in PORTUGUESE: 
 %% comment out the following three lines
-%\renewcommand\abstractname{Resumo}
-%\renewcommand\keywordsname{Palavras-chave}
-%\renewcommand\refname{Referências}
+\renewcommand\abstractname{Resumo}
+\renewcommand\keywordsname{Palavras-chave}
+\renewcommand\refname{Referências}
 
 %% end of the preamble, start of the body of the document source.
 
@@ -166,9 +166,11 @@ O objetivo deste trabalho é avaliar o impacto da remoção sistemática de anti
 
 
 
-\section{Arquitetura de Software}
+\section{Fundamentação Teórica}
 
-A arquitetura de software corresponde à estrutura fundamental de um sistema, compreendendo seus componentes, as relações entre eles e os princípios que orientam sua organização e evolução. Segundo Bass, Clements e Kazman, a arquitetura representa um conjunto de estruturas necessárias para raciocinar sobre o sistema, incluindo elementos de software, propriedades visíveis externamente e os relacionamentos estabelecidos entre esses elementos.
+\subsection{Arquitetura de Software e Qualidade Interna}
+
+A arquitetura de software corresponde à estrutura fundamental de um sistema, compreendendo seus componentes, as relações entre eles e os princípios que orientam sua organização e evolução. Segundo Bass, Clements e Kazman~\cite{Bass2012}, a arquitetura representa um conjunto de estruturas necessárias para raciocinar sobre o sistema, incluindo elementos de software, propriedades visíveis externamente e os relacionamentos estabelecidos entre esses elementos.
 
 A definição de uma arquitetura adequada desempenha papel fundamental na qualidade de sistemas de software, influenciando atributos como manutenibilidade, escalabilidade, testabilidade e capacidade de evolução. Decisões arquiteturais tomadas durante o desenvolvimento afetam diretamente a forma como novas funcionalidades são incorporadas e como modificações futuras podem ser realizadas.
 
@@ -177,279 +179,54 @@ Entretanto, à medida que sistemas evoluem, é comum que restrições de prazo, 
 Nesse contexto, a arquitetura exerce papel central na sustentabilidade de longo prazo dos sistemas, tornando necessária a adoção de práticas de monitoramento e refatoração capazes de preservar atributos de qualidade interna ao longo de sua evolução.
 
 
-\subsection{Template Parameters}
+\subsection{Anti-Patterns Arquiteturais}
 
-There are a number of {\itshape template parameters}
-which modify some part of the applied template style. A complete list
-of these parameters can be found in the {\itshape \LaTeX\ User's Guide.}
+Anti-patterns são soluções recorrentes para problemas recorrentes que produzem consequências negativas para o sistema. O conceito foi formalizado por Brown et al.~\cite{Brown1998}, que os definiram como uma forma literária que descreve uma solução comumente utilizada para um problema recorrente e que gera consequências negativas. Ao contrário dos design patterns, que representam soluções estruturalmente eficazes, anti-patterns descrevem soluções aparentemente funcionais que, com o tempo, comprometem atributos de qualidade interna do sistema.
 
-Frequently-used parameters, or combinations of parameters, include:
-\begin{itemize}
-\item {\texttt{anonymous,review}}: Suitable for a double-anonymized conference submission. It anonymizes the work and includes line numbers.
-\item{\texttt{authorversion}}: Produces a version of the work suitable for posting by the author.
-\item{\texttt{screen}}: Produces colored hyperlinks.
-\end{itemize}
+Importa distinguir anti-patterns arquiteturais de code smells. Code smells, descritos por Fowler~\cite{Fowler2018}, são indícios de problemas locais no código-fonte — como métodos excessivamente longos ou variáveis com nomes genéricos — que podem ser corrigidos por refatorações pontuais. Anti-patterns arquiteturais, em contraste, referem-se a problemas estruturais que comprometem a organização das responsabilidades entre módulos e camadas do sistema, exigindo intervenções de maior escopo para sua remoção.
 
+No contexto deste trabalho, foram identificados os seguintes anti-patterns no sistema estudado:
 
-\section{Modifications}
+\textbf{Business Logic in UI.} Ocorre quando regras de negócio são implementadas diretamente em componentes de interface de usuário, em vez de residirem em uma camada dedicada de aplicação ou domínio. Esse padrão viola o Princípio da Separação de Responsabilidades e dificulta a escrita de testes automatizados, uma vez que verificar a lógica de negócio exige renderizar a interface completa.
 
-Modifying the template, including but not limited to adjusting
-margins, typeface sizes, line spacing, paragraph and list definitions,
-and the use of the \verb|\vspace| command to manually adjust the
-vertical spacing between elements of your work, \textbf{is not allowed.}
+\textbf{God Object.} Consiste na existência de módulos que concentram múltiplas responsabilidades distintas, tornando-se excessivamente grandes e difíceis de compreender. A presença de um God Object viola o Princípio da Responsabilidade Única~\cite{Martin2017} e amplifica o impacto de modificações, pois alterações em uma responsabilidade tendem a afetar as demais.
 
-\textbf{Your document will be returned to you for revision if modifications are discovered.}
+\textbf{Hardcoded Dependencies.} Ocorre quando módulos dependem diretamente de implementações concretas de serviços externos, em vez de dependerem de abstrações. Esse padrão impede a substituição das dependências por implementações alternativas — como mocks em testes — e aumenta o acoplamento entre camadas do sistema.
 
+\textbf{Singleton Não Injetável.} Refere-se ao uso de instâncias globais únicas exportadas como valores estáticos, sem suporte à injeção de dependência. Embora o padrão Singleton seja amplamente documentado, seu uso sem mecanismo de substituição impede a escrita de testes unitários isolados, comprometendo diretamente a testabilidade do sistema~\cite{Feathers2004}.
 
-\section{Typefaces}
 
-The \verb|acmart| document class requires the use of the Libertine typeface family. Your \TeX\ installation should include this set of packages. Please do not replace it with other typefaces. The \verb|lmodern| and  \verb|ltimes| packages should not be used, as they will override the built-in typeface families.
+\subsection{Qualidade Interna: Acoplamento, Coesão e Testabilidade}
 
-\section{Title Information}
+A qualidade de um sistema de software pode ser avaliada sob diferentes perspectivas. A ISO/IEC~25010~\cite{ISO25010} organiza os atributos de qualidade em características externas — perceptíveis pelo usuário final — e características internas — observáveis na estrutura do código-fonte. Este trabalho concentra-se em três atributos de qualidade interna: acoplamento, coesão e testabilidade.
 
-The title of your work should use capital letters appropriately --\url{https://capitalizemytitle.com/} has useful rules for capitalization. Use the {\verb|title|} command to define the title of your work. If your work has a subtitle, define it with the {\verb|subtitle|} command. Do not insert line breaks in your title.
+\textbf{Acoplamento} corresponde ao grau com que um módulo depende de implementações concretas de outros módulos. Sistemas com alto acoplamento são mais difíceis de modificar e testar, pois alterações em um módulo tendem a se propagar para outros. Uma métrica formal amplamente utilizada é o \textit{Coupling Between Object classes} (CBO), proposta por Chidamber e Kemerer~\cite{Chidamber1994}, que contabiliza o número de classes às quais uma classe está diretamente acoplada.
 
-If your title is lengthy, you must define a short version to be used in the page headers to prevent overlapping text. The \verb|title| command has a ``short title'' parameter:
-\begin{verbatim}
-  \title[short title]{full title}
-\end{verbatim}
+\textbf{Coesão} refere-se ao grau com que os elementos de um módulo estão relacionados entre si e contribuem para uma única responsabilidade bem definida. Alta coesão indica que um módulo realiza uma função específica, enquanto baixa coesão indica acúmulo de responsabilidades distintas em um mesmo artefato. O Princípio da Responsabilidade Única (SRP), enunciado por Martin~\cite{Martin2017}, estabelece que um módulo deve ter apenas uma razão para mudar. A métrica \textit{Lack of Cohesion of Methods} (LCOM), também de Chidamber e Kemerer~\cite{Chidamber1994}, quantifica esse atributo.
 
-\section{Authors and Affiliations}
+\textbf{Testabilidade} descreve a facilidade com que um módulo pode ser verificado de forma isolada, sem necessidade de configurar dependências externas reais. Feathers~\cite{Feathers2004} argumenta que sistemas com baixa testabilidade frequentemente apresentam dependências diretas a recursos externos, ausência de injeção de dependência e uso extensivo de singletons — características que tornam inviável a escrita de testes unitários rápidos e determinísticos.
 
-Each author must be defined separately for accurate metadata
-identification. As an exception, multiple authors may share one
-affiliation. Authors' names should not be abbreviated; use full first
-names wherever possible. Inclusion of e-mail addresses for all authors is mandatory and must follow the font style defined in the template.
+Os três atributos são inter-relacionados: alto acoplamento tende a comprometer tanto a coesão quanto a testabilidade, enquanto a introdução de abstrações contribui simultaneamente para a redução do acoplamento e para o aumento da testabilidade.
 
-Immediately below the title, each author must be declared using the following format:
 
-\begin{center}
-\begin{minipage}{\columnwidth}
-\small
-\begin{verbatim}
-\author{FirstName Surname}
-\affiliation{
-  \institution{Department Name, Institution/University Name}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
-\end{verbatim}
-\end{minipage}
-\end{center}
+\subsection{Refatoração Arquitetural}
 
-Grouping authors' names or e-mail addresses, or providing an ``e-mail
-alias,'' as shown below, is not acceptable:
-\begin{verbatim}
-\author{Brooke Aster, David Mehldau}
-\email{dave,judy,steve@university.edu}
-\email{firstname.lastname@phillips.org}
-\end{verbatim}
+Refatoração é o processo de alterar a estrutura interna de um software sem modificar seu comportamento externamente observável~\cite{Fowler2018}. Fowler catalogou diversas técnicas de refatoração aplicáveis ao nível de código — como extração de método, substituição de variável temporária por consulta e decomposição de condicional. Contudo, quando o sistema acumula anti-patterns arquiteturais, refatorações pontuais são insuficientes.
 
-For papers with multiple authors, the surnames of the authors must be included in the page headers. The list of author names shown in the header must not exceed the column width. Therefore, only the surnames should be used, preferably in the form ``Surname et al.'' when appropriate. This shortened list must be explicitly defined using the following command, placed immediately after the last \verb|\author| declaration:
+Refatoração arquitetural difere da refatoração de código em escopo e impacto. Enquanto refatorações de código atuam em construções individuais, refatorações arquiteturais envolvem a reorganização de responsabilidades entre módulos e camadas do sistema. Esse tipo de intervenção é necessário quando os problemas estruturais não podem ser resolvidos sem alterar as fronteiras entre componentes.
 
-\begin{verbatim}
-\renewcommand{\shortauthors}{Surname1stAuthor et al.}
-\end{verbatim}
+Neste trabalho, o processo de refatoração arquitetural envolveu a aplicação dos seguintes padrões:
 
-Omitting this command may cause the full list of authors to be automatically used in the page headers, which can lead to text overlap and layout issues.
+\textbf{Use Cases (Camada de Aplicação).} Segundo Martin~\cite{Martin2017}, use cases representam os fluxos de negócio da aplicação e devem residir em uma camada separada da interface de usuário e da infraestrutura. Extrair use cases das telas resolve o anti-pattern \textit{Business Logic in UI} e permite testar a lógica de negócio de forma independente da UI.
 
-The \verb|authornote| and \verb|authornotemark| commands allow a note
-to apply to multiple authors. For example, if the first two authors
-of an article contributed equally to the work.
+\textbf{Ports \& Adapters (Arquitetura Hexagonal).} Proposta por Cockburn~\cite{Cockburn2005}, a Arquitetura Hexagonal organiza o sistema em torno de um núcleo de domínio isolado por interfaces denominadas \textit{ports}. As implementações concretas das dependências externas — os \textit{adapters} — implementam essas interfaces e são fornecidas ao núcleo por injeção de dependência. Esse padrão resolve diretamente o anti-pattern \textit{Hardcoded Dependencies}.
 
-Before submitting the camera-ready version, authors must verify the following:
-\begin{itemize}
-  \item All authors are declared individually using the required format.
-  \item All e-mail addresses have been correctly included.
-  \item The font used for e-mail addresses is consistent with the template.
-  \item The shortened author list defined by \verb|\shortauthors| contains only surnames and fits within the column width of the header.
-\end{itemize}
+\textbf{Entidades de Domínio Ricas.} No contexto do \textit{Domain-Driven Design} (DDD), Evans~\cite{Evans2003} defende que entidades e objetos de valor devem encapsular as regras de negócio que lhes pertencem, em vez de serem estruturas de dados passivas com lógica dispersa em serviços. Entidades de domínio ricas aumentam a coesão ao reunir dados e comportamento relacionados em um mesmo artefato.
 
-\section{Sectioning Commands}
+\textbf{Organização por Feature (Vertical Slicing).} Em vez de organizar o código por tipo de artefato — todas as telas em um diretório, todos os serviços em outro —, a organização por feature agrupa em um mesmo módulo todos os artefatos pertencentes a uma mesma funcionalidade do sistema. Essa abordagem melhora a rastreabilidade das mudanças e reduz o impacto de modificações dentro de cada domínio funcional.
 
-Your work should use standard \LaTeX\ sectioning commands:
-\verb|\section|, \verb|\subsection|, \verb|\subsubsection|,
-\verb|\paragraph|, and \verb|\subparagraph|. The sectioning levels up to
-\verb|\subsubsection| should be numbered; do not remove the numbering
-from the commands.
 
-All numbered section and subsection titles must follow the same capitalization style: the first letter of each word in the title must be capitalized (Title Case).
-
-Simulating a sectioning command by setting the first word or words of a paragraph in boldface or italicized text is {\bfseries not allowed.}
-
-Below are examples of sectioning commands:
-
-\subsection{Subsection}
-\label{sec:subsection}
-
-This is a subsection.
-
-\subsubsection{Subsubsection}
-\label{sec:subsubsection}
-
-This is a subsubsection.
-
-\paragraph{Paragraph}
-
-This is a paragraph.
-
-\subparagraph{Subparagraph}
-
-This is a subparagraph.
-
-\section{Tables}
-
-This ACM-like CBSoft template, based on the \verb|acmart| document class, includes the \verb|booktabs| package (\url{https://ctan.org/pkg/booktabs})- for preparing high-quality tables.
-
-Table captions are placed \textbf{above} the table.
-
-Because tables cannot be split across pages, the best placement is typically at the top of the page nearest their initial citation. To ensure this proper ``floating'' placement of tables, use the \texttt{table} environment to enclose the table's contents and the table caption. The contents of the table must be placed in the \texttt{tabular} environment to ensure proper row and column alignment. Do not use horizontal lines between rows with \texttt{hline}, except for the table header and marking its end. Do not use vertical lines between columns in any case.
-
-Immediately following this sentence is the point at which Table~\ref{tab:freq} is included in the input file; compare the placement of the table here with the table in the printed output of this document.
-
-\begin{table}
-  \caption{Frequency of special characters}
-  \label{tab:freq}
-  \begin{tabular}{ccl}
-    \toprule
-    Non-English or Math & Frequency   & Comments\\
-    \midrule
-    \O                  & 1 in 1,000  & For Swedish names\\
-    $\pi$               & 1 in 5      & Common in math\\
-    \$                  & 4 in 5      & Used in business\\
-    $\Psi^2_1$          & 1 in 40,000 & Unexplained usage\\
-  \bottomrule
-\end{tabular}
-\end{table}
-
-To set a wider table, which takes up the whole width of the page's live area, use the \texttt{table*} environment to enclose the table's contents and the table caption. As with a single-column table, this wide table will ``float'' to a location deemed more desirable. Immediately following this sentence is the point at which Table~\ref{tab:commands} is included in the input file. Once again, it is instructive to compare the placement of the table here with the table in the printed output of this document.
-
-\begin{table*}
-  \caption{Some typical commands}
-  \label{tab:commands}
-  \begin{tabular}{ccl}
-    \toprule
-    Command                     & A Number  & Comments\\
-    \midrule
-    \texttt{{\char'134}author}  & 100       & Author\\
-    \texttt{{\char'134}table}   & 300       & For tables\\
-    \texttt{{\char'134}table*}  & 400       & For wider tables\\
-    \bottomrule
-  \end{tabular}
-\end{table*}
-
-Always use \texttt{midrule} to separate table header rows from data rows, and use it only for this purpose. This enables assistive technologies to recognize table headers and support their users in navigating tables more easily.
-
-\section{Math Equations}
-You may want to display math equations in three distinct styles: inline, numbered, or non-numbered display. Each of the three is discussed in the next sections.
-
-\subsection{Inline (In-text) Equations}
-A formula that appears in the running text is called an inline or in-text formula. It is produced by the \texttt{math} environment, which can be invoked with the usual \texttt{{\char'134}begin\,\ldots{\char'134}end} construction or with the short form \texttt{\$\,\ldots\$}. You can use any of the symbols and structures, from $\alpha$ to $\omega$, available in \LaTeX~\cite{Lamport:LaTeX}; this section will simply show a few examples of in-text equations in context. This is an equation in in-line math style:
-
-\begin{math}
-  \lim_{n\rightarrow \infty}x=0
-\end{math},
-
-It looks slightly different when set in display style (see next section).
-
-\subsection{Display Equations}
-A numbered display equation, set off by vertical space from the text and centered horizontally, is produced by the \texttt{equation} environment. An unnumbered display equation is produced by the \texttt{displaymath} environment.
-
-Once again, in either environment, you can use any of the symbols and structures available in \LaTeX\@; this section gives just a couple of examples of display equations in context. First, consider the equation, shown as an inline equation above:
-\begin{equation}
-  \lim_{n\rightarrow \infty}x=0
-\end{equation}
-
-Notice how it is formatted somewhat differently in the \texttt{displaymath} environment. Now, we will enter an unnumbered equation:
-\begin{displaymath}
-  \sum_{i=0}^{\infty} x + 1
-\end{displaymath}
-
-And this is another numbered equation:
-\begin{equation}
-  \sum_{i=0}^{\infty}x_i=\int_{0}^{\pi+2} f
-\end{equation}
-
-\section{Figures}
-
-The \verb|figure| environment should be used for figures. One or more images can be placed within a figure. If your figure contains third-party material, you must clearly identify it as such, as shown in the example below.
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=\linewidth]{sample-franklin}
-  \caption{1907 Franklin Model D roadster. Photograph by Harris \& Ewing, Inc. [Public domain], via Wikimedia Commons. (\url{https://goo.gl/VLCRBB}).}
-  \Description{A woman and a girl in white dresses sit in an open car.}
-\end{figure}
-
-Figure captions are placed \textbf{below} the figure.
-
-Every figure should also have a figure description with the \texttt{\Description} command unless it is purely
-decorative. These descriptions convey what is s in the image to someone
-who cannot see it. They are also used by search engine crawlers for
-indexing images, and when images cannot be loaded.
-
-
-\section{Citations and Bibliographies}
-
-The use of \BibTeX\ for the preparation and formatting of one's references is strongly recommended. Authors' names should be complete. Use full first names (``Donald E. Knuth'') instead of initials (``D. E. Knuth''), and the identifying features of a reference must be included: title, year, volume, number, pages, article DOI, etc.
-
-The bibliography is included in your source document with these two
-commands, placed just before the \verb|\end{document}| command:
-\begin{verbatim}
-  \bibliographystyle{ACM-Reference-Format}
-  \bibliography{bibfile}
-\end{verbatim}
-
-\verb|bibfile| is the \BibTeX\ filename without the \verb|.bib| suffix.
-
-Citations and references are numbered by default. Some examples:
-\begin{itemize}
-\item A paginated journal article \cite{Abril07}
-\item An enumerated journal article \cite{Cohen07}
-\item A reference to an entire issue \cite{JCohen96}
-\item A monograph (whole book) \cite{Kosiur01}
-\item A monograph/whole book in a series \cite{Harel79}
-\item A divisible book such as an anthology or compilation \cite{Editor00}
-\item A divisible book (series not included since no volume number is given) \cite{Editor00a}
-\item A chapter in a divisible book \cite{Spector90}
-\item A chapter in a divisible book in a series \cite{Douglass98}
-\item A multi-volume work as a book \cite{Knuth97}
-\item Paginated proceedings articles \cite{Andler79, Hagerup1993}
-\item A proceedings article with all possible elements \cite{Smith10}
-\item An enumerated proceedings article \cite{VanGundy07}
-\item An informally published work \cite{Harel78}
-\item Preprints \cite{Bornmann2019, AnzarootPBM14}
-\item A doctoral dissertation \cite{Clarkson85}
-\item A master's thesis \cite{anisi03}
-\item Online documents / World Wide Web resources \cite{Thornburg01, Ablamowicz07, Poker06}
-\item Video games (Case 1) \cite{Obama08}
-\item Video games (Case 2) \cite{Novak03, Lee05}
-\item A patent (Case 3) \cite{JoeScientist001}
-\item Work accepted for publication \cite{rous08}
-\item `YYYYb' test for prolific author \cite{SaeediMEJ10, SaeediJETC10}
-\item Citations containing duplicate DOI and URLs (e.g., some SIAM articles) \cite{Kirschmer:2010:AEI:1958016.1958018}
-\item Multi-volume works as books \cite{MR781536, MR781537}
-\item A presentation \cite{Reiser2014}
-\item An article under review \cite{Baggett2025}
-\item Citations with DOIs \cite{2004:ITE:1009386.1010128, Kirschmer:2010:AEI:1958016.1958018}
-\item Online citations \cite{TUGInstmem, Thornburg01, CTANacmart}
-\item Artifacts \cite{R, UMassCitations}
-\end{itemize}
-
-
-\section{Recomme that demonstratependices}
-
-If your work needs an appendix, add it before the \verb|\end{document}| command at the conclusion of your source document.
-
-Start the appendix with the \verb|appendix| command:
-\begin{verbatim}
-  \appendix
-\end{verbatim}
-
-In the appendix, sections are lettered rather than numbered. This document has two appendices that demonstrate the section and subsection identification method.
-
-\section{Conclusion and Future Work}
+\section{Conclusão e Trabalhos Futuros}
 <text included by the authors>
 
 \section*{Artifact Availability}
