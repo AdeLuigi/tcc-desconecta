@@ -26,7 +26,11 @@
     \providecommand\BibTeX{{Bib\TeX}}
 }
 
-%% Only for papers written in PORTUGUESE: 
+%% Micro-typographic adjustments to prevent overfull boxes from long identifiers
+\usepackage{microtype}
+\setlength{\emergencystretch}{3em}
+
+%% Only for papers written in PORTUGUESE:
 %% comment out the following three lines
 \renewcommand\abstractname{Resumo}
 \renewcommand\keywordsname{Palavras-chave}
@@ -200,6 +204,7 @@ O acoplamento foi avaliado por dois conjuntos complementares de indicadores, cor
 \begin{table}[h]
   \caption{Indicadores de acoplamento coletados nos dois pontos no tempo}
   \label{tab:indicadores-acoplamento}
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{lcc}
     \toprule
     Indicador & Baseline & Pós-refat. \\
@@ -216,7 +221,8 @@ O acoplamento foi avaliado por dois conjuntos complementares de indicadores, cor
     Adapters concretos implementados & 0 & 4 \\
     Use cases dependentes exclusivamente de interfaces & 0 & 3 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}%
+  }
 \end{table}
 
 A aparente estabilidade nos dois primeiros indicadores (telas com Firebase direto e serviços acoplados ao SDK) reflete que as telas mais complexas e todos os serviços legados não foram migrados nesta rodada de refatoração: eles continuam funcionando sem alteração e representam a dívida técnica remanescente. No núcleo arquitetural novo, contudo, nenhum use case, entidade de domínio ou port importa o Firebase SDK diretamente. Todas as dependências externas são acessadas exclusivamente por meio das interfaces definidas em \texttt{app/ports/} e implementadas nos adapters concretos em \texttt{app/adapters/}. Essa separação representa o efeito arquitetural central da introdução do padrão Ports \& Adapters: o Firebase deixa de ser uma dependência estrutural do núcleo da aplicação e passa a ser um detalhe de infraestrutura substituível.
@@ -229,6 +235,7 @@ A coesão foi avaliada por indicadores que capturam tanto a concentração exces
 \begin{table}[h]
   \caption{Indicadores de coesão coletados nos dois pontos no tempo}
   \label{tab:indicadores-coesao}
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{lcc}
     \toprule
     Indicador & Baseline & Pós-refat. \\
@@ -241,7 +248,8 @@ A coesão foi avaliada por indicadores que capturam tanto a concentração exces
     Entidades de domínio extraídas & 0 & 4 \\
     Custom hooks de lógica de negócio & 0 & 2 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}%
+  }
 \end{table}
 
 A redução de 678 para 420 linhas no \texttt{groupService.ts} e a queda de 2.596 para 2.245 linhas no total do diretório \texttt{app/services/} refletem o movimento de lógica de negócio para artefatos mais especializados. A criação de três use cases, quatro entidades de domínio e dois hooks de lógica de negócio introduziu módulos com responsabilidade única e bem delimitada, cada um orquestando ou encapsulando apenas o comportamento para o qual foi projetado.
@@ -258,6 +266,7 @@ A testabilidade foi avaliada por indicadores que medem a capacidade de isolar un
 \begin{table}[h]
   \caption{Indicadores de testabilidade coletados nos dois pontos no tempo}
   \label{tab:indicadores-testabilidade}
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{lcc}
     \toprule
     Indicador & Baseline & Pós-refat. \\
@@ -266,10 +275,10 @@ A testabilidade foi avaliada por indicadores que medem a capacidade de isolar un
     Use cases com injeção de dependência via interfaces & 0 & 3 \\
     Entidades de domínio sem dependências externas & 0 & 4 \\
     Ocorrências de erros tipados (\texttt{DomainError} et al.) & 0 & 47 \\
-    Retornos silenciosos (\texttt{return null/false/[]}) & presente & 41 \\
     Suites de teste automatizadas existentes & 0 & 4 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}%
+  }
 \end{table}
 
 O indicador de maior impacto estrutural é a introdução de três use cases com injeção de dependência: a lógica de negócio que antes só podia ser exercida ao renderizar a tela completa, com todos os providers de contexto e mocks do Firebase configurados, pode agora ser verificada de forma isolada, fornecendo implementações de teste das interfaces \texttt{IUserRepository} e \texttt{IScreenTimeGateway}. As quatro entidades de domínio criadas são estruturas sem dependências externas, o que as torna verificáveis com testes unitários simples. A introdução de 47 ocorrências de erros tipados por meio da hierarquia \texttt{DomainError} torna os caminhos de falha explícitos e verificáveis em testes, em contraste com o comportamento anterior de retornos silenciosos, padrão que ainda persiste em 41 locais nos serviços legados, onde a lógica permanece difícil de testar de forma isolada.
@@ -284,6 +293,7 @@ A ordem de execução seguiu uma progressão do geral para o específico: a remo
 \begin{table}[h]
   \caption{Principais intervenções e dimensões de qualidade afetadas}
   \label{tab:melhorias}
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{lc}
     \toprule
     Intervenção & Dimensões afetadas \\
@@ -295,7 +305,8 @@ A ordem de execução seguiu uma progressão do geral para o específico: a remo
     Reorganizar por feature & Coesão \\
     Mover lógica para Cloud Functions & Acoplamento, Coesão \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}%
+  }
 \end{table}
 
 \section{Estudo de Caso}
@@ -312,7 +323,7 @@ No momento do baseline, o diretório \texttt{app/} continha 37 telas, 8 serviço
 
 O anti-pattern mais prevalente e de maior impacto arquitetural identificado no baseline foi a presença de lógica de negócio diretamente em componentes de interface de usuário. O caso mais extremo é \texttt{DetalhesDoGrupoScreen.tsx}, arquivo com 2.705 linhas que concentrava, além da renderização da tela de detalhes de grupo, a totalidade da lógica de orquestração associada a essa funcionalidade: 30 chamadas a hooks de estado, 72 chamadas assíncronas ao longo do arquivo e 8 importações diretas do Firebase SDK. Uma única função dentro desse componente chegava a realizar sequências de leitura, transformação, escrita e notificação no Firestore, operações que, segundo o padrão de Separação de Responsabilidades, deveriam residir em uma camada de aplicação dedicada.
 
-O padrão se repetia em outras telas. Em \texttt{ConfigurarLimiteScreen.tsx}, a função \texttt{handleSave} concentrava seis operações de negócio distintas: validação dos dados de formulário, busca do estado atual do usuário no Firestore, construção do mapa de configuração por aplicativo, persistência no Firestore, sincronização com o módulo nativo Android e atualização do contexto global. Nenhuma dessas operações podia ser verificada de forma isolada sem renderizar a tela completa. De forma geral, 12 das 37 telas (32,4\%) importavam serviços diretamente e 8 (21,6\%) importavam o Firebase SDK sem mediação.
+O padrão se repetia em outras telas. A função \texttt{handleSave} de \texttt{ConfigurarLimiteScreen.tsx} concentrava, por exemplo, seis operações de negócio distintas: validação dos dados de formulário, busca do estado atual do usuário no Firestore, construção do mapa de configuração por aplicativo, persistência no Firestore, sincronização com o módulo nativo Android e atualização do contexto global. Nenhuma dessas operações podia ser verificada de forma isolada sem renderizar a tela completa. De forma geral, 12 das 37 telas (32,4\%) importavam serviços diretamente e 8 (21,6\%) importavam o Firebase SDK sem mediação.
 
 \subsubsection{Hardcoded Dependencies}
 
@@ -328,7 +339,7 @@ O \texttt{statisticsService.ts}, com 412 linhas, combinava busca de dados no Fir
 
 \subsubsection{Singletons Não Injetáveis}
 
-Dois serviços eram exportados como instâncias únicas globais criadas na inicialização do módulo: \texttt{export default new ScreenTimeService()} em \texttt{screenTime.ts} e \texttt{export default new StatisticsService()} em \texttt{statisticsService.ts}. O efeito prático é que qualquer componente que importasse esses serviços recebia sempre a mesma instância, vinculada ao Firebase real, sem possibilidade de substituir por um mock ou por uma implementação alternativa. Feathers~\cite{Feathers2004} aponta esse padrão como uma das principais barreiras à testabilidade em sistemas legados: ao tornar as dependências irrecuperáveis por quem importa o módulo, o singleton impede que a lógica que o utiliza seja verificada de forma isolada.
+Dois serviços eram exportados como instâncias únicas globais, criadas na inicialização do módulo com a instrução \texttt{export default new}: \texttt{ScreenTimeService} em \texttt{screenTime.ts} e \texttt{StatisticsService} em \texttt{statisticsService.ts}. O efeito prático é que qualquer componente que importasse esses serviços recebia sempre a mesma instância, vinculada ao Firebase real, sem possibilidade de substituir por um mock ou por uma implementação alternativa. Feathers~\cite{Feathers2004} aponta esse padrão como uma das principais barreiras à testabilidade em sistemas legados: ao tornar as dependências irrecuperáveis por quem importa o módulo, o singleton impede que a lógica que o utiliza seja verificada de forma isolada.
 
 \subsection{Intervenções Realizadas}
 
@@ -338,13 +349,13 @@ A primeira intervenção estrutural foi a introdução de uma hierarquia de erro
 
 \subsubsection{Extração de Use Cases}
 
-Com os contratos de erro estabelecidos, a segunda intervenção extraiu a lógica de orquestração de negócio das telas para use cases independentes. Foram criados \texttt{saveLimitConfigUseCase}, \texttt{deleteLimitConfigUseCase} e \texttt{signInWithGoogleUseCase}, cada um responsável por um único fluxo de negócio. A função \texttt{handleSave} de \texttt{ConfigurarLimiteScreen.tsx}, que anteriormente realizava seis operações inline, passou a delegar para o use case correspondente e a reagir ao resultado tipado retornado. A tela tornou-se responsável exclusivamente pela camada de apresentação, capturar a intenção do usuário, invocar o use case e traduzir o resultado em atualizações de estado da interface.
+Com os contratos de erro estabelecidos, a segunda intervenção extraiu a lógica de orquestração de negócio das telas para use cases independentes. Três use cases foram criados, cada um responsável por um único fluxo de negócio: \texttt{saveLimitConfigUseCase}, \texttt{deleteLimitConfigUseCase} e \texttt{signInWithGoogleUseCase}. A função \texttt{handleSave}, que anteriormente realizava seis operações inline em \texttt{ConfigurarLimiteScreen.tsx}, passou a delegar para o use case correspondente e a reagir ao resultado tipado retornado. A tela tornou-se responsável exclusivamente pela camada de apresentação, capturar a intenção do usuário, invocar o use case e traduzir o resultado em atualizações de estado da interface.
 
 Do ponto de vista de testabilidade, o efeito mais relevante é que esses use cases recebem suas dependências por parâmetro, em vez de instanciá-las internamente. Isso significa que um teste pode fornecer implementações de teste das dependências sem precisar configurar o Firebase ou renderizar nenhum componente de interface.
 
 \subsubsection{Criação da Camada Ports \& Adapters}
 
-A terceira intervenção formalizou as abstrações que os use cases precisavam consumir. Foram definidas quatro interfaces de porta, \texttt{IUserRepository}, \texttt{IGroupRepository}, \texttt{IScreenTimeGateway} e \texttt{INotificationService}, que descrevem os contratos de acesso a cada sistema externo em termos de negócio, sem expor nenhum tipo do Firebase SDK ou do Android. Para cada interface, foi criado um adapter concreto: \texttt{FirestoreUserRepository}, \texttt{FirestoreGroupRepository}, \texttt{NativeScreenTimeGateway} e \texttt{FcmNotificationService}, que implementam os contratos utilizando o SDK real.
+A terceira intervenção formalizou as abstrações que os use cases precisavam consumir. Foram definidas quatro interfaces de porta que descrevem os contratos de acesso a cada sistema externo em termos de negócio, sem expor nenhum tipo do Firebase SDK ou do Android: \texttt{IUserRepository}, \texttt{IGroupRepository}, \texttt{IScreenTimeGateway} e \texttt{INotificationService}. Para cada interface foi criado um adapter concreto que implementa o contrato usando o SDK real: \texttt{FirestoreUserRepository} e \texttt{FirestoreGroupRepository} para os repositórios de dados, \texttt{NativeScreenTimeGateway} para o módulo Android e \texttt{FcmNotificationService} para as notificações.
 
 A consequência arquitetural é que o Firebase passou a ser um detalhe de implementação confinado aos adapters: nenhum use case, entidade de domínio ou port importa o Firebase SDK. As dependências do núcleo da aplicação fluem exclusivamente em direção a abstrações, tornando o sistema compatível com a estrutura de inversão de dependência descrita por Martin~\cite{Martin2017} na Clean Architecture. Um teste que precise verificar um use case pode fornecer uma implementação de repositório em memória, sem depender de nenhuma infraestrutura externa.
 
@@ -376,7 +387,7 @@ Na testabilidade, a transformação foi a mais profunda em termos absolutos. O s
 
 \subsection{Acoplamento}
 
-O principal resultado na dimensão de acoplamento foi a criação da fronteira arquitetural entre o núcleo da aplicação e a infraestrutura externa. Antes da refatoração, não existia nenhuma interface que descrevesse o contrato de acesso ao Firebase, qualquer artefato que precisasse de dados dependia diretamente do SDK. Após as intervenções, quatro interfaces de porta e quatro adapters concretos delimitam essa fronteira de forma explícita: os use cases declaram suas dependências por meio de \texttt{IUserRepository}, \texttt{IGroupRepository}, \texttt{IScreenTimeGateway} e \texttt{INotificationService}, enquanto o Firebase aparece exclusivamente nas implementações de \texttt{app/adapters/}. As quatro entidades de domínio não possuem nenhuma importação de biblioteca externa. Esse resultado corresponde ao objetivo central do padrão Ports \& Adapters enunciado por Cockburn~\cite{Cockburn2005}: tornar o núcleo da aplicação independente de qualquer tecnologia de infraestrutura. A eliminação da credencial hardcoded em \texttt{auth.ts}, movida para variáveis de ambiente, completa os ganhos observados nesta dimensão.
+O principal resultado na dimensão de acoplamento foi a criação da fronteira arquitetural entre o núcleo da aplicação e a infraestrutura externa. Antes da refatoração, não existia nenhuma interface que descrevesse o contrato de acesso ao Firebase, qualquer artefato que precisasse de dados dependia diretamente do SDK. Após as intervenções, quatro interfaces de porta e quatro adapters concretos delimitam essa fronteira de forma explícita. Os use cases declaram suas dependências exclusivamente por meio dessas interfaces: \texttt{IUserRepository}, \texttt{IGroupRepository}, \texttt{IScreenTimeGateway} e \texttt{INotificationService}. O Firebase aparece apenas nas implementações de \texttt{app/adapters/}. As quatro entidades de domínio não possuem nenhuma importação de biblioteca externa. Esse resultado corresponde ao objetivo central do padrão Ports \& Adapters enunciado por Cockburn~\cite{Cockburn2005}: tornar o núcleo da aplicação independente de qualquer tecnologia de infraestrutura. A eliminação da credencial hardcoded em \texttt{auth.ts}, movida para variáveis de ambiente, completa os ganhos observados nesta dimensão.
 
 \subsection{Coesão}
 
