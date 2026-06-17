@@ -343,6 +343,110 @@ A ordem de execução obedeceu a uma progressão do geral para o específico: a 
   \end{tabular}
 \end{table}
 
+\section{Estudo de Caso}
+
+\subsection{Caracterização do Sistema}
+
+A aplicação XXXXXX tem como objetivo auxiliar usuários na redução do tempo de uso de smartphones por meio de mecanismos de gamificação e desafios coletivos. O sistema permite que usuários configurem limites de uso por aplicativo, participem de grupos de desafio com metas compartilhadas e acompanhem estatísticas de uso ao longo do tempo. No plano técnico, o aplicativo é desenvolvido em React Native com TypeScript e utiliza Firebase como plataforma de back-end, integrando Firestore para persistência de dados, Authentication para gerenciamento de identidade, Storage para mídias e Cloud Messaging para notificações. A camada Android nativa, implementada em Kotlin, acessa as APIs \textit{AccessibilityService} e \textit{UsageStatsManager} do sistema operacional para monitorar e bloquear aplicativos quando os limites configurados são atingidos.
+
+No momento do baseline, o diretório \texttt{app/} continha 37 telas, 8 serviços, 0 use cases, 0 entidades de domínio e 0 interfaces de porta, totalizando 12.611 linhas de código. A ausência de artefatos dedicados à orquestração de negócio — use cases, ports e adapters — é o indicador mais imediato do estágio arquitetural inicial do sistema: toda a lógica que não residia nos serviços estava distribuída entre os componentes de interface, sem separação formal de responsabilidades.
+
+\subsection{Anti-Patterns Identificados no Baseline}
+
+\subsubsection{Business Logic in UI}
+
+O anti-pattern mais prevalente e de maior impacto arquitetural identificado no baseline foi a presença de lógica de negócio diretamente em componentes de interface de usuário. O caso mais extremo é \texttt{DetalhesDoGrupoScreen.tsx}, arquivo com 2.705 linhas que concentrava, além da renderização da tela de detalhes de grupo, a totalidade da lógica de orquestração associada a essa funcionalidade: 30 chamadas a hooks de estado, 72 chamadas assíncronas ao longo do arquivo e 8 importações diretas do Firebase SDK. Uma única função dentro desse componente chegava a realizar sequências de leitura, transformação, escrita e notificação no Firestore — operações que, segundo o padrão de Separação de Responsabilidades, deveriam residir em uma camada de aplicação dedicada.
+
+O padrão se repetia em outras telas. Em \texttt{ConfigurarLimiteScreen.tsx}, a função \texttt{handleSave} concentrava seis operações de negócio distintas: validação dos dados de formulário, busca do estado atual do usuário no Firestore, construção do mapa de configuração por aplicativo, persistência no Firestore, sincronização com o módulo nativo Android e atualização do contexto global. Nenhuma dessas operações podia ser verificada de forma isolada sem renderizar a tela completa. De forma geral, 12 das 37 telas (32,4\%) importavam serviços diretamente e 8 (21,6\%) importavam o Firebase SDK sem mediação.
+
+\subsubsection{Hardcoded Dependencies}
+
+Todos os oito serviços identificados no baseline dependiam diretamente do Firebase SDK, sem qualquer camada de abstração intermediária. Os métodos dos serviços recebiam e retornavam tipos do Firestore — como \texttt{DocumentSnapshot} e \texttt{QuerySnapshot} — e instanciavam referências a coleções diretamente nas chamadas de negócio. Essa característica tornava qualquer serviço individualmente impossível de substituir: não existia interface que descrevesse o contrato do serviço, nem mecanismo de injeção que permitisse fornecer uma implementação alternativa em contexto de teste.
+
+Além do acoplamento estrutural aos tipos do SDK, foi identificada uma credencial hardcoded no arquivo \texttt{auth.ts}: o valor de \texttt{webClientId} do Google Sign-In estava gravado diretamente no código-fonte, em vez de ser fornecido por variáveis de ambiente. Embora não represente um risco imediato de segurança para credenciais de autenticação OAuth do lado do cliente, o padrão contraria boas práticas de separação entre configuração e código~\cite{Feathers2004} e dificulta a rotação de chaves.
+
+\subsubsection{God Objects}
+
+Três arquivos apresentavam o anti-pattern God Object no baseline, combinando múltiplas responsabilidades semanticamente distintas em um único módulo. O \texttt{groupService.ts}, com 678 linhas, concentrava mais de oito responsabilidades identificáveis: criação e remoção de grupos, gestão de membros, geração de códigos de convite, resolução de convites, registro de atividades, cálculo de progresso em desafios, envio de notificações e operações em batch sobre documentos relacionados. Alterações em qualquer uma dessas responsabilidades exigiam navegar por todo o arquivo e avaliar o impacto nos demais comportamentos.
+
+O \texttt{statisticsService.ts}, com 412 linhas, combinava busca de dados no Firestore, cálculo de métricas de uso, formatação de valores para exibição, tradução de nomes de aplicativos para rótulos legíveis, geração de paletas de cores e exclusão de registros históricos em lote — seis responsabilidades que deveriam, segundo o Princípio da Responsabilidade Única~\cite{Martin2017}, pertencer a artefatos distintos. O \texttt{screenTime.ts}, com 503 linhas, mesclava a ponte com o módulo nativo Android, a persistência de dados de uso no Firestore, a formatação de valores de tempo para a interface e a gestão da configuração de bloqueio de aplicativos.
+
+\subsubsection{Singletons Não Injetáveis}
+
+Dois serviços eram exportados como instâncias únicas globais criadas na inicialização do módulo: \texttt{export default new ScreenTimeService()} em \texttt{screenTime.ts} e \texttt{export default new StatisticsService()} em \texttt{statisticsService.ts}. O efeito prático é que qualquer componente que importasse esses serviços recebia sempre a mesma instância, vinculada ao Firebase real — sem possibilidade de substituir por um mock ou por uma implementação alternativa. Feathers~\cite{Feathers2004} aponta esse padrão como uma das principais barreiras à testabilidade em sistemas legados: ao tornar as dependências irrecuperáveis por quem importa o módulo, o singleton impede que a lógica que o utiliza seja verificada de forma isolada.
+
+\subsection{Intervenções Realizadas}
+
+\subsubsection{Padronização do Tratamento de Erros}
+
+A primeira intervenção estrutural foi a introdução de uma hierarquia de erros tipados para substituir o padrão prevalente de retornos silenciosos — funções que, em caso de falha, devolviam \texttt{null}, \texttt{false} ou arrays vazios sem propagar nenhuma informação sobre o que havia ocorrido. Foram criadas as classes \texttt{DomainError}, \texttt{NetworkError}, \texttt{NotFoundError} e \texttt{ConflictError}, organizadas em uma hierarquia de herança que permite ao código chamador distinguir categorias de falha sem inspecionar mensagens de texto. Ao final da refatoração, 47 pontos no código de produção utilizavam erros tipados — tornando os caminhos de falha explícitos e verificáveis em testes. Essa intervenção foi executada antes das demais por uma razão de dependência: use cases com contratos de erro bem definidos são substancialmente mais fáceis de isolar por interfaces do que funções com retornos ambíguos.
+
+\subsubsection{Extração de Use Cases}
+
+Com os contratos de erro estabelecidos, a segunda intervenção extraiu a lógica de orquestração de negócio das telas para use cases independentes. Foram criados \texttt{saveLimitConfigUseCase}, \texttt{deleteLimitConfigUseCase} e \texttt{signInWithGoogleUseCase}, cada um responsável por um único fluxo de negócio. A função \texttt{handleSave} de \texttt{ConfigurarLimiteScreen.tsx}, que anteriormente realizava seis operações inline, passou a delegar para o use case correspondente e a reagir ao resultado tipado retornado. A tela tornou-se responsável exclusivamente pela camada de apresentação — capturar a intenção do usuário, invocar o use case e traduzir o resultado em atualizações de estado da interface.
+
+Do ponto de vista de testabilidade, o efeito mais relevante é que esses use cases recebem suas dependências por parâmetro, em vez de instanciá-las internamente. Isso significa que um teste pode fornecer implementações de teste das dependências sem precisar configurar o Firebase ou renderizar nenhum componente de interface.
+
+\subsubsection{Criação da Camada Ports \& Adapters}
+
+A terceira intervenção formalizou as abstrações que os use cases precisavam consumir. Foram definidas quatro interfaces de porta — \texttt{IUserRepository}, \texttt{IGroupRepository}, \texttt{IScreenTimeGateway} e \texttt{INotificationService} — que descrevem os contratos de acesso a cada sistema externo em termos de negócio, sem expor nenhum tipo do Firebase SDK ou do Android. Para cada interface, foi criado um adapter concreto: \texttt{FirestoreUserRepository}, \texttt{FirestoreGroupRepository}, \texttt{NativeScreenTimeGateway} e \texttt{FcmNotificationService}, que implementam os contratos utilizando o SDK real.
+
+A consequência arquitetural é que o Firebase passou a ser um detalhe de implementação confinado aos adapters: nenhum use case, entidade de domínio ou port importa o Firebase SDK. As dependências do núcleo da aplicação fluem exclusivamente em direção a abstrações, tornando o sistema compatível com a estrutura de inversão de dependência descrita por Martin~\cite{Martin2017} na Clean Architecture. Um teste que precise verificar um use case pode fornecer uma implementação de repositório em memória, sem depender de nenhuma infraestrutura externa.
+
+\subsubsection{Entidades de Domínio Ricas}
+
+Paralelamente à criação da camada de ports, foram extraídas quatro entidades de domínio: \texttt{Group}, \texttt{LimiteConfig}, \texttt{GroupCode} e \texttt{PackageName}. Cada entidade encapsula tanto os dados quanto as regras de negócio que lhes pertencem. \texttt{Group} contém a lógica de verificação de expiração do grupo e de elegibilidade de membros. \texttt{LimiteConfig} valida os parâmetros de configuração de limite — como valor mínimo e dias ativos — no momento da construção do objeto. \texttt{GroupCode} encapsula a geração segura de códigos de convite e as regras de formato. \texttt{PackageName} valida o identificador de pacote Android antes de permitir que um limite seja configurado para ele.
+
+Por não possuírem nenhuma dependência de importação sobre Firebase, módulos nativos ou contextos globais, essas entidades são verificáveis com testes unitários que se resumem à instanciação do objeto e à asserção sobre seu comportamento — o tipo mais rápido e determinístico de teste.
+
+\subsubsection{Reorganização por Feature}
+
+A intervenção de reorganização estruturou o diretório \texttt{app/} em torno das seis features funcionais do sistema — \textit{auth}, \textit{grupos}, \textit{limites}, \textit{desafios}, \textit{perfil} e \textit{screen-time} — em vez de agrupar artefatos por tipo. Cada feature passou a conter, em seu próprio subdiretório, as telas, componentes, hooks, use cases e tipos relacionados àquela funcionalidade. Essa reorganização não alterou o comportamento do sistema, mas melhorou a rastreabilidade: uma modificação em qualquer feature do sistema agora afeta um conjunto coeso de arquivos em um único local, em vez de estar distribuída entre diretórios separados de telas, serviços e contextos.
+
+\subsubsection{Extração para Cloud Functions}
+
+A última intervenção de maior impacto migrou para o servidor três operações que envolviam acesso simultâneo a múltiplos documentos Firestore: \texttt{sendGroupNotification}, \texttt{onActivityRegistered} e \texttt{onChallengeCompleted}. Essas funções, anteriormente implementadas no cliente, realizavam leituras e escritas em cascata que geravam acoplamento entre coleções distintas do banco de dados e expunham regras de negócio no código do aplicativo. Ao movê-las para Cloud Functions, o cliente passou a invocar operações atômicas no servidor, reduzindo o volume de código de orquestração na camada de aplicação e eliminando acessos diretos a Firestore por parte de telas que dependiam dessas operações.
+
+\section{Resultados e Discussão}
+
+\subsection{Visão Geral dos Indicadores}
+
+A comparação dos indicadores coletados no baseline e no snapshot pós-refatoração revela padrões distintos entre os três atributos avaliados. No acoplamento, os indicadores da camada legada permaneceram praticamente estáveis — todos os oito serviços seguem acoplados diretamente ao Firebase SDK e sete das trinta e quatro telas ainda importam o SDK sem mediação — enquanto os indicadores do núcleo arquitetural novo apresentaram transformação completa: quatro interfaces de porta e quatro adapters foram criados do zero, e os três use cases extraídos dependem exclusivamente de interfaces, sem nenhuma importação direta do Firebase. Na coesão, a redução de 351 linhas no diretório \texttt{app/services/} e a criação de sete novos artefatos especializados — três use cases e quatro entidades de domínio — evidenciam o início de um movimento de redistribuição de responsabilidades, ainda incompleto em relação aos God Objects remanescentes. Na testabilidade, a transformação foi a mais profunda em termos absolutos: o sistema passou de zero artefatos isoláveis para teste para um conjunto composto por três use cases com injeção de dependência, quatro entidades de domínio puras e quatro suites de teste automatizadas — partindo de uma base em que nenhum teste automatizado existia.
+
+\subsection{Acoplamento}
+
+O principal resultado na dimensão de acoplamento foi a criação da fronteira arquitetural entre o núcleo da aplicação e a infraestrutura externa. Antes da refatoração, não existia nenhuma interface que descrevesse o contrato de acesso ao Firebase — qualquer artefato que precisasse de dados dependia diretamente do SDK. Após as intervenções, quatro interfaces de porta e quatro adapters concretos delimitam essa fronteira de forma explícita: os use cases declaram suas dependências por meio de \texttt{IUserRepository}, \texttt{IGroupRepository}, \texttt{IScreenTimeGateway} e \texttt{INotificationService}, enquanto o Firebase aparece exclusivamente nas implementações de \texttt{app/adapters/}. As quatro entidades de domínio não possuem nenhuma importação de biblioteca externa. Esse resultado corresponde ao objetivo central do padrão Ports \& Adapters enunciado por Cockburn~\cite{Cockburn2005}: tornar o núcleo da aplicação independente de qualquer tecnologia de infraestrutura. A eliminação da credencial hardcoded em \texttt{auth.ts} — movida para variáveis de ambiente — completa os ganhos observados nesta dimensão.
+
+\subsection{Coesão}
+
+A análise da coesão revela um padrão de melhoria parcial, concentrada nos artefatos que foram diretamente intervencionados, com dívida técnica relevante nos God Objects remanescentes.
+
+O efeito mais expressivo foi a redução do \texttt{groupService.ts} de 678 para 420 linhas — uma contração de 38\% —, obtida pela extração da entidade \texttt{GroupCode} e de parte da lógica de orquestração para use cases. O que permanece no serviço ainda corresponde a múltiplas responsabilidades, mas o arquivo deixou de conter a geração de códigos de convite e a validação de formato, que passaram a residir em um artefato com responsabilidade única. De forma análoga, a redução de 351 linhas no total do diretório \texttt{app/services/} reflete o mesmo movimento: lógica que havia crescido dentro dos serviços foi redistribuída para artefatos criados com propósito específico.
+
+Os três use cases criados e as quatro entidades de domínio extraídas representam o conjunto de artefatos em que a coesão é mais alta no estado pós-refatoração. Cada use case orquestra exatamente um fluxo de negócio e cada entidade encapsula exatamente os dados e as regras que lhe pertencem — estrutura que contrasta diretamente com o perfil dos God Objects, onde responsabilidades semanticamente distintas coexistem no mesmo módulo. O efeito sobre a coesão global do sistema é, entretanto, limitado pela persistência de três arquivos que continuam apresentando o anti-pattern: \texttt{DetalhesDoGrupoScreen.tsx} com 2.696 linhas, \texttt{screenTime.ts} com 503 linhas e \texttt{statisticsService.ts} com 412 linhas. Esses três arquivos concentram, isoladamente, uma proporção relevante da lógica de negócio do sistema e permanecem como o principal alvo de intervenção em uma rodada futura de refatoração.
+
+\subsection{Testabilidade}
+
+A testabilidade foi o atributo em que a transformação foi mais profunda e em que o contraste com o estado inicial é mais evidente.
+
+No baseline, nenhum artefato do sistema era verificável de forma isolada sem configurar o Firebase real ou renderizar componentes de interface. A ausência de testes automatizados não era uma escolha de priorização — era uma consequência estrutural: qualquer lógica de negócio relevante estava acoplada a singletons, a componentes de interface ou a chamadas diretas ao Firebase, tornando a escrita de testes unitários impraticável sem mocks extensos que precisariam ser reescritos a cada modificação dos serviços.
+
+Após as intervenções, três classes distintas de artefatos passaram a ser verificáveis de forma isolada. As quatro entidades de domínio podem ser testadas com instanciação direta e asserções sobre comportamento, sem nenhuma dependência de infraestrutura. Os três use cases podem ser testados fornecendo implementações de teste das interfaces de porta — repositórios em memória que não requerem Firebase — e verificando o resultado tipado retornado. As quatro suites de teste criadas cobrem as principais regras de negócio das entidades \texttt{Group}, \texttt{LimiteConfig} e \texttt{GroupCode}, e os fluxos dos use cases \texttt{saveLimitConfigUseCase} e \texttt{signInWithGoogleUseCase}.
+
+A introdução de 47 ocorrências de erros tipados por meio da hierarquia \texttt{DomainError} tem um impacto qualitativo específico: ela transforma caminhos de falha anteriormente silenciosos em contratos explícitos verificáveis em testes. Um teste pode agora afirmar que, dado um repositório que retorna \texttt{NotFoundError}, o use case não persiste dados e propaga o erro ao chamador — comportamento que, antes da refatoração, não era observável de fora da função. A persistência de 41 retornos silenciosos nos serviços legados indica que essa transformação permanece incompleta, mas os novos artefatos demonstram o padrão que deverá ser aplicado na continuidade da refatoração.
+
+\subsection{Discussão}
+
+Os resultados permitem responder à questão de pesquisa proposta — RQ1: \textit{Qual o impacto da remoção sistemática de anti-patterns arquiteturais sobre atributos de qualidade interna de software?} — com uma conclusão que precisa ser contextualizada pela natureza incremental da refatoração realizada.
+
+A remoção sistemática dos anti-patterns produziu melhoras mensuráveis nos três atributos. Os use cases, as entidades de domínio e os adapters introduzidos pela refatoração apresentam acoplamento zero ao Firebase SDK, responsabilidade única por artefato e testabilidade plena sem dependências externas — características que eram estruturalmente inviáveis no sistema antes das intervenções. Os artefatos que não foram migrados nesta rodada — os serviços mais complexos e as telas de maior porte — constituem a dívida técnica remanescente e estão identificados como alvo de uma próxima iteração.
+
+As duas intervenções de maior impacto transversal foram a extração de use cases e a criação da camada Ports \& Adapters. A primeira afetou simultaneamente a coesão — ao remover lógica de orquestração das telas — e a testabilidade — ao criar artefatos com dependências injetáveis. A segunda afetou o acoplamento — ao introduzir a fronteira entre o núcleo e a infraestrutura — e também a testabilidade — ao tornar possível fornecer implementações alternativas das dependências externas em contexto de teste. Esse resultado é coerente com a literatura: Martin~\cite{Martin2017} argumenta que a separação entre camadas de aplicação e infraestrutura é a condição necessária para que tanto o acoplamento quanto a testabilidade possam ser gerenciados independentemente da plataforma subjacente.
+
+A reorganização por feature contribuiu para a coesão em um sentido diferente das demais intervenções: ao invés de alterar o comportamento dos artefatos, ela alterou a estrutura de descoberta — a capacidade de um desenvolvedor de localizar e compreender todos os artefatos relacionados a uma funcionalidade sem navegar por múltiplos diretórios. Esse benefício não é plenamente capturado pelos indicadores quantitativos coletados, mas é relevante para a manutenibilidade do sistema a longo prazo.
+
+Uma limitação importante dos resultados é que eles refletem uma arquitetura híbrida — o sistema opera simultaneamente com artefatos que ainda não foram migrados e com o novo núcleo arquitetural — e não o estado que seria obtido após uma migração completa. Os benefícios observados nos indicadores do núcleo novo representam, portanto, um limite inferior plausível para o que uma migração completa produziria: o sistema já demonstra o comportamento desejado nos artefatos criados pela refatoração, e a extensão desse padrão ao restante do código resultaria em indicadores ainda mais favoráveis.
+
 \section{Conclusão e Trabalhos Futuros}
 <text included by the authors>
 
