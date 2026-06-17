@@ -1,4 +1,4 @@
-\documentclass[sigconf]{acmart}
+\documentclass[sigconf,anonymous]{acmart}
 
 %% Using the option "anonymous" will produce "Anonymous Author(s)"
 %% for double-anonymized review. Upon acceptance, remove this option
@@ -44,107 +44,53 @@
 %% The "title" command has an optional parameter,
 %% allowing the author to define a "short title" to be used on the page 
 %% headers.
-\title{The Name of the Title Is Hope}
+\title{Avaliando o Impacto da Remoção de Anti-Patterns Arquiteturais em uma Aplicação Mobile React Native}
 
 %% The "author" command and its associated commands are used to define
 %% the authors and their affiliations.
 %% Of note is the shared affiliation of the first two authors, and the
 %% "authornote" and "authornotemark" commands
 %% used to denote shared contribution to the research.
-\author{FirstName Surname1stAutor}
+\author{Ademario Santana}
 \affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
+  \institution{[Departamento, Institui\c{c}\~ao]}
+  \city{[Cidade]}
+  \country{Brasil}
 }
-\email{email@email.com}
+\email{[email]}
 
-\author{FirstName Surname}
+\author{Diego Cardoso}
 \affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
+  \institution{[Departamento, Institui\c{c}\~ao]}
+  \city{[Cidade]}
+  \country{Brasil}
 }
-\email{email@email.com}
+\email{[email]}
 
-\author{FirstName Surname}
+\author{Claudia Werner}
 \affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
+  \institution{[Departamento, Institui\c{c}\~ao]}
+  \city{[Cidade]}
+  \country{Brasil}
 }
-\email{email@email.com}
-
-\author{FirstName Surname}
-\affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
-
-\author{FirstName Surname}
-\affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
-
-\author{FirstName Surname}
-\affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
-
-\author{FirstName Surname}
-\affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
-
-\author{FirstName Surname}
-\affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
-
-\author{FirstName Surname}
-\affiliation{
-  \institution{DepartmentName, Institution/UniversityName}
-  \city{City}
-  \country{Country}
-}
-\email{email@email.com}
+\email{[email]}
 
 %% By default, the full list of authors will be used on the page
 %% headers. This list is often too long and will overlap
 %% other information printed in the page headers. 
 %% This command allows the author to define a more concise list
 %% of authors' names for this purpose.
-\renewcommand{\shortauthors}{Surname1stAuthor et al.}
-\renewcommand{\shorttitle}{The Name of the Title Is Hope}
+\renewcommand{\shortauthors}{Santana et al.}
+\renewcommand{\shorttitle}{Remoção de Anti-Patterns Arquiteturais em React Native}
 
 %% The abstract is a short summary of the work the paper presents.
 \begin{abstract}
-A evolução contínua de sistemas de software frequentemente leva ao acúmulo de anti-patterns arquiteturais, comprometendo atributos importantes de qualidade interna, como acoplamento, coesão e testabilidade. Embora a literatura apresente diversas recomendações para mitigação desses problemas, ainda existe a necessidade de evidências empíricas sobre os impactos da remoção sistemática de anti-patterns em sistemas reais.
-
-Este trabalho apresenta um estudo de caso conduzido em uma aplicação móvel desenvolvida em React Native que apresentava problemas arquiteturais relacionados a dependências excessivas entre módulos, responsabilidades dispersas em componentes de renderização de interface, ausência de mecanismos de abstração e inversão de dependência. Para tratar esses problemas, foi realizado um processo de refatoração arquitetural baseado em princípios de Engenharia de Software, incluindo a separação de responsabilidades, a introdução de camadas de abstração e a reorganização da lógica de negócio.
-
-O impacto das modificações foi avaliado por meio da comparação de métricas de qualidade coletadas antes e após a refatoração, considerando os atributos de acoplamento, coesão e testabilidade. Os resultados obtidos indicam que a remoção sistemática dos anti-patterns contribuiu para a melhoria da qualidade interna do sistema, reduzindo dependências indevidas entre componentes, aumentando a especialização dos módulos e facilitando a construção de testes automatizados.
-
-Os resultados reforçam a importância da refatoração arquitetural como estratégia para evolução de sistemas existentes e fornecem evidências sobre os benefícios da aplicação de práticas de Engenharia de Software na melhoria da manutenibilidade de aplicações móveis.
+A evolução contínua de sistemas de software frequentemente leva ao acúmulo de anti-patterns arquiteturais, comprometendo atributos de qualidade interna como acoplamento, coesão e testabilidade. Este trabalho apresenta um estudo de caso conduzido em uma aplicação móvel desenvolvida em React Native que apresentava problemas arquiteturais relacionados a dependências excessivas entre módulos, responsabilidades dispersas em componentes de interface e ausência de mecanismos de abstração e inversão de dependência. Um processo de refatoração arquitetural baseado em princípios de Engenharia de Software foi realizado para tratar esses problemas, por meio da separação de responsabilidades, da introdução de camadas de abstração e da reorganização da lógica de negócio em use cases, entidades de domínio e adapters. O impacto das modificações foi avaliado por meio da comparação de indicadores de qualidade coletados antes e após a refatoração. Os resultados indicam que a remoção sistemática dos anti-patterns contribuiu para a melhoria da qualidade interna do sistema: a fronteira arquitetural introduzida pelo padrão Ports \& Adapters eliminou o acoplamento direto ao Firebase SDK no núcleo da aplicação, a criação de artefatos com responsabilidade única reduziu a concentração de lógica em God Objects e telas, e a introdução de injeção de dependência tornou verificáveis em testes fluxos que antes exigiam Firebase configurado. Os resultados reforçam a importância da refatoração arquitetural como estratégia para evolução de sistemas existentes e fornecem evidências sobre os benefícios da aplicação de práticas de Engenharia de Software na melhoria da manutenibilidade de aplicações móveis.
 \end{abstract}
 
 %% Keywords. The author(s) should pick words that accurately describe
 %% the presented work. Separate the keywords with commas.
-\keywords{Do, Not, Use, This, Code, Put, the, Correct, Terms, for, Your, Paper}
+\keywords{Refatoração Arquitetural, Anti-Patterns, Qualidade de Software, React Native, Estudo de Caso}
 
 %% This command processes the author, affiliation, and title
 %% information and builds the first part of the formatted document.
@@ -152,7 +98,7 @@ Os resultados reforçam a importância da refatoração arquitetural como estrat
 \frenchspacing
 \maketitle
 
-\section{Introduction}
+\section{Introdução}
 
 A evolução contínua de sistemas de software frequentemente resulta no acúmulo de dívida técnica e na introdução de decisões arquiteturais que comprometem a qualidade interna do sistema. À medida que novas funcionalidades são incorporadas e prazos de entrega se tornam mais restritivos, é comum que soluções inicialmente adequadas passem a apresentar problemas estruturais que dificultam a manutenção e a evolução do software.
 
@@ -411,7 +357,7 @@ A última intervenção de maior impacto migrou para o servidor três operaçõe
 
 \subsection{Visão Geral dos Indicadores}
 
-A comparação dos indicadores coletados no baseline e no snapshot pós-refatoração revela padrões distintos entre os três atributos avaliados. No acoplamento, os indicadores da camada legada permaneceram praticamente estáveis — todos os oito serviços seguem acoplados diretamente ao Firebase SDK e sete das trinta e quatro telas ainda importam o SDK sem mediação — enquanto os indicadores do núcleo arquitetural novo apresentaram transformação completa: quatro interfaces de porta e quatro adapters foram criados do zero, e os três use cases extraídos dependem exclusivamente de interfaces, sem nenhuma importação direta do Firebase. Na coesão, a redução de 351 linhas no diretório \texttt{app/services/} e a criação de sete novos artefatos especializados — três use cases e quatro entidades de domínio — evidenciam o início de um movimento de redistribuição de responsabilidades, ainda incompleto em relação aos God Objects remanescentes. Na testabilidade, a transformação foi a mais profunda em termos absolutos: o sistema passou de zero artefatos isoláveis para teste para um conjunto composto por três use cases com injeção de dependência, quatro entidades de domínio puras e quatro suites de teste automatizadas — partindo de uma base em que nenhum teste automatizado existia.
+A comparação dos indicadores coletados no baseline e no snapshot pós-refatoração revela padrões distintos entre os três atributos avaliados. No acoplamento, o resultado central é a criação da fronteira arquitetural entre o núcleo da aplicação e a infraestrutura externa: quatro interfaces de porta e quatro adapters foram criados do zero, e os três use cases extraídos dependem exclusivamente de interfaces, sem nenhuma importação direta do Firebase — enquanto os serviços e telas não migrados nesta rodada permanecem como dívida técnica identificada para intervenção futura. Na coesão, a redução de 351 linhas no diretório \texttt{app/services/} e a criação de sete novos artefatos especializados — três use cases e quatro entidades de domínio — evidenciam o início de um movimento de redistribuição de responsabilidades, ainda incompleto em relação aos God Objects remanescentes. Na testabilidade, a transformação foi a mais profunda em termos absolutos: o sistema passou de zero artefatos isoláveis para teste para um conjunto composto por três use cases com injeção de dependência, quatro entidades de domínio puras e quatro suites de teste automatizadas — partindo de uma base em que nenhum teste automatizado existia.
 
 \subsection{Acoplamento}
 
@@ -447,42 +393,63 @@ A reorganização por feature contribuiu para a coesão em um sentido diferente 
 
 Uma limitação importante dos resultados é que eles refletem uma arquitetura híbrida — o sistema opera simultaneamente com artefatos que ainda não foram migrados e com o novo núcleo arquitetural — e não o estado que seria obtido após uma migração completa. Os benefícios observados nos indicadores do núcleo novo representam, portanto, um limite inferior plausível para o que uma migração completa produziria: o sistema já demonstra o comportamento desejado nos artefatos criados pela refatoração, e a extensão desse padrão ao restante do código resultaria em indicadores ainda mais favoráveis.
 
-\section{Conclusão e Trabalhos Futuros}
-<text included by the authors>
+\section{Ameaças à Validade}
 
-\section*{Artifact Availability}
-This section must be included immediately after the Conclusion and before the Acknowledgments section. It must not be numbered and must be titled exactly as \textbf{Artifact Availability}.
+A interpretação dos resultados deste estudo exige que as ameaças à sua validade sejam explicitamente reconhecidas. As quatro categorias clássicas de validade em estudos empíricos de Engenharia de Software~\cite{Yin2014} são discutidas a seguir.
 
-If the paper provides research artifacts (such as datasets, source code, scripts, models, or experimental packages), the authors must describe what is available, where it can be accessed, and under which license or usage conditions.
+\subsection{Validade Interna}
 
-If no artifacts are available, this section must still be included, explicitly stating that no artifacts are provided.
+A principal ameaça à validade interna é a possibilidade de que os indicadores coletados capturem apenas os efeitos das melhorias realizadas, sem refletir a qualidade do sistema de forma mais ampla. Os indicadores foram definidos pelos próprios autores do trabalho e são, por natureza, sensíveis às intervenções que foram efetivamente executadas: a criação da camada Ports \& Adapters, por exemplo, impacta diretamente os indicadores de interfaces de porta e adapters concretos. Uma seleção diferente de indicadores poderia revelar dimensões do sistema que não melhoraram — ou que pioraram.
 
-For papers written in Portuguese, this section must be titled
-\textbf{Disponibilidade de Artefatos}.
+A principal mitigação adotada foi a fixação dos indicadores antes da coleta pós-refatoração: o baseline foi documentado em 11 de junho de 2026, antes do início das intervenções, e os indicadores foram definidos nesse mesmo documento de baseline. Essa ordenação impede que os indicadores sejam ajustados \textit{post hoc} para melhor refletir os resultados obtidos. Adicionalmente, os indicadores de presença de dívida técnica remanescente — como os God Objects que permaneceram e os retornos silenciosos nos serviços legados — foram incluídos deliberadamente para que o relato não apresente apenas os aspectos favoráveis.
 
-\section*{Acknowledgements}
-<text included by the authors>
+\subsection{Validade de Construto}
+
+Os indicadores utilizados são proxies operacionais dos atributos de acoplamento, coesão e testabilidade, não métricas formais validadas empiricamente como CBO e LCOM~\cite{Chidamber1994}. A contagem de interfaces de porta criadas não equivale a uma medida de CBO; a contagem de linhas em arquivos com múltiplas responsabilidades não equivale a LCOM. A correspondência entre os indicadores e os construtos teóricos é plausível, mas não foi formalmente verificada.
+
+A mitigação adotada foi alinhar os critérios às definições canônicas presentes na literatura: o critério de ausência de God Objects ancora-se na definição de SRP de Martin~\cite{Martin2017}; o critério de testabilidade ancora-se no diagnóstico de Feathers~\cite{Feathers2004} sobre os padrões que tornam o código difícil de testar. A ausência de ferramentas de análise estática com suporte formal às métricas CBO e LCOM para o ecossistema TypeScript foi o fator determinante para a adoção de indicadores observacionais em lugar de métricas formais.
+
+\subsection{Validade Externa}
+
+Os resultados obtidos neste estudo não podem ser generalizados automaticamente para outros sistemas, linguagens ou contextos de desenvolvimento. O sistema estudado foi desenvolvido em React Native com Firebase — uma combinação tecnológica específica em que o Firebase SDK tende a permear as camadas da aplicação de forma especialmente visível. Em sistemas com back-ends baseados em REST ou GraphQL, o padrão de acoplamento pode ser diferente, e as intervenções de maior impacto podem não ser as mesmas.
+
+O contexto de desenvolvimento também é relevante: o sistema foi produzido originalmente como Trabalho de Conclusão de Curso, por um time pequeno e sob restrições de prazo. Sistemas desenvolvidos em contextos industriais com equipes maiores, processos de revisão de código estabelecidos e ciclos de manutenção mais longos podem apresentar perfis de anti-patterns distintos. Além disso, os resultados refletem uma arquitetura híbrida, resultante de uma migração parcial, e não o estado de um sistema completamente refatorado segundo os padrões introduzidos.
+
+\subsection{Validade de Conclusão}
+
+Os dados coletados são de natureza descritiva e não permitem inferências causais formais. Não foi possível isolar o efeito de cada intervenção individual, pois as onze melhorias foram executadas em sequência, com dependências entre elas, e os dois pontos de coleta capturam o efeito acumulado de todas as intervenções. A hipótese de que as intervenções de Use Cases e Ports \& Adapters foram as de maior impacto baseia-se na análise qualitativa dos indicadores e na consistência com a literatura, mas não em um experimento controlado capaz de verificar causalidade.
+
+A ausência de um grupo de controle — um sistema equivalente que não passou pelas mesmas intervenções — impede descartar que fatores externos, como a simples redução de escopo do sistema (de 37 para 34 telas), possam ter contribuído para parte das mudanças observadas.
+
+\section{Trabalhos Relacionados}
+
+A literatura em Engenharia de Software apresenta uma linha de investigação consolidada sobre os efeitos da refatoração na qualidade interna de sistemas. Bavota et al.~\cite{Bavota2015} investigaram empiricamente a relação entre qualidade e refatoração em sistemas Java de código aberto, identificando que refatorações tendem a ocorrer em módulos de baixa qualidade e que, após as intervenções, os módulos afetados apresentam melhoras nas métricas CBO e LCOM. Os resultados deste trabalho são consistentes com essa observação no que diz respeito à redução do acoplamento e ao aumento da coesão nos artefatos migrados, embora o contexto seja distinto — uma única aplicação React Native, em vez de um conjunto de projetos Java analisados estatisticamente. Palomba et al.~\cite{Palomba2014} examinaram especificamente a relação entre refatorações e a remoção de code smells, concluindo que refatorações de extração de método e de classe estão fortemente associadas à eliminação de God Classes e a outros smells relacionados à coesão. A extração de use cases e entidades de domínio realizada neste trabalho é conceitualmente análoga a essas refatorações de extração, e os resultados de coesão observados corroboram os padrões identificados pelos autores.
+
+Na área de aplicações móveis, a presença de anti-patterns específicos ao contexto mobile tem sido objeto de investigação crescente. Reimann et al.~\cite{Reimann2014} propuseram um catálogo de anti-patterns para aplicações Android e Java ME, identificando padrões como o abuso de objetos de contexto e o acoplamento entre camadas de apresentação e lógica de negócio — problemas que encontram correspondência direta no \textit{Business Logic in UI} e nas \textit{Hardcoded Dependencies} documentados neste trabalho. Minelli e Mocci~\cite{Minelli2013} analisaram a evolução de aplicações iOS e identificaram uma tendência de crescimento dos arquivos de controlador ao longo do tempo, fenômeno análogo ao crescimento dos serviços e telas observado no baseline deste estudo.
+
+No campo da arquitetura de software, a Arquitetura Hexagonal proposta por Cockburn~\cite{Cockburn2005} e a Clean Architecture descrita por Martin~\cite{Martin2017} fornecem os princípios que orientaram as intervenções realizadas. Ambas as abordagens compartilham o objetivo de isolar o núcleo da aplicação das dependências de infraestrutura por meio de fronteiras de abstração explícitas. A contribuição deste trabalho em relação a essas referências não é de natureza propositiva — os padrões já são bem estabelecidos —, mas empírica: o relato documentado de um processo de adoção incremental desses padrões em um sistema real, com indicadores coletados antes e depois das intervenções, oferece uma perspectiva de implementação que os textos normativos não fornecem.
+
+Distingue-se dos trabalhos citados pelo escopo: enquanto estudos como o de Bavota et al. analisam grandes conjuntos de projetos por meio de métricas automatizadas, este trabalho examina em profundidade um único sistema, documentando as decisões arquiteturais e os seus efeitos de forma qualitativa e quantitativa combinadas. Essa escolha metodológica, coerente com o estudo de caso de Yin~\cite{Yin2014}, permite capturar nuances do processo de refatoração que estudos de larga escala tendem a abstrair.
+
+\section{Conclusão}
+
+Este trabalho investigou o impacto da remoção sistemática de anti-patterns arquiteturais sobre atributos de qualidade interna de software, por meio de um estudo de caso conduzido em uma aplicação móvel desenvolvida em React Native. Quatro anti-patterns foram identificados no baseline do sistema — \textit{Business Logic in UI}, \textit{Hardcoded Dependencies}, God Objects e Singletons Não Injetáveis — e um plano de onze intervenções sequenciais foi executado para removê-los ou mitigá-los, com indicadores de acoplamento, coesão e testabilidade coletados antes e após as intervenções.
+
+Em resposta à questão de pesquisa proposta — RQ1: \textit{Qual o impacto da remoção sistemática de anti-patterns arquiteturais sobre atributos de qualidade interna de software?} — os resultados indicam que a remoção produziu melhoras mensuráveis nos três atributos avaliados. A fronteira arquitetural introduzida pelo padrão Ports \& Adapters eliminou o acoplamento direto ao Firebase SDK no núcleo da aplicação: os use cases, as entidades de domínio e os ports não importam nenhum tipo do SDK, dependendo exclusivamente de contratos de interface. A criação de artefatos com responsabilidade única — três use cases e quatro entidades de domínio — reduziu o volume de lógica concentrada nos God Objects e nas telas, e a introdução de erros tipados e injeção de dependência tornou verificáveis em testes fluxos que antes só podiam ser exercidos ao renderizar componentes de interface com Firebase configurado.
+
+As duas intervenções de maior impacto transversal foram a extração de use cases e a criação da camada Ports \& Adapters. Essas duas intervenções afetaram simultaneamente os três atributos — ao introduzir artefatos com responsabilidade única, dependências injetáveis e fronteiras de abstração explícitas — e são as mais diretamente responsáveis pelos ganhos observados. As demais intervenções, como a padronização do tratamento de erros, a reorganização por feature e a extração para Cloud Functions, contribuíram de forma complementar, criando as condições estruturais para que as intervenções principais pudessem ser aplicadas com segurança.
+
+As principais limitações deste trabalho são o escopo restrito a um único sistema, a natureza incremental da refatoração — que resultou em uma arquitetura híbrida com artefatos legados e novos coexistindo —, e o uso de indicadores observacionais em lugar de métricas formais como CBO e LCOM. Essas limitações delimitam a generalização dos resultados, mas não invalidam as evidências geradas: o sistema demonstra, nos artefatos criados pela refatoração, o comportamento arquitetural esperado pelos padrões adotados.
+
+Como trabalhos futuros, identificam-se três direções principais. A primeira é a continuidade da migração: as telas de maior porte — em especial \texttt{DetalhesDoGrupoScreen.tsx}, com 2.696 linhas — e os serviços legados remanescentes são candidatos naturais a uma próxima rodada de refatoração, e a infraestrutura de ports, adapters e use cases já está em vigor para recebê-los. A segunda é a aplicação de métricas formais de acoplamento e coesão — CBO, LCOM e RFC — sobre o histórico de commits do repositório, de forma a validar retrospectivamente os indicadores observacionais utilizados neste trabalho. A terceira é a replicação do processo em outro sistema, preferencialmente com stack tecnológica diferente, para ampliar a generalização dos resultados e verificar se as mesmas intervenções produzem efeitos similares em contextos distintos.
+
+\section*{Disponibilidade de Artefatos}
+O c\'{o}digo-fonte da aplica\c{c}\~{a}o estudada, incluindo os estados antes e ap\'{o}s a refatora\c{c}\~{a}o acess\'{i}veis por meio do hist\'{o}rico de commits, est\'{a} dispon\'{i}vel em reposit\'{o}rio p\'{u}blico no GitHub: \url{https://github.com/AdeLuigi/tcc-desconecta}. O reposit\'{o}rio cont\'{e}m o c\'{o}digo da aplica\c{c}\~{a}o React Native, o m\'{o}dulo nativo Android, as Cloud Functions, os arquivos de especifica\c{c}\~{a}o das onze etapas do plano de melhorias e os snapshots de indicadores utilizados na an\'{a}lise. O artefato \'{e} disponibilizado sob a licen\c{c}a MIT.
 
 %% The next two lines define the bibliography style to be used, and
 %% the bibliography file.
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{sample-base}
-
-%% If your work has appendices, this is the place to put them
-\appendix
-
-\section{Appendix Example 1}
-
-\subsection{Part One}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi malesuada, quam in pulvinar varius, metus nunc fermentum urna, id sollicitudin purus odio sit amet enim. Aliquam ullamcorper eu ipsum vel mollis. Curabitur quis dictum nisl. Phasellus vel semper risus, et lacinia dolor. Integer ultricies commodo sem nec semper.
-
-\subsection{Part Two}
-Etiam commodo feugiat nisl pulvinar pellentesque. Etiam auctor sodales ligula, non varius nibh pulvinar semper. Suspendisse nec lectus non ipsum convallis congue hendrerit vitae sapien. Donec at laoreet eros. Vivamus non purus placerat, scelerisque diam eu, cursus ante. Etiam aliquam tortor auctor efficitur mattis.
-
-\section{Appendix Example 2}
-Nam id fermentum dui. Suspendisse sagittis tortor a nulla mollis, in pulvinar ex pretium. Sed interdum orci quis metus euismod, et sagittis enim maximus. Vestibulum gravida massa ut felis suscipit congue. Quisque mattis elit a risus ultrices commodo venenatis eget dui. Etiam sagittis eleifend elementum.
-
-Nam interdum magna at lectus dignissim, ac dignissim lorem rhoncus. Maecenas eu arcu ac neque placerat aliquam. Nunc pulvinar massa et mattis lacinia.
 
 \end{document}
 
