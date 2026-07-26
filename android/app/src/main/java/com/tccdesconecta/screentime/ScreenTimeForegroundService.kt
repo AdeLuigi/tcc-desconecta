@@ -7,8 +7,10 @@ import android.app.Service
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -23,7 +25,9 @@ import java.util.TimeZone
 
 class ScreenTimeForegroundService : Service() {
 
-    private val handler = Handler(Looper.getMainLooper())
+    private val workerThread = HandlerThread("ScreenTimeWorker").also { it.start() }
+    private val handler = Handler(workerThread.looper)
+    private val restartHandler = Handler(Looper.getMainLooper())
     private var shouldRestartService = true
     private val syncRunnable = object : Runnable {
         override fun run() {
@@ -52,10 +56,19 @@ class ScreenTimeForegroundService : Service() {
 
         shouldRestartService = true
 
-        startForeground(
-            ScreenTimeBackgroundConfig.NOTIFICATION_ID,
-            buildNotification("Monitoramento de tempo de tela em andamento")
-        )
+        val notification = buildNotification("Monitoramento de tempo de tela em andamento")
+        // Android 14+ exige que o tipo seja declarado explicitamente na chamada
+        // O tipo 'specialUse' não exige rede ativa (ao contrário de 'dataSync')
+        // nem permissões de sensor (ao contrário de 'health')
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                ScreenTimeBackgroundConfig.NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(ScreenTimeBackgroundConfig.NOTIFICATION_ID, notification)
+        }
 
         handler.removeCallbacks(syncRunnable)
         handler.post(syncRunnable)
@@ -65,6 +78,7 @@ class ScreenTimeForegroundService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacks(syncRunnable)
+        workerThread.quitSafely()
         maybeRestartService("onDestroy")
         super.onDestroy()
     }
@@ -92,7 +106,8 @@ class ScreenTimeForegroundService : Service() {
         val restartIntent = Intent(this, ScreenTimeForegroundService::class.java).apply {
             action = ScreenTimeBackgroundConfig.ACTION_START
         }
-        handler.postDelayed({
+        // Usa main looper para restart: o worker thread já foi finalizado em onDestroy
+        restartHandler.postDelayed({
             runCatching {
                 ContextCompat.startForegroundService(this, restartIntent)
             }.onFailure { err ->
