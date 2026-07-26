@@ -239,11 +239,29 @@ class ScreenTimeForegroundService : Service() {
 
         //TODO: está abrindo o app mas está indo pra última tela em que o app estava aberto, precisa ir pra main screen
 
+        // Quando o usuário descarta a notificação (Android 14+ permite isso),
+        // o deleteIntent reinicia o startForeground imediatamente
+        val repostIntent = Intent(this, ScreenTimeForegroundService::class.java).apply {
+            action = ScreenTimeBackgroundConfig.ACTION_START
+        }
+        val deletePendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PendingIntent.getForegroundService(
+                this, 1, repostIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getService(
+                this, 1, repostIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
         val notification = NotificationCompat.Builder(this, ScreenTimeBackgroundConfig.NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Desconecta monitorando")
             .setContentText(contentText)
             .setContentIntent(pendingIntent)
+            .setDeleteIntent(deletePendingIntent)
             .setOngoing(true)
             .setAutoCancel(false)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
