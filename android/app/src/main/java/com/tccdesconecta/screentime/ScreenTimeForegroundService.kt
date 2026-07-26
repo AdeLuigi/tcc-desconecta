@@ -128,10 +128,13 @@ class ScreenTimeForegroundService : Service() {
 
         uploadSnapshotToFirestore(minutesToday)
 
+        val h = minutesToday / 60
+        val m = minutesToday % 60
+        val timeText = if (h > 0) "${h}h ${m}m" else "${m}m"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(
             ScreenTimeBackgroundConfig.NOTIFICATION_ID,
-            buildNotification("Tempo hoje: ${minutesToday} min")
+            buildNotification("Tempo hoje: $timeText")
         )
     }
 
