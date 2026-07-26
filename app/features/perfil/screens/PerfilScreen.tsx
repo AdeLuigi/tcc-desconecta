@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
 } from "react-native"
+import { formatScreenTime } from "@/utils/timeFormat"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -286,13 +287,6 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
   const increaseLimite = () =>
     setLimiteTelaMinutos((prev) => (prev < 30 ? Math.min(30, prev + 2) : Math.min(1440, prev + 30)))
 
-  const formatMinutes = (min: number) => {
-    const hours = Math.floor(min / 60)
-    const mins = min % 60
-    if (mins === 0) return `${hours}h`
-    return `${hours}h ${mins}min`
-  }
-
   const displayImage = selectedImage || photoURL || undefined
 
   return (
@@ -412,7 +406,7 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ navigation }) => {
               <TouchableOpacity onPress={decreaseLimite} style={styles.stepperBtn}>
                 <Text style={styles.stepperBtnText}>{"<"}</Text>
               </TouchableOpacity>
-              <Text style={styles.stepperValue}>{formatMinutes(limiteTelaMinutos)}</Text>
+              <Text style={styles.stepperValue}>{formatScreenTime(limiteTelaMinutos)}</Text>
               <TouchableOpacity onPress={increaseLimite} style={styles.stepperBtn}>
                 <Text style={styles.stepperBtnText}>{">"}</Text>
               </TouchableOpacity>

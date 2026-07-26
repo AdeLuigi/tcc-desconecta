@@ -198,18 +198,43 @@ class ScreenTimeForegroundService : Service() {
             set(java.util.Calendar.SECOND, 0)
             set(java.util.Calendar.MILLISECOND, 0)
         }
-
         val startTime = calendar.timeInMillis
         val endTime = System.currentTimeMillis()
+        val SESSION_TIMEOUT = 5 * 60 * 1000L
 
-        val usageStatsList = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            startTime,
-            endTime
-        ) ?: emptyList()
+        val events = usageStatsManager.queryEvents(startTime, endTime)
+        val lastForeground = mutableMapOf<String, Long>()
+        var totalMs = 0L
+        val event = android.app.usage.UsageEvents.Event()
 
-        val totalMillis = usageStatsList.sumOf { it.totalTimeInForeground }
-        return (totalMillis / 1000 / 60).toInt()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            val pkg = event.packageName ?: continue
+            when (event.eventType) {
+                android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND -> {
+                    val prev = lastForeground[pkg]
+                    if (prev != null && event.timeStamp > prev) {
+                        val sessionStart = maxOf(prev, startTime)
+                        val sessionEnd = minOf(event.timeStamp, endTime, prev + SESSION_TIMEOUT)
+                        if (sessionEnd > sessionStart) totalMs += sessionEnd - sessionStart
+                    }
+                    lastForeground[pkg] = event.timeStamp
+                }
+                android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND -> {
+                    val start = lastForeground.remove(pkg) ?: continue
+                    val sessionStart = maxOf(start, startTime)
+                    val sessionEnd = minOf(event.timeStamp, endTime)
+                    if (sessionEnd > sessionStart) totalMs += sessionEnd - sessionStart
+                }
+            }
+        }
+        // Sessões ainda abertas (app ainda em foreground)
+        lastForeground.forEach { (_, startedAt) ->
+            val sessionStart = maxOf(startedAt, startTime)
+            val sessionEnd = minOf(endTime, startedAt + SESSION_TIMEOUT)
+            if (sessionEnd > sessionStart) totalMs += sessionEnd - sessionStart
+        }
+        return (totalMs / 1000 / 60).toInt()
     }
 
     private fun createNotificationChannel() {

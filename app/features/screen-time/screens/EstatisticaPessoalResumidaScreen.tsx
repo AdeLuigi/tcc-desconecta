@@ -18,6 +18,7 @@ const CloseIcon: React.FC<SvgProps> = require("@assets/images/close.svg").defaul
 const EclipseIcon: React.FC<SvgProps> = require("@assets/images/eclipse.svg").default
 import ScreenTimeService from "@/services/screenTime"
 import { getAppCategory, type AppCategory } from "@/utils/appCategories"
+import { formatScreenTime } from "@/utils/timeFormat"
 
 const Logo = require("@assets/images/logo2.png")
 const HeaderBackground = require("@assets/images/metas.png")
@@ -233,14 +234,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           }))
 
           if (todayTime > 0) {
-            const tSave = Date.now()
-            ScreenTimeService.saveScreenTimeData(
-              userData.uid,
-              todayTime,
-              appsWithCategory as any
-            )
-              .then(() => console.log(`[Stats] saveScreenTimeData (bg): ${Date.now() - tSave}ms`))
-              .catch((err) => console.error('[Stats] Erro ao salvar tempo de tela:', err))
+            // save centralizado na HomeDinamicaScreen
           }
 
           // Calcular categorias a partir dos apps nativos
@@ -307,18 +301,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             if (app.appIcon) nativeIconMap[app.packageName] = app.appIcon
           })
           if (todayTime > 0 && userData?.uid) {
-            const appsWithCategory = apps.map(app => ({
-              ...app,
-              category: getAppCategory(app.packageName, app.category) as string,
-            }))
-            const tSave = Date.now()
-            ScreenTimeService.saveScreenTimeData(
-              userData.uid,
-              todayTime,
-              appsWithCategory as any
-            )
-              .then(() => console.log(`[Stats] saveScreenTimeData [semanal]: ${Date.now() - tSave}ms`))
-              .catch(() => {})
+            // save centralizado na HomeDinamicaScreen
           }
         } catch {
           // Ignorar erros na sincronização nativa
@@ -426,14 +409,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
     return count
   }
 
-  const formatLimitTime = (minutes: number): string => {
-    if (minutes >= 60) {
-      const h = Math.floor(minutes / 60)
-      const m = minutes % 60
-      return m > 0 ? `${h}h${m}min` : `${h}h`
-    }
-    return `${minutes}min`
-  }
+  const formatLimitTime = (minutes: number): string => formatScreenTime(minutes)
   // --- Fim streak helpers ---
 
   const chartConfig = {
@@ -651,7 +627,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
           <View style={styles.summaryCards}>
             <View style={styles.summaryCard}>
               <Text preset="heading" style={styles.summaryValueCyan}>
-                {StatisticsService.formatTime(statistics.totalTimeInMinutes)}
+                {formatScreenTime(statistics.totalTimeInMinutes)}
               </Text>
               <Text style={styles.summaryLabel}>de tempo de tela</Text>
             </View>
@@ -665,7 +641,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
             ) : period === 7 ? (
               <View style={styles.summaryCard}>
                 <Text preset="heading" style={styles.summaryValueCyan}>
-                  {StatisticsService.formatTime(statistics.averageTimePerDay)}
+                  {formatScreenTime(statistics.averageTimePerDay)}
                 </Text>
                 <Text style={styles.summaryLabel}>Média Diária</Text>
               </View>
@@ -691,7 +667,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
                     <Image source={getCategoryImage(category)} style={styles.categoryIcon} />
                     <View style={styles.categoryInfo}>
                       <Text style={styles.categoryName}>{StatisticsService.translateCategory(category)}</Text>
-                      <Text style={styles.categoryTime}>{StatisticsService.formatTime(minutes)}</Text>
+                      <Text style={styles.categoryTime}>{formatScreenTime(minutes)}</Text>
                     </View>
                   </View>
                 ))
@@ -715,7 +691,7 @@ export const EstatisticaPessoalResumidaScreen: React.FC<EstatisticaPessoalResumi
                     <Text style={styles.appRowName}>{app.appName}</Text>
                     <Text style={styles.appRowCategory}>{StatisticsService.translateCategory(app.category)}</Text>
                   </View>
-                  <Text style={styles.appRowTime}>{StatisticsService.formatTime(app.timeInMinutes)}</Text>
+                  <Text style={styles.appRowTime}>{formatScreenTime(app.timeInMinutes)}</Text>
                 </View>
               ))
             ) : (

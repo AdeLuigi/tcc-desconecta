@@ -2,6 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, getDocs, orderBy, limit } from "@react-native-firebase/firestore"
 import { getAppCategory, type AppCategory } from '@/utils/appCategories';
 import excludedSystemPackages from '@/data/excludedSystemPackages.json';
+import { formatScreenTime } from '@/utils/timeFormat';
 
 const { ScreenTimeModule } = NativeModules;
 
@@ -247,22 +248,6 @@ class ScreenTimeService {
       console.error(`Erro ao obter tempo de tela do dia ${daysAgo}:`, error);
       return null;
     }
-  }
-
-  /**
-   * Formata minutos em formato legível (ex: "2h 30min")
-   */
-  formatTime(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    
-    if (hours === 0) {
-      return `${mins}min`;
-    }
-    if (mins === 0) {
-      return `${hours}h`;
-    }
-    return `${hours}h ${mins}min`;
   }
 
   /**

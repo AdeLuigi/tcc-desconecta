@@ -10,6 +10,7 @@ import { Icon } from "@/components/Icon"
 import { useFocusEffect } from "@react-navigation/native"
 import ScreenTimeService, { AppUsage } from "@/services/screenTime"
 import { getAppCategory, getCategoryEmoji, getCategoryLabel, type AppCategory } from "@/utils/appCategories"
+import { formatScreenTime } from "@/utils/timeFormat"
 import { getUserGroups, type Group, joinGroupByCode } from "@/services/groupService"
 import { isDomainError } from "@/domain/errors"
 import { Group as DomainGroup } from "@/domain/Group"
@@ -333,7 +334,7 @@ export const HomeDinamicaScreen: React.FC<HomeDinamicaScreenProps> = ({ navigati
             ) : (
               <View>
                 <Text style={styles.screenTimeText}>
-                  {screenTimeData.hours}h {screenTimeData.minutes}m
+                  {formatScreenTime(hasPermission ? screenTimeToday : 152)}
                 </Text>
                 <Text style={styles.screenTimeLabel}>de tempo de tela hoje</Text>
                 <View style={styles.mostUsedApps}>

@@ -1,4 +1,5 @@
 import { getFirestore, collection, query, where, orderBy, limit, getDocs, writeBatch, doc, getDoc } from '@react-native-firebase/firestore'
+import { formatScreenTime } from '@/utils/timeFormat'
 
 export interface AppStatistic {
   packageName: string
@@ -138,16 +139,7 @@ class StatisticsService {
    * Formata minutos em formato legível (ex: "2h 30min")
    */
   formatTime(minutes: number): string {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    
-    if (hours === 0) {
-      return `${mins}min`
-    }
-    if (mins === 0) {
-      return `${hours}h`
-    }
-    return `${hours}h ${mins}min`
+    return formatScreenTime(minutes)
   }
 
   /**

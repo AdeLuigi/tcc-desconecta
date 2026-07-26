@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native"
+import { formatScreenTime } from "@/utils/timeFormat"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Button } from "@/components/Button"
@@ -74,14 +75,6 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
     setLimiteMinutos((prev) => (prev <= 30 ? Math.max(2, prev - 2) : prev - 30))
   const increaseLimite = () =>
     setLimiteMinutos((prev) => (prev < 30 ? Math.min(30, prev + 2) : Math.min(1440, prev + 30)))
-
-  const formatMinutes = (min: number) => {
-    const hours = Math.floor(min / 60)
-    const mins = min % 60
-    if (hours === 0) return `${mins}min`
-    if (mins === 0) return `${hours}h`
-    return `${hours}h ${mins}min`
-  }
 
   const handleSave = async () => {
     if (!userData) return
@@ -216,7 +209,7 @@ export const ConfigurarLimiteScreen: React.FC<ConfigurarLimiteScreenProps> = ({
               <TouchableOpacity onPress={decreaseLimite} style={s.stepperBtn} disabled={isSaving}>
                 <Text style={s.stepperBtnText}>{"<"}</Text>
               </TouchableOpacity>
-              <Text style={s.stepperValue}>{formatMinutes(limiteMinutos)}</Text>
+              <Text style={s.stepperValue}>{formatScreenTime(limiteMinutos)}</Text>
               <TouchableOpacity onPress={increaseLimite} style={s.stepperBtn} disabled={isSaving}>
                 <Text style={s.stepperBtnText}>{">"}</Text>
               </TouchableOpacity>

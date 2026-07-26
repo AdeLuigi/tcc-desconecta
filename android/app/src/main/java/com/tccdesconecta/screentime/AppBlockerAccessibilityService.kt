@@ -162,6 +162,7 @@ class AppBlockerAccessibilityService : AccessibilityService() {
 
         val startTime = calendar.timeInMillis
         val endTime = System.currentTimeMillis()
+        val SESSION_TIMEOUT = 5 * 60 * 1000L
 
         val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
         val event = UsageEvents.Event()
@@ -179,16 +180,18 @@ class AppBlockerAccessibilityService : AccessibilityService() {
                 }
                 UsageEvents.Event.MOVE_TO_BACKGROUND -> {
                     if (lastForegroundTime > 0) {
-                        totalMillis += event.timeStamp - lastForegroundTime
+                        val sessionEnd = minOf(event.timeStamp, lastForegroundTime + SESSION_TIMEOUT)
+                        totalMillis += sessionEnd - lastForegroundTime
                         lastForegroundTime = 0L
                     }
                 }
             }
         }
 
-        // Se o app ainda está em foreground, soma o tempo até agora
+        // Se o app ainda está em foreground, soma o tempo até agora (com cap)
         if (lastForegroundTime > 0) {
-            totalMillis += endTime - lastForegroundTime
+            val sessionEnd = minOf(endTime, lastForegroundTime + SESSION_TIMEOUT)
+            totalMillis += sessionEnd - lastForegroundTime
         }
 
         return (totalMillis / 1000 / 60).toInt()
