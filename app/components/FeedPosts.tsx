@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { View, StyleSheet, Image, TouchableOpacity, ActivityIndicator, RefreshControl, ScrollView } from "react-native"
 import { Text } from "./Text"
-import { PostComments } from "@/components/PostComments"
 import { getGroupFeed, type FeedPost, type TipoAtividade } from "@/services/feedService"
 import { useNavigation } from "@react-navigation/native"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -10,6 +9,7 @@ export type { FeedPost, TipoAtividade }
 
 interface FeedPostsProps {
   groupId: string
+  groupName?: string
 }
 
 const ACTIVITY_TYPES: Record<TipoAtividade, { label: string; emoji: string; color: string }> = {
@@ -54,9 +54,8 @@ const groupPostsByDate = (posts: FeedPost[]): { dateKey: string; label: string; 
   }))
 }
 
-export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
+export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId, groupName }) => {
   const navigation = useNavigation<AppStackScreenProps<"DetalhesDoGrupo">["navigation"]>()
-  const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -83,19 +82,20 @@ export const FeedPosts: React.FC<FeedPostsProps> = ({ groupId }) => {
     setRefreshing(false)
   }
 
-  const toggleComments = (postId: string) => {
-    setExpandedPostId(expandedPostId === postId ? null : postId)
-  }
-
   const renderPost = (item: FeedPost) => {
     const activityInfo = ACTIVITY_TYPES[item.tipoAtividade] || ACTIVITY_TYPES.progresso
-    const isExpanded = expandedPostId === item.id
 
     return (
       <TouchableOpacity
         key={item.id}
         style={styles.postCard}
-        onPress={() => toggleComments(item.id)}
+        onPress={() =>
+          navigation.navigate("DetalhesDaPostagem", {
+            groupId,
+            groupName: groupName ?? "",
+            post: item,
+          })
+        }
         activeOpacity={0.85}
       >
         {/* Thumbnail */}

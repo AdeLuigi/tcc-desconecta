@@ -136,6 +136,21 @@ export type AppStackParamList = {
     } | null
   }
   Notificacoes: undefined
+  DetalhesDaPostagem: {
+    groupId: string
+    groupName: string
+    post: {
+      id: string
+      dataCriacao: string
+      descricao: string
+      foto?: string
+      nome: string
+      tipoAtividade: string
+      userId: string
+      photoURL?: string
+      reactions?: Record<string, string[]>
+    }
+  }
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
 }

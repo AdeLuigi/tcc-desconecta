@@ -12,6 +12,7 @@ export interface FeedPost {
   tipoAtividade: TipoAtividade
   userId: string
   photoURL?: string
+  reactions?: Record<string, string[]>
 }
 
 export interface Comment {
@@ -46,6 +47,7 @@ export async function getGroupFeed(groupId: string): Promise<FeedPost[]> {
         tipoAtividade: data.tipoAtividade || "progresso",
         userId: data.userId || "",
         photoURL: data.photoURL || "",
+        reactions: data.reactions || {},
       })
     })
 
@@ -214,5 +216,70 @@ export async function deleteComment(
   } catch (error) {
     console.error("Erro ao deletar comentário:", error)
     return false
+  }
+}
+
+/**
+ * Busca um post específico do feed (útil para atualizar reações)
+ */
+export async function getFirestorePost(groupId: string, postId: string): Promise<FeedPost | null> {
+  try {
+    const db = getFirestore()
+    const postRef = doc(db, "grupos", groupId, "feed", postId)
+    const postSnap = await getDoc(postRef)
+
+    if (!postSnap.exists()) return null
+
+    const data = postSnap.data()
+    return {
+      id: postSnap.id,
+      dataCriacao: data?.dataCriacao || "",
+      descricao: data?.descricao || "",
+      foto: data?.foto || "",
+      nome: data?.nome || "",
+      tipoAtividade: data?.tipoAtividade || "progresso",
+      userId: data?.userId || "",
+      photoURL: data?.photoURL || "",
+      reactions: data?.reactions || {},
+    }
+  } catch (error) {
+    console.error("Erro ao buscar post:", error)
+    return null
+  }
+}
+
+/**
+ * Alterna a reação de um usuário em um post (adiciona se não existe, remove se já existe)
+ */
+export async function toggleReaction(
+  groupId: string,
+  postId: string,
+  userId: string,
+  emoji: string,
+): Promise<void> {
+  try {
+    const db = getFirestore()
+    const postRef = doc(db, "grupos", groupId, "feed", postId)
+    const postSnap = await getDoc(postRef)
+
+    if (!postSnap.exists()) return
+
+    const data = postSnap.data()
+    const reactions: Record<string, string[]> = { ...(data?.reactions || {}) }
+    const currentUsers: string[] = reactions[emoji] || []
+
+    if (currentUsers.includes(userId)) {
+      reactions[emoji] = currentUsers.filter((id) => id !== userId)
+      if (reactions[emoji].length === 0) {
+        delete reactions[emoji]
+      }
+    } else {
+      reactions[emoji] = [...currentUsers, userId]
+    }
+
+    await updateDoc(postRef, { reactions })
+  } catch (error) {
+    console.error("Erro ao alternar reação:", error)
+    throw error
   }
 }

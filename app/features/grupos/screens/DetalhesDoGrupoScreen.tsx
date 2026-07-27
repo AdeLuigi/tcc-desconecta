@@ -113,6 +113,8 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         (currentGroup as any).selectedApps.length > 0
       const selectedApps: string[] = isFilteredByApps ? (currentGroup as any).selectedApps : []
 
+      console.log("currentGroup",currentGroup)
+
       const rankingData = await Promise.all(
         grupo.membros.map(async (membro) => {
           try {
@@ -970,7 +972,7 @@ export const DetalhesDoGrupoScreen: React.FC<DetalhesDoGrupoScreenProps> = ({ na
         {activeTab === "feed" && (
           <View style={styles.section}>
             <View style={styles.feedContainer}>
-              <FeedPosts key={feedKey} groupId={grupo.id} />
+              <FeedPosts key={feedKey} groupId={grupo.id} groupName={currentGroup.nome} />
             </View>
           </View>
         )}

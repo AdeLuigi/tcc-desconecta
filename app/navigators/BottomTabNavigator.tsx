@@ -36,6 +36,7 @@ import { SelecionarAppsLimiteScreen } from "@/features/limites/screens/Seleciona
 import { ConfigurarLimiteScreen } from "@/features/limites/screens/ConfigurarLimiteScreen"
 import { NotificacoesScreen } from "@/features/perfil/screens/NotificacoesScreen"
 import { ParticipantesDoGrupoScreen } from "@/features/grupos/screens/ParticipantesDoGrupoScreen"
+import { DetalhesDaPostagemScreen } from "@/features/grupos/screens/DetalhesDaPostagemScreen"
 
 // Types
 import type { BottomTabParamList } from "./navigationTypes"
@@ -73,6 +74,7 @@ const HomeStack = () => {
       <Stack.Screen name="ConfigurarLimite" component={ConfigurarLimiteScreen as any} />
       <Stack.Screen name="ParticipantesDoGrupo" component={ParticipantesDoGrupoScreen as any} />
       <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
+      <Stack.Screen name="DetalhesDaPostagem" component={DetalhesDaPostagemScreen as any} />
     </Stack.Navigator>
   )
 }
@@ -95,6 +97,7 @@ const GruposStack = () => {
       <Stack.Screen name="ParticipantesDoGrupo" component={ParticipantesDoGrupoScreen as any} />
       <Stack.Screen name="FeedDosGrupos" component={FeedDosGruposScreen as any} />
       <Stack.Screen name="Notificacoes" component={NotificacoesScreen as any} />
+      <Stack.Screen name="DetalhesDaPostagem" component={DetalhesDaPostagemScreen as any} />
     </Stack.Navigator>
   )
 }
