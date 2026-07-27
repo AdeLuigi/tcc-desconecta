@@ -1091,6 +1091,82 @@ body {
   display: inline-block;
 }
 
+/* === REAL SCREENSHOT PHONE FRAMES
+   ============================================================ */
+.sc-phone-real {
+  width: 178px;
+  height: 350px;
+  background: var(--bg-deep);
+  border: 2px solid var(--border);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  transition: var(--transition-slow);
+}
+.sc-phone-real:hover {
+  transform: translateY(-10px) scale(1.03);
+  border-color: var(--purple);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--purple);
+}
+.sc-scroll-area {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 82, 216, 0.35) transparent;
+}
+.sc-scroll-area::-webkit-scrollbar { width: 2px; }
+.sc-scroll-area::-webkit-scrollbar-track { background: transparent; }
+.sc-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(107, 82, 216, 0.45);
+  border-radius: 2px;
+}
+.sc-scroll-area img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.sc-scroll-fade {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+  border-radius: 0 0 26px 26px;
+}
+.sc-scroll-hint {
+  position: absolute;
+  bottom: 10px; left: 50%; transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.sc-scroll-dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+.sc-scroll-dot:nth-child(1) { opacity: 0.8; }
+.sc-scroll-dot:nth-child(2) { opacity: 0.45; }
+.sc-scroll-dot:nth-child(3) { opacity: 0.15; }
+
+/* Hero phone real image */
+.hero-phone-screen {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.hero-phone-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 /* 13. DOWNLOAD
    ============================================================ */
 .download {

@@ -1,3 +1,5 @@
+import homeImg from '../../screenshots/Home.png'
+
 function DownloadArrow() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -80,42 +82,13 @@ export default function Hero() {
           <div className="hero-visual">
             <div className="hero-phone-wrapper">
               <div className="hero-phone-glow" aria-hidden="true" />
-              <div className="hero-phone" role="img" aria-label="Tela do aplicativo Desconecta mostrando o ranking do grupo">
-                <div className="phone-notch-bar">
-                  <div className="phone-notch" />
-                </div>
-                <div className="phone-status">
-                  <span>9:41</span>
-                  <span>●●● 100%</span>
-                </div>
-                <div className="phone-topbar">
-                  <span className="phone-app-name">DESCONECTA</span>
-                  <span aria-hidden="true" style={{ fontSize: '0.65rem' }}>🔔</span>
-                </div>
-                <div className="phone-body">
-                  <p className="phone-greeting">
-                    Olá, <strong>Felipe</strong>! Segunda-feira 🌅
-                  </p>
-                  <div className="phone-time-box">
-                    <div className="phone-time-big">2h 32min</div>
-                    <div className="phone-time-label">de tela hoje</div>
-                    <div className="phone-time-badge">↓ 18% em relação a ontem</div>
-                  </div>
-                  <div>
-                    <div className="phone-rank-title">Ranking do grupo</div>
-                    {[
-                      { pos: '1°', init: 'F', name: 'Felipe',   time: '2h32m', me: true  },
-                      { pos: '2°', init: 'A', name: 'Ademario', time: '3h05m', me: false },
-                      { pos: '3°', init: 'S', name: 'Silvana',  time: '4h12m', me: false },
-                    ].map(m => (
-                      <div key={m.name} className={`phone-rank-row${m.me ? ' me' : ''}`}>
-                        <span className="phone-rank-pos">{m.pos}</span>
-                        <div className="phone-rank-avatar" aria-hidden="true">{m.init}</div>
-                        <span className={`phone-rank-name${m.me ? ' me-name' : ''}`}>{m.name}</span>
-                        <span className="phone-rank-time">{m.time}</span>
-                      </div>
-                    ))}
-                  </div>
+              <div className="hero-phone" role="img" aria-label="Tela inicial do aplicativo Desconecta">
+                <div className="hero-phone-screen">
+                  <img
+                    src={homeImg}
+                    alt="Tela inicial do Desconecta mostrando 2h 32min de tempo de tela, streak de 4 dias e grupos ativos"
+                    className="hero-phone-img"
+                  />
                 </div>
               </div>
             </div>
