@@ -14,6 +14,7 @@ import * as logger from "firebase-functions/logger";
 export {onActivityRegistered} from "./triggers/onActivityRegistered.js";
 export {onChallengeCompleted} from "./triggers/onChallengeCompleted.js";
 export {sendGroupNotification} from "./callable/sendGroupNotification.js";
+export {weeklyGroupWinner} from "./scheduled/weeklyGroupWinner.js";
 
 // Inicializar Firebase Admin
 admin.initializeApp();
