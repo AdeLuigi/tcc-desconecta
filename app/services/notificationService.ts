@@ -1,6 +1,8 @@
 import messaging from '@react-native-firebase/messaging'
 import { getFirestore, doc, updateDoc, getDoc, collection, getDocs, query, where } from '@react-native-firebase/firestore'
 import { Platform, PermissionsAndroid, Alert } from 'react-native'
+import { navigate } from '@/navigators/navigationUtilities'
+import { getGroupById } from '@/services/groupService'
 
 /**
  * Solicita permissão para notificações
@@ -198,6 +200,20 @@ async function storeNotificationInFirestore(notification: {
 import { addDoc } from '@react-native-firebase/firestore'
 
 /**
+ * Navega para a tela de detalhes de um grupo a partir do seu ID.
+ * Usado pelo handler de notificações para deep-link direto ao grupo.
+ */
+async function navigateToGroup(groupId: string): Promise<void> {
+  try {
+    const group = await getGroupById(groupId)
+    if (!group) return
+    navigate('DetalhesDoGrupo', { grupo: group })
+  } catch (error) {
+    console.error('Erro ao navegar para o grupo via notificação:', error)
+  }
+}
+
+/**
  * Configura listeners para notificações em foreground
  */
 export function setupNotificationListeners(): () => void {
@@ -217,16 +233,22 @@ export function setupNotificationListeners(): () => void {
   // Notificação clicada quando o app está em background
   const unsubscribeBackground = messaging().onNotificationOpenedApp((remoteMessage) => {
     console.log('Notificação abriu o app (background):', remoteMessage)
-    // Aqui você pode navegar para a tela específica
+    const { type, groupId } = (remoteMessage.data ?? {}) as Record<string, string>
+    if (type === 'weekly_winner' && groupId) {
+      navigateToGroup(groupId)
+    }
   })
 
-  // Verificar se o app foi aberto por uma notificação
+  // Verificar se o app foi aberto por uma notificação (estado encerrado)
   messaging()
     .getInitialNotification()
     .then((remoteMessage) => {
       if (remoteMessage) {
         console.log('App aberto por notificação:', remoteMessage)
-        // Navegar para a tela específica
+        const { type, groupId } = (remoteMessage.data ?? {}) as Record<string, string>
+        if (type === 'weekly_winner' && groupId) {
+          navigateToGroup(groupId)
+        }
       }
     })
 
