@@ -229,6 +229,10 @@ body {
   50%       { transform: translateY(-14px); }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* 7. NAVBAR
    ============================================================ */
 .navbar {
